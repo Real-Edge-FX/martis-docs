@@ -283,6 +283,39 @@ export default function LandingPage() {
             <HeroCode />
           </div>
         </div>
+
+        {/* Hero Image Showcase */}
+        <div style={{
+          maxWidth: 1200,
+          margin: '64px auto 0',
+          position: 'relative',
+        }}>
+          <div style={{
+            borderRadius: 16,
+            overflow: 'hidden',
+            border: '1px solid rgba(99,102,241,0.25)',
+            boxShadow: '0 40px 80px rgba(0,0,0,0.6), 0 0 0 1px rgba(99,102,241,0.1)',
+          }}>
+            <div style={{
+              background: '#161b22',
+              padding: '10px 16px',
+              display: 'flex',
+              gap: 8,
+              alignItems: 'center',
+              borderBottom: '1px solid rgba(99,102,241,0.2)',
+            }}>
+              <span style={{ width: 12, height: 12, borderRadius: '50%', background: '#ff5f57', display: 'inline-block' }} />
+              <span style={{ width: 12, height: 12, borderRadius: '50%', background: '#febc2e', display: 'inline-block' }} />
+              <span style={{ width: 12, height: 12, borderRadius: '50%', background: '#28c840', display: 'inline-block' }} />
+              <span style={{ marginLeft: 8, color: '#8b949e', fontSize: 12 }}>Martis Admin Panel</span>
+            </div>
+            <img
+              src="/hero.png"
+              alt="Martis Admin Dashboard Preview"
+              style={{ width: '100%', display: 'block' }}
+            />
+          </div>
+        </div>
       </section>
 
       {/* FEATURE CARDS */}
