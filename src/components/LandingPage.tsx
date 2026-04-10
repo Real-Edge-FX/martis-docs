@@ -220,7 +220,7 @@ export default function LandingPage() {
               fontSize: 13, color: '#a5b4fc',
             }}>
               <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#6366f1', display: 'inline-block' }} />
-              Laravel Admin Engine · v1.x
+              Laravel Admin Engine · v0.2.0-alpha
             </div>
 
             <h1 style={{
