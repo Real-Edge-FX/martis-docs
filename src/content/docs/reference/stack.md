@@ -1,87 +1,63 @@
 ---
 title: 'Technology Stack'
-description: 'PHP, Laravel, React, PrimeReact, Tailwind, Vite, and testing tools.'
+description: 'The technologies that power Martis — backend, frontend, and tooling.'
 sidebar:
   order: 2
 ---
 
-
-## Server Infrastructure
-
-| Component | Value |
-|-----------|-------|
-| Server IP | 192.168.50.21 (local network) |
-| OS | Ubuntu 24.04.4 LTS |
-| User | martis |
-| SSH | Port 22 |
-| Web Server | Caddy 2.x (port 80) |
+Martis is built on a carefully chosen stack that prioritizes developer experience, performance, and extensibility.
 
 ## Backend
 
 | Component | Version | Notes |
 |-----------|---------|-------|
-| PHP | 8.2 | Installed on host |
-| Laravel | 12.x | Base framework |
+| PHP | 8.2+ | Minimum requirement |
+| Laravel | 11, 12 | Supported versions |
 | Composer | 2.x | PHP dependency management |
-| MySQL | 8.0 | Docker container (`127.0.0.1:3306`) |
-| Redis | 7 | Docker container (`127.0.0.1:6379`), password auth |
-| PHP-FPM | 8.2 | Unix socket, configured for `martis` user |
-| Caddy | 2.x | Reverse proxy to PHP-FPM |
+
+Martis is distributed as a **Composer package** and requires no additional infrastructure. It integrates directly into your existing Laravel application.
 
 ## Frontend
 
 | Component | Version | Notes |
 |-----------|---------|-------|
-| Node.js | 20 | Installed on host |
-| PNPM | 9 | Workspace-aware package manager |
-| React | 18 | UI framework |
-| TypeScript | 5.x | Strict mode enabled |
-| Vite | 6 | Build tool with HMR support |
+| React | 18 | UI framework — rendered server-side bootstrapped |
+| TypeScript | 5.x | Strict mode throughout |
+| Vite | 6 | Build tool; assets pre-compiled and published |
 | React Router | 6 | Client-side routing with code splitting |
 | TanStack Query | — | Server state management and caching |
 | PrimeReact | — | UI component library (DataTable, Dropdown, etc.) |
-| react-i18next | — | Internationalization |
-| Phosphor Icons | — | Icon library (1,512 icons) |
+| react-i18next | — | Internationalization (EN, PT-BR, PT-PT out of the box) |
+| Phosphor Icons | — | Icon library (1,512+ icons) |
 | Tailwind CSS | — | Utility-first CSS with dark mode support |
 
-## Development Tools
+Frontend assets are **pre-compiled** and shipped with the package. You do not need Node.js or a build step in your application to use Martis.
+
+## Admin Panel
+
+The admin panel is a **React SPA** served from `/martis` (configurable). It communicates with your Laravel application via a dedicated REST API automatically registered by the package.
+
+- Routes are registered under `/api/martis/` by default
+- Auth is delegated to your application's configured guard
+- All resources are auto-discovered from `app/Martis/`
+
+## Testing (Package Development)
+
+If you are contributing to Martis itself:
 
 | Tool | Purpose |
 |------|---------|
-| Pest PHP | PHP unit/feature testing |
-| Vitest | TypeScript unit testing |
-| Playwright | End-to-end browser testing |
+| Pest PHP | PHP unit and feature tests |
+| Vitest | TypeScript unit tests |
+| Playwright | End-to-end browser tests |
 | PHPStan | Static analysis (level 8) |
 | Laravel Pint | PHP code formatter |
 | ESLint | TypeScript linter |
-| Telescope | Laravel debug dashboard (dev only) |
-| Scramble | Automatic API documentation (Swagger at `/docs/api`) |
 
-## CI/CD
+## API Documentation
 
-| Component | Details |
-|-----------|---------|
-| CI Runner | GitHub Actions self-hosted runner on `192.168.50.21` |
-| CI Pipeline | `make ci` (lint + typecheck + test) |
-| Deploy | Automatic via post-merge hook or GitHub Actions deploy workflow |
-| Pre-push Hook | Blocks push if `make ci` fails |
-| GitHub App | Token-based auth (App ID: 3164933, auto-refreshed) |
+Martis uses [Scramble](https://scramble.dedoc.co/) for automatic API documentation. When installed in development mode, the OpenAPI spec is available at `/docs/api`.
 
-## Key Makefile Commands
+## Architecture Decisions
 
-| Command | Description |
-|---------|-------------|
-| `make ci` | Full CI: lint + typecheck + test |
-| `make build` | Compile frontend assets (Vite production build) |
-| `make push` | Refresh GitHub token + push to origin |
-| `make deploy` | Manual deploy: pull + build + cache clear |
-| `make test` | Run all tests (Pest + Vitest) |
-| `make lint` | Run linters (Pint + ESLint) |
-| `make format` | Auto-fix formatting |
-| `make typecheck` | PHPStan + TypeScript check |
-| `make fresh` | Reset database with seeds |
-| `make start` / `make stop` | Start/stop Docker services |
-| `make status` | Check service health |
-| `make assets-watch` | Vite HMR for development |
-| `make sync-package` | Sync to package repository |
-| `make refresh-token` | Refresh GitHub App token |
+See [Architectural Decisions](decisions) for the rationale behind major design choices.

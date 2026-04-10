@@ -1,86 +1,84 @@
 /* ================================================================
-   MARTIS DOCS — Forced Dark Theme
-   Uses !important on computed properties because customCss is
-   injected BEFORE Starlight's own CSS in the bundle, so CSS
-   variable overrides lose to Starlight's later unlayered rules.
+   MARTIS DOCS — Theme-Aware Styles
+   All dark-mode overrides scoped under html[data-theme="dark"]
+   Light theme uses Starlight's built-in light palette unchanged.
    ================================================================ */
 
-/* ------------ Page background ------------ */
-html, body {
+/* -------- Dark: Page background -------- */
+html[data-theme="dark"],
+html[data-theme="dark"] body {
   background-color: #020817 !important;
   color: #d4daf0 !important;
 }
 
-/* Main content area */
-.main-frame,
-.content-panel,
-.sl-container {
+html[data-theme="dark"] .main-frame,
+html[data-theme="dark"] .content-panel,
+html[data-theme="dark"] .sl-container {
   background-color: #020817 !important;
 }
 
-/* ------------ Header / Nav bar ------------ */
-header.header,
-.header {
+/* -------- Dark: Header / Nav bar -------- */
+html[data-theme="dark"] header.header,
+html[data-theme="dark"] .header {
   background: rgba(2, 8, 23, 0.96) !important;
   border-bottom: 1px solid rgba(99, 102, 241, 0.15) !important;
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
 }
 
-/* ------------ Sidebar ------------ */
-.sidebar-pane,
-.sidebar-content,
-nav.sidebar,
-.sl-sidebar,
-aside.sidebar {
+/* -------- Dark: Sidebar -------- */
+html[data-theme="dark"] .sidebar-pane,
+html[data-theme="dark"] .sidebar-content,
+html[data-theme="dark"] nav.sidebar,
+html[data-theme="dark"] .sl-sidebar,
+html[data-theme="dark"] aside.sidebar {
   background: #030c1f !important;
   border-right: 1px solid rgba(99, 102, 241, 0.12) !important;
 }
 
-/* Sidebar items */
-.sidebar a {
+html[data-theme="dark"] .sidebar a {
   color: #8b9cc5 !important;
 }
-.sidebar a[aria-current=page],
-.sidebar a:hover {
+html[data-theme="dark"] .sidebar a[aria-current=page],
+html[data-theme="dark"] .sidebar a:hover {
   color: #a5b4fc !important;
   background: rgba(99, 102, 241, 0.1) !important;
 }
-.sidebar summary,
-.sidebar .group-label {
+html[data-theme="dark"] .sidebar summary,
+html[data-theme="dark"] .sidebar .group-label {
   color: #d4daf0 !important;
 }
 
-/* ------------ Right sidebar (TOC) ------------ */
-.right-sidebar,
-.right-sidebar-panel {
+/* -------- Dark: Right sidebar (TOC) -------- */
+html[data-theme="dark"] .right-sidebar,
+html[data-theme="dark"] .right-sidebar-panel {
   background: #020817 !important;
   border-left: 1px solid rgba(99, 102, 241, 0.1) !important;
 }
 
-/* ------------ Main content text ------------ */
-.sl-markdown-content,
-.sl-markdown-content p,
-.sl-markdown-content li,
-.sl-markdown-content dt,
-.sl-markdown-content dd {
+/* -------- Dark: Main content text -------- */
+html[data-theme="dark"] .sl-markdown-content,
+html[data-theme="dark"] .sl-markdown-content p,
+html[data-theme="dark"] .sl-markdown-content li,
+html[data-theme="dark"] .sl-markdown-content dt,
+html[data-theme="dark"] .sl-markdown-content dd {
   color: #d4daf0 !important;
 }
-.sl-markdown-content h2,
-.sl-markdown-content h3,
-.sl-markdown-content h4,
-.sl-markdown-content h5 {
+html[data-theme="dark"] .sl-markdown-content h2,
+html[data-theme="dark"] .sl-markdown-content h3,
+html[data-theme="dark"] .sl-markdown-content h4,
+html[data-theme="dark"] .sl-markdown-content h5 {
   color: #f0f2fc !important;
 }
-.sl-markdown-content a {
+html[data-theme="dark"] .sl-markdown-content a {
   color: #818cf8 !important;
 }
-.sl-markdown-content a:hover {
+html[data-theme="dark"] .sl-markdown-content a:hover {
   color: #a5b4fc !important;
 }
 
-/* ------------ Page title gradient ------------ */
-.content-panel h1 {
+/* -------- Dark: Page title gradient -------- */
+html[data-theme="dark"] .content-panel h1 {
   background: linear-gradient(135deg, #a5b4fc 0%, #818cf8 50%, #67e8f9 100%) !important;
   -webkit-background-clip: text !important;
   -webkit-text-fill-color: transparent !important;
@@ -88,75 +86,75 @@ aside.sidebar {
   color: #818cf8 !important;
 }
 
-/* ------------ Tables ------------ */
-.sl-markdown-content table {
+/* -------- Dark: Tables -------- */
+html[data-theme="dark"] .sl-markdown-content table {
   border: 1px solid rgba(99, 102, 241, 0.18) !important;
   border-collapse: collapse !important;
   background: #060f24 !important;
   color: #d4daf0 !important;
 }
-.sl-markdown-content th {
+html[data-theme="dark"] .sl-markdown-content th {
   background: rgba(99, 102, 241, 0.12) !important;
   border-bottom: 1px solid rgba(99, 102, 241, 0.25) !important;
   color: #c7d2fe !important;
 }
-.sl-markdown-content td {
+html[data-theme="dark"] .sl-markdown-content td {
   border-top: 1px solid rgba(26, 42, 80, 0.6) !important;
   color: #d4daf0 !important;
 }
 
-/* ------------ Inline code ------------ */
-.sl-markdown-content :not(pre) > code {
+/* -------- Dark: Inline code -------- */
+html[data-theme="dark"] .sl-markdown-content :not(pre) > code {
   background: rgba(99, 102, 241, 0.13) !important;
   color: #a5b4fc !important;
   border: 1px solid rgba(99, 102, 241, 0.2) !important;
   border-radius: 4px;
 }
 
-/* ------------ Code blocks (expressive-code) ------------ */
-.expressive-code .frame {
+/* -------- Dark: Code blocks -------- */
+html[data-theme="dark"] .expressive-code .frame {
   border: 1px solid rgba(99, 102, 241, 0.2) !important;
   background: #0d1117 !important;
 }
-.expressive-code pre {
+html[data-theme="dark"] .expressive-code pre {
   background: #0d1117 !important;
 }
 
-/* ------------ Blockquotes ------------ */
-.sl-markdown-content blockquote {
+/* -------- Dark: Blockquotes -------- */
+html[data-theme="dark"] .sl-markdown-content blockquote {
   border-left: 3px solid #818cf8 !important;
   background: rgba(99, 102, 241, 0.06) !important;
   color: #8b9cc5 !important;
   border-radius: 0 6px 6px 0;
 }
 
-/* ------------ Dividers / HR ------------ */
-.sl-markdown-content hr {
+/* -------- Dark: Dividers -------- */
+html[data-theme="dark"] .sl-markdown-content hr {
   border-color: rgba(99, 102, 241, 0.15) !important;
 }
 
-/* ------------ TOC links ------------ */
-starlight-toc a,
-.right-sidebar a {
+/* -------- Dark: TOC links -------- */
+html[data-theme="dark"] starlight-toc a,
+html[data-theme="dark"] .right-sidebar a {
   color: #8b9cc5 !important;
 }
-starlight-toc a[aria-current=true],
-starlight-toc a:hover {
+html[data-theme="dark"] starlight-toc a[aria-current=true],
+html[data-theme="dark"] starlight-toc a:hover {
   color: #818cf8 !important;
 }
 
-/* ------------ Search dialog ------------ */
-dialog,
-.search-dialog,
-#starlight__search dialog {
+/* -------- Dark: Search dialog -------- */
+html[data-theme="dark"] dialog,
+html[data-theme="dark"] .search-dialog,
+html[data-theme="dark"] #starlight__search dialog {
   background: #0d1a3a !important;
   color: #d4daf0 !important;
   border: 1px solid rgba(99, 102, 241, 0.2) !important;
   border-radius: 12px;
 }
 
-/* Pagefind variables (work in any injection order) */
-:root {
+/* -------- Dark: Pagefind variables -------- */
+html[data-theme="dark"] {
   --pagefind-ui-primary:      #818cf8;
   --pagefind-ui-text:         #d4daf0;
   --pagefind-ui-background:   #0d1a3a;
@@ -167,59 +165,61 @@ dialog,
   --pagefind-ui-font: inherit;
 }
 
-/* Remove gray divider lines between search results */
-.pagefind-ui__result {
+/* -------- Dark: Pagefind results UI -------- */
+html[data-theme="dark"] .pagefind-ui__result {
   border-top: none !important;
   padding: 8px 12px !important;
   border-radius: 8px;
   margin: 2px 0 !important;
 }
-.pagefind-ui__results-area {
+html[data-theme="dark"] .pagefind-ui__results-area {
   background: #0d1a3a !important;
 }
-.pagefind-ui__results-area mark {
+html[data-theme="dark"] .pagefind-ui__results-area mark {
   color: #818cf8;
   background: rgba(99, 102, 241, 0.15);
   border-radius: 2px;
 }
-
-/* Fix ugly blue hover on search results */
-.pagefind-ui__result:hover,
-.pagefind-ui__result:focus-within {
+html[data-theme="dark"] .pagefind-ui__result:hover,
+html[data-theme="dark"] .pagefind-ui__result:focus-within {
   background: rgba(99, 102, 241, 0.1) !important;
   outline: none !important;
 }
-.pagefind-ui__result-link {
+html[data-theme="dark"] .pagefind-ui__result-link {
   color: #a5b4fc !important;
 }
-.pagefind-ui__result-link:hover {
+html[data-theme="dark"] .pagefind-ui__result-link:hover {
   color: #c7d2fe !important;
   text-decoration: none !important;
 }
-.pagefind-ui__result-link:focus {
-  outline: 2px solid rgba(99, 102, 241, 0.4) !important;
-  box-shadow: none !important;
-  border-radius: 4px;
-}
-.pagefind-ui__search-input {
+html[data-theme="dark"] .pagefind-ui__search-input {
   background: #0d1a3a !important;
   color: #d4daf0 !important;
   border-color: #1a2a50 !important;
 }
-.pagefind-ui__search-input:focus {
+html[data-theme="dark"] .pagefind-ui__search-input:focus {
   border-color: #818cf8 !important;
   box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2) !important;
   outline: none !important;
 }
 
-/* ------------ Pagination links ------------ */
-.pagination-links a {
+/* -------- Dark: Pagination links -------- */
+html[data-theme="dark"] .pagination-links a {
   background: rgba(6, 15, 36, 0.8) !important;
   border: 1px solid rgba(99, 102, 241, 0.18) !important;
   color: #d4daf0 !important;
   border-radius: 8px;
 }
-.pagination-links a:hover {
+html[data-theme="dark"] .pagination-links a:hover {
   border-color: rgba(99, 102, 241, 0.4) !important;
   background: rgba(99, 102, 241, 0.08) !important;
+}
+
+/* -------- Light: Search (clean theme) -------- */
+html[data-theme="light"] .pagefind-ui__result {
+  border-top: none !important;
+  border-radius: 6px;
+}
+html[data-theme="light"] .pagefind-ui__result:hover {
+  background: rgba(99, 102, 241, 0.06) !important;
 }

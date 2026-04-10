@@ -14,8 +14,9 @@ export default defineConfig({
         src: './src/assets/logo.png',
         replacesTitle: true,
       },
+      favicon: '/favicon.png',
       social: [
-        { icon: 'github', label: 'GitHub', href: 'https://github.com/Real-Edge-FX/martis' },
+        { icon: 'github', label: 'GitHub', href: 'https://github.com/Real-Edge-FX/martis-package' },
       ],
       customCss: ['./src/styles/custom.css'],
       defaultLocale: 'root',
@@ -64,6 +65,10 @@ export default defineConfig({
         },
       ],
       head: [
+        {
+          tag: 'link',
+          attrs: { rel: 'icon', href: '/favicon.png', type: 'image/png' },
+        },
         {
           tag: 'meta',
           attrs: { name: 'og:image', content: '/og-image.png' },

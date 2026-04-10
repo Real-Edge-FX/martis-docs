@@ -1,125 +1,21 @@
 ---
 title: 'Quick Start'
-description: 'Development workflow, dev server, hot reload, and first CRUD.'
+description: 'Create your first Martis resource and get the admin panel running in minutes.'
 sidebar:
   order: 2
 ---
 
-
-Get up and running with the Martis development environment.
+This guide walks you through creating your first Martis resource after installing the package.
 
 ## Prerequisites
 
-- SSH access to the server: `ssh martis@192.168.50.21`
-- Server is on the local network (no public internet)
+- Laravel 11 or 12 application
+- PHP 8.2+
+- Martis installed and configured ([Installation Guide](installation))
 
-## Starting the Development Server
+## Create Your First Resource
 
-```bash
-# 1. Connect to the server
-ssh martis@192.168.50.21
-
-# 2. Enter the project directory
-cd ~/martis
-
-# 3. Verify you are on the develop branch (CRITICAL)
-git branch  # Must show * develop
-
-# 4. Start services (MySQL, Redis)
-make start
-
-# 5. Check that everything is running
-make status
-
-# 6. Open the admin panel
-# http://martis.realedgefx.com/martis
-# Login: admin@martis.local / password
-```
-
-## Development Workflow
-
-### Feature Implementation
-
-```bash
-# 1. Create a feature branch from develop
-git checkout develop
-git checkout -b feature/REA-XXX-description
-
-# 2. Implement changes in the appropriate directories:
-#    Backend PHP:   packages/martis/src/
-#    Frontend JS:   packages/martis/resources/js/
-#    Playground:    playground/app/Martis/
-
-# 3. Run CI before committing
-make ci
-
-# 4. Commit with conventional commit format
-git add <files>
-git commit -m "feat(scope): description
-
-Co-Authored-By: Paperclip <noreply@paperclip.ing>"
-
-# 5. Build assets (MANDATORY after frontend changes)
-make build
-
-# 6. Merge back to develop
-git checkout develop
-git merge feature/REA-XXX-description --no-edit
-
-# 7. Delete the feature branch
-git branch -d feature/REA-XXX-description
-
-# 8. Push to GitHub
-make push
-```
-
-### Important Rules
-
-1. **Always use `make push`** — never `git push` directly. `make push` handles GitHub token refresh automatically.
-2. **Always run `make build`** after frontend changes — without this, the browser serves stale JavaScript.
-3. **Never leave the server on a feature branch** — always checkout back to `develop` before finishing.
-4. **Always run `make ci`** before committing — the pre-push hook blocks pushes that fail CI.
-
-### Frontend Hot Reload
-
-For real-time frontend development:
-
-```bash
-# Terminal 1: Start Vite HMR
-make assets-watch
-
-# Terminal 2: Edit files in packages/martis/resources/js/
-```
-
-Note: `make assets-watch` is for development only. Always run `make build` for production assets.
-
-## Running Tests
-
-```bash
-make test           # All tests (Pest + Vitest)
-make test-backend   # PHP tests only (Pest)
-make test-frontend  # TypeScript tests only (Vitest)
-make test-e2e       # E2E tests (Playwright)
-make ci             # Full CI: lint + typecheck + test
-make coverage       # PHP test coverage
-```
-
-## Useful Commands
-
-```bash
-make lint           # Run linters (Pint + ESLint)
-make format         # Auto-fix formatting (Pint + ESLint --fix)
-make typecheck      # PHPStan level 8 + tsc --noEmit
-make fresh          # Reset database with fresh seeds
-make deploy         # Manual deploy (pull + build + cache clear)
-make status         # Check all services
-make start          # Start Docker services
-make stop           # Stop Docker services
-```
-
-## Adding a New Resource
-
-Create a new PHP class in `playground/app/Martis/`:
+Create a PHP class that extends `Martis\Resource`:
 
 ```php
 <?php
@@ -131,6 +27,7 @@ use Illuminate\Http\Request;
 use Martis\Fields\Id;
 use Martis\Fields\Text;
 use Martis\Fields\Number;
+use Martis\Fields\Boolean;
 use Martis\Resource;
 
 class ProductResource extends Resource
@@ -152,7 +49,7 @@ class ProductResource extends Resource
 
     public function group(): ?string
     {
-        return 'Products';
+        return 'Catalog';
     }
 
     public function fields(Request $request): array
@@ -161,56 +58,87 @@ class ProductResource extends Resource
             Id::make('id'),
             Text::make('name')->sortable()->searchable()->required(),
             Number::make('price')->min(0)->nullable(),
+            Boolean::make('active')->default(true),
         ];
     }
 }
 ```
 
-The resource is auto-discovered — no manual registration needed.
+Resources are **auto-discovered** — no manual registration needed. Place the file in `app/Martis/` and Martis will detect it automatically.
 
-## Creating Custom Components
+## Access the Admin Panel
 
-Use the artisan command to scaffold custom React components:
-
-```bash
-php artisan martis:component StatusBadge --type=field
-php artisan martis:component CustomLayout --type=layout
-php artisan martis:component InfoPanel --type=generic
-```
-
-This creates the component file and registers it in `resources/js/martis/boot.ts`.
-
-After creating components, rebuild:
+Start your development server:
 
 ```bash
-make build
+php artisan serve
 ```
 
-## Project Structure
+Then navigate to:
 
 ```
-/home/martis/martis/
-├── packages/martis/              # The Martis package
-│   ├── src/                      # PHP source (Resources, Fields, Controllers)
-│   ├── resources/js/             # React + TypeScript frontend
-│   ├── resources/css/            # CSS (Tailwind + PrimeReact)
-│   ├── config/martis.php         # Default configuration
-│   ├── routes/martis.php         # Route definitions
-│   ├── stubs/                    # Code generation templates
-│   └── tests/                    # Pest PHP + Vitest tests
-├── playground/                   # Test Laravel application
-│   ├── app/Models/               # Eloquent models
-│   ├── app/Martis/               # Test resources
-│   └── .env                      # Environment config
-├── docs/                         # Documentation
-├── docker/                       # Docker configs (MySQL, Redis)
-├── Makefile                      # Build/CI/deploy scripts
-└── docker-compose.yml            # Service definitions
+http://localhost:8000/martis
 ```
+
+You will see your `ProductResource` listed in the sidebar under the **Catalog** group with a shopping cart icon.
+
+## Core Workflow
+
+### Index View
+
+The index lists all records with pagination, sorting, and search. Fields marked `.sortable()` get a clickable header; `.searchable()` fields are included in the global search.
+
+### Detail View
+
+Click any row to open the detail view. This shows all fields in read-only mode, including relationship fields.
+
+### Create / Edit
+
+The form respects validation rules defined on fields (`.required()`, `.min()`, `.max()`, `.rules()`, etc.). Custom validation is passed through to Laravel's validator.
+
+## Adding Relationships
+
+```php
+use Martis\Fields\BelongsTo;
+use Martis\Fields\HasMany;
+
+public function fields(Request $request): array
+{
+    return [
+        Id::make('id'),
+        Text::make('name'),
+        BelongsTo::make('category', CategoryResource::class),
+        HasMany::make('variants', VariantResource::class),
+    ];
+}
+```
+
+## Adding Actions
+
+```php
+use Martis\Actions\Action;
+
+public function actions(Request $request): array
+{
+    return [
+        Action::make('activate')
+            ->label('Activate Selected')
+            ->handler(function ($models) {
+                $models->each->update(['active' => true]);
+            }),
+    ];
+}
+```
+
+Actions appear in the bulk action dropdown on the index view.
+
+## Customising the Panel
+
+All defaults are overridable. See the [Override System](../core/overrides) for replacing default React components with your own.
 
 ## Next Steps
 
-- [Resources](../resources.md) — Configure resource behavior
-- [Fields Reference](../fields.md) — Explore all 32 field types
-- [Override System](../overrides.md) — Customize components
-- [Troubleshooting](troubleshooting.md) — Common issues
+- [Fields Reference](../core/fields) — All available field types and their options
+- [Actions](../core/actions) — Bulk and record-level actions
+- [Override System](../core/overrides) — Replace any component with custom React
+- [Configuration](../core/configuration) — Panel settings, auth guard, route prefix

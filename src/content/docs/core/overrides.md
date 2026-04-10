@@ -328,7 +328,7 @@ This command:
 | `footer` | Page footer | `layout:footer` |
 | `generic` | General purpose | `{kebab-name}` |
 
-After creating a component, rebuild assets with `make build`.
+After creating a component, republish the package assets with `php artisan vendor:publish --tag=martis-assets --force`.
 
 ## Component Registry API
 

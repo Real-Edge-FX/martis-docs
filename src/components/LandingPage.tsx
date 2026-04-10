@@ -160,7 +160,7 @@ export default function LandingPage() {
             <a href="/getting-started/introduction/" style={navLinkStyle}>Docs</a>
             <a href="/core/resources/" style={navLinkStyle}>Resources</a>
             <a href="/reference/api/" style={navLinkStyle}>API</a>
-            <a href="https://github.com/Real-Edge-FX/martis" target="_blank" rel="noopener"
+            <a href="https://github.com/Real-Edge-FX/martis-package" target="_blank" rel="noopener"
               style={{
                 ...navLinkStyle,
                 display: 'flex', alignItems: 'center', gap: 6,
@@ -261,7 +261,7 @@ export default function LandingPage() {
               <a href="/getting-started/installation/" style={primaryBtnStyle}>
                 Get Started →
               </a>
-              <a href="https://github.com/Real-Edge-FX/martis" target="_blank" rel="noopener" style={ghostBtnStyle}>
+              <a href="https://github.com/Real-Edge-FX/martis-package" target="_blank" rel="noopener" style={ghostBtnStyle}>
                 View on GitHub
               </a>
             </div>
@@ -565,7 +565,7 @@ export default function LandingPage() {
               ['Docs', '/getting-started/introduction/'],
               ['Resources', '/core/resources/'],
               ['Fields', '/core/fields/'],
-              ['GitHub', 'https://github.com/Real-Edge-FX/martis'],
+              ['GitHub', 'https://github.com/Real-Edge-FX/martis-package'],
             ].map(([label, href]) => (
               <a key={label} href={href} style={{
                 color: '#475569', fontSize: 14, textDecoration: 'none',

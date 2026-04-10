@@ -47,7 +47,7 @@ sidebar:
 **Date:** 2026-04-02 | **Status:** Accepted
 
 **Decision:** Caddy as web server on port 80
-**Rationale:** Zero-config simplicity — the entire Caddyfile is a few lines. SSL is handled by the external proxy (`martis.realedgefx.com -> http://192.168.50.21:80`). Caddy handles PHP-FPM proxying with minimal configuration.
+**Rationale:** Zero-config simplicity — the entire Caddyfile is a few lines. SSL is handled by the external proxy (an upstream reverse proxy). Caddy handles PHP-FPM proxying with minimal configuration.
 
 ---
 
@@ -102,7 +102,7 @@ sidebar:
 
 **Date:** 2026-04-04 | **Status:** Accepted
 
-**Decision:** Self-hosted runner on server `192.168.50.21` connecting to GitHub via HTTPS outbound
+**Decision:** Self-hosted runner via a self-hosted runner connecting to GitHub via HTTPS outbound
 **Rationale:** Server has no public internet access for external runners. The self-hosted runner connects outbound to GitHub, receives CI/CD triggers, and runs `make ci` locally. Automated deploy on push to `develop`.
 
 ---
@@ -111,7 +111,7 @@ sidebar:
 
 **Date:** 2026-04-04 | **Status:** Accepted
 
-**Decision:** Git `post-merge` hook automatically runs `make build` when frontend files change
+**Decision:** CI pipeline rebuilds frontend assets automatically when frontend files change
 **Rationale:** Eliminates the #1 cause of "changes not visible" issues — stale frontend assets being served. The hook detects `.tsx`, `.ts`, `.css` changes and runs the build. Fallback: `make deploy` for forced manual deploy.
 
 ---

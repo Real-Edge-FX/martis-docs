@@ -1,152 +1,163 @@
 ---
 title: 'Troubleshooting'
-description: 'Common issues, error messages, and solutions.'
+description: 'Solutions to common issues when installing and using Martis.'
 sidebar:
   order: 4
 ---
 
+## Installation Issues
 
-Common issues and solutions when working with the Martis development environment.
+### "Class not found" after install
 
-## PHP-FPM Not Starting
-
-```bash
-sudo systemctl status php8.2-fpm
-sudo journalctl -u php8.2-fpm -n 50
-```
-
-**Common fix:** Check socket permissions at `/run/php/php8.2-fpm.sock`. The `listen.mode` should be `0666` in `/etc/php/8.2/fpm/pool.d/www.conf`.
-
-## Caddy Returns 502 Bad Gateway
-
-PHP-FPM is not running or the socket is inaccessible.
+Run `composer dump-autoload` after adding the service provider (if not using auto-discovery):
 
 ```bash
-sudo systemctl restart php8.2-fpm
-sudo systemctl restart caddy
+composer dump-autoload
+php artisan config:clear
+php artisan cache:clear
 ```
 
-## MySQL Container Crash Loop
+### Assets not loading (404 on `/vendor/martis/`)
 
-Check logs and recreate the volume if corrupted:
+Publish the package assets:
 
 ```bash
-sudo docker logs martis_mysql 2>&1 | tail -20
-cd ~/martis && sudo docker compose down -v && sudo docker compose up -d mysql redis
+php artisan vendor:publish --tag=martis-assets --force
 ```
 
-## "Vite Manifest Not Found"
+Then clear your browser cache and hard-refresh.
 
-Frontend assets have not been built or published:
+### "Vite manifest not found"
+
+This means the frontend assets were not built. Run:
 
 ```bash
-cd ~/martis
-make build
+php artisan vendor:publish --tag=martis-assets --force
 ```
 
-If `make build` fails, try manually:
+If you installed from source, ensure the package has been built before publishing.
+
+## Panel Access Issues
+
+### Cannot access `/martis`
+
+1. Ensure the route is registered — check `php artisan route:list | grep martis`
+2. Verify the `prefix` in `config/martis.php` matches your URL
+3. Check that the auth guard is configured correctly (see [Authentication](../core/authentication))
+
+### Redirected to login page unexpectedly
+
+Martis uses Laravel's configured `auth` guard by default. Ensure your user is authenticated:
+
+```php
+// config/martis.php
+'guard' => 'web', // or your custom guard name
+```
+
+### Panel shows a blank white page
+
+Open your browser developer console. Common causes:
+- JavaScript error during load — check the console for the specific error
+- Mixed content warning if on HTTPS with HTTP assets
+- Outdated cached assets — hard-refresh with `Ctrl+Shift+R`
+
+## Resource Issues
+
+### Resource not appearing in sidebar
+
+Resources in `app/Martis/` are auto-discovered. If yours is missing:
+
+1. Check the namespace matches: `namespace App\Martis;`
+2. Ensure the class extends `Martis\Resource`
+3. Run `php artisan config:clear` (discovery can be cached)
+4. Check `php artisan martis:resources` to list discovered resources
+
+### Search returns no results
+
+Ensure the fields you want to search are marked `.searchable()`:
+
+```php
+Text::make('name')->searchable(),
+```
+
+Only fields explicitly marked `.searchable()` are included in the global search query.
+
+### Relationship field shows empty / not loading
+
+1. Ensure the related resource exists and is auto-discovered
+2. Check that the foreign key and relationship method are correctly defined on the model
+3. Verify the related model is accessible to the current auth user (policy or gate)
+
+## Field Issues
+
+### File upload fails (422 / 413)
+
+Check PHP and server upload limits:
 
 ```bash
-pnpm --filter @martis/martis build
-cd playground && php8.2 artisan vendor:publish --tag=martis-assets --force
+# php.ini settings to verify:
+upload_max_filesize = 10M
+post_max_size = 10M
 ```
 
-## Permission Denied on storage/
+Set limits on the field:
 
-```bash
-cd ~/martis
-sudo chown -R martis:martis playground/storage playground/bootstrap/cache
-chmod -R 775 playground/storage playground/bootstrap/cache
+```php
+File::make('document')->maxSize(10240), // 10 MB in KB
 ```
 
-## Redis WRONGTYPE Error
+### Boolean field not saving
 
-Flush the Redis cache:
+Ensure the database column is `boolean` or `tinyint(1)` and the Eloquent cast is set:
 
-```bash
-sudo docker exec martis_redis redis-cli FLUSHALL
+```php
+protected $casts = ['active' => 'boolean'];
 ```
 
-## Frontend Changes Not Visible
+### Date field returns wrong format
 
-This is the most common issue. After modifying files in `packages/martis/resources/js/`:
+Use the `.format()` option to match your database/display format:
 
-1. Run `make build` to compile new assets
-2. Hard-refresh the browser (Ctrl+Shift+R)
-3. Check that `packages/martis/public/manifest.json` has been updated
-
-If using `make assets-watch` for development, ensure Vite HMR is running and connected.
-
-## Git Push Fails with Authentication Error
-
-Always use `make push` instead of `git push`. The `make push` command automatically refreshes the GitHub App token before pushing.
-
-If `make push` also fails:
-
-1. Check PEM key exists: `ls -la /home/martis/.github-app.pem`
-2. Verify PyJWT is installed: `python3 -c "import jwt"`
-3. If PEM is missing, escalate to the CEO agent
-
-## Storage Link Missing (403 on Uploaded Files)
-
-The symlink from `playground/public/storage` to `playground/storage/app/public` is required for serving uploaded files.
-
-```bash
-cd ~/martis/playground
-php8.2 artisan storage:link
+```php
+Date::make('published_at')->format('Y-m-d'),
 ```
 
-This is normally created automatically by `make build` and `make deploy`.
+## Action Issues
 
-## CI Fails on PHPStan
+### Action does not appear in dropdown
 
-PHPStan runs at level 8 (strict). Common issues:
+Actions are filtered by the `canRun` policy method. If you have a policy defined, ensure it allows the action. To allow all authenticated users:
 
-- Missing return type declarations
-- Unresolved generic types
-- Contract/implementation method signature mismatch
-
-```bash
-# Run PHPStan alone to see detailed errors
-cd ~/martis && make typecheck
+```php
+public function authorize(Request $request): bool
+{
+    return $request->user() !== null;
+}
 ```
 
-## Server on Wrong Branch
+### Action runs but changes are not visible
 
-The server must always be on the `develop` branch. If you find it on a feature branch:
+Martis uses TanStack Query for caching. After an action, the index is automatically invalidated. If changes are not visible:
+1. Wait for the refetch (typically < 1 second)
+2. Manually refresh the page as a fallback
 
-```bash
-cd ~/martis
-git stash
-git checkout develop
-git stash pop  # only if you have uncommitted changes to keep
+## Performance Issues
+
+### Slow index page with many records
+
+1. Ensure you have database indexes on columns used for sorting and searching
+2. Use `.hideFromIndex()` on heavy fields (e.g. large text, nested relationships) that are not needed in the list
+3. Reduce `perPage` in resource configuration
+
+### Slow relationship fields
+
+BelongsTo fields load options via API. For large datasets, implement search-as-you-type:
+
+```php
+BelongsTo::make('category', CategoryResource::class)->searchable(),
 ```
 
-## Docker Services Not Starting
+## Getting Help
 
-```bash
-cd ~/martis
-make stop
-make start
-make status
-```
-
-If containers are stuck:
-
-```bash
-sudo docker compose down
-sudo docker compose up -d
-```
-
-## Database Migration Issues
-
-```bash
-cd ~/martis/playground
-php8.2 artisan migrate:fresh --seed
-```
-
-Or use the Makefile shortcut:
-
-```bash
-make fresh
-```
+- [GitHub Issues](https://github.com/Real-Edge-FX/martis-package/issues) — bug reports and feature requests
+- [GitHub Discussions](https://github.com/Real-Edge-FX/martis-package/discussions) — questions and community support
