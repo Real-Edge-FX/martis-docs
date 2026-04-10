@@ -3,8 +3,7 @@ title: 'REST API Overview'
 description: 'All endpoints, request/response formats, authentication, and error handling.'
 sidebar:
   order: 1
----
-
+---# Martis API — Overview
 
 Martis provides a REST API for all CRUD operations, resource metadata, and configuration. The API is automatically documented via Scramble (OpenAPI/Swagger).
 

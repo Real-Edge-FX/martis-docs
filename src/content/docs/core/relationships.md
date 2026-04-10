@@ -3,10 +3,11 @@ title: 'Relationships'
 description: 'BelongsTo, HasMany, BelongsToMany with pivot fields, attach/detach, and MorphTo.'
 sidebar:
   order: 3
----
-
+---# Relationships
 
 This guide covers all relationship field types in Martis and how to use them.
+
+## Overview
 
 Martis provides four relationship field types that map 1:1 to Laravel Eloquent relationships:
 
@@ -32,7 +33,7 @@ BelongsTo::make('user_id', 'Author')
     ->sortable()
 ```
 
-See [BelongsTo Reference](./fields#belongsto) for full API reference.
+See [fields.md — BelongsTo](fields.md#belongsto) for full API reference.
 
 ---
 
@@ -47,7 +48,7 @@ HasMany::make('Comments', 'comments')
     ->collapsedByDefault()
 ```
 
-See [HasMany Reference](./fields) for full API reference.
+See [fields.md — HasMany](fields.md) for full API reference.
 
 ---
 
@@ -191,7 +192,7 @@ MorphTo::make('commentable_id', 'Commentable')
     ->nullable()
 ```
 
-See [MorphTo Reference](./fields#morphto) for full API reference.
+See [fields.md — MorphTo](fields.md#morphto) for full API reference.
 
 ---
 

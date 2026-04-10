@@ -3,8 +3,7 @@ title: 'Authentication'
 description: 'Login, 2FA, user profile, avatar uploads, and user menu configuration.'
 sidebar:
   order: 6
----
-
+---# Authentication
 
 Martis provides a complete authentication system with login, logout, two-factor authentication (2FA), and a user profile page — all configurable and overridable.
 
@@ -232,6 +231,6 @@ These are applied automatically by the Martis route definitions. You do not need
 
 ## Next Steps
 
-- [Resources](./resources) — Define admin resources
-- [Authorization](./resources#authorization) — Control access with policies
-- [Configuration](./configuration) — Full config reference
+- [Resources](resources.md) — Define admin resources
+- [Authorization](resources.md#authorization) — Control access with policies
+- [Configuration](configuration.md) — Full config reference

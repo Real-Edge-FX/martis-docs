@@ -3,10 +3,11 @@ title: 'Actions'
 description: 'Inline, bulk, destructive, queued, and pivot actions with full authorization support.'
 sidebar:
   order: 4
----
-
+---# Actions
 
 > Last updated: 2026-04-10
+
+## Overview
 
 Martis Actions allow you to run custom operations on resources. Four distinct action types are supported:
 

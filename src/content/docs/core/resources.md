@@ -3,8 +3,7 @@ title: 'Resources'
 description: 'Resource classes, model binding, lifecycle hooks, authorization, search, pagination, soft deletes.'
 sidebar:
   order: 1
----
-
+---# Resources — Complete Reference
 
 The `Resource` class is the core building block of Martis. Each resource maps to an Eloquent model and defines its CRUD interface, fields, authorization, and behavior.
 
@@ -70,7 +69,7 @@ public function fields(Request $request): array
 }
 ```
 
-See the [Fields Reference](./fields) for all 31 available field types.
+See the [Fields Reference](fields.md) for all 31 available field types.
 
 ## Configuration Methods
 
@@ -220,7 +219,7 @@ Email::make('email')->required()->unique(['users', 'email'], 'This email is alre
 Password::make('password')->required()->rules(['min:8']),
 ```
 
-See the [Fields Reference](./fields) for all validation methods available on fields.
+See the [Fields Reference](fields.md) for all validation methods available on fields.
 
 ### errorDisplay()
 
@@ -528,7 +527,7 @@ public function overrides(): array
 }
 ```
 
-See the [Override System](./overrides) documentation for full details.
+See the [Override System](overrides.md) documentation for full details.
 
 ## Complete Example
 

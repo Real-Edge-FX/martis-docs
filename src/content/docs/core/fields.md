@@ -3,8 +3,7 @@ title: 'Fields Reference'
 description: 'All 32 field types with configuration, visibility flags, validation, and relationships.'
 sidebar:
   order: 2
----
-
+---# Fields — Complete Reference
 
 > Auto-generated from source code. **Every agent MUST update this file when adding or modifying fields or base field methods.**
 
@@ -1234,7 +1233,7 @@ When rendering a field, the React frontend resolves the component in this order:
 3. **Override global by type** — `componentRegistry.registerFieldDisplay(type, comp)`
 4. **Default component** — built-in Martis component for the type
 
-See [Override System](./overrides) for details.
+See [Override System](overrides.md) for details.
 
 ---
 

@@ -3,8 +3,7 @@ title: 'Installation Guide'
 description: 'Step-by-step setup: Composer, assets, config, and first resource.'
 sidebar:
   order: 1
----
-
+---# Installation Guide
 
 Add Martis to any existing Laravel application as a Composer package.
 
@@ -254,7 +253,7 @@ php artisan martis:install --force
 
 ## Next Steps
 
-- [Resources](/core/resources) — Learn how to define and configure resources
-- [Fields Reference](/core/fields) — Explore all 32 field types
-- [Override System](/core/overrides) — Customize the UI without forking
-- [Quick Start](/getting-started/quickstart) — Development workflow
+- [Resources](resources.md) — Learn how to define and configure resources
+- [Fields Reference](fields.md) — Explore all 32 field types
+- [Override System](overrides.md) — Customize the UI without forking
+- [Quick Start](setup/quickstart.md) — Development workflow

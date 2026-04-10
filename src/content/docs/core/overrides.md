@@ -3,8 +3,7 @@ title: 'Override System'
 description: 'Four-tier component resolution: replace any view, field, layout, or drawer without forking.'
 sidebar:
   order: 5
----
-
+---# Override System
 
 The override system is Martis's competitive advantage over Nova. **Everything can be customized without forking** — React components, layouts, and server-side behaviors.
 
@@ -328,7 +327,7 @@ This command:
 | `footer` | Page footer | `layout:footer` |
 | `generic` | General purpose | `{kebab-name}` |
 
-After creating a component, republish the package assets with `php artisan vendor:publish --tag=martis-assets --force`.
+After creating a component, rebuild assets with `make build`.
 
 ## Component Registry API
 

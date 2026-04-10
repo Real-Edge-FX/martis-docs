@@ -1,12 +1,11 @@
 ---
 title: 'Built-in Components'
-description: 'Every UI component in the frontend including DataTable, forms, modals, search, and navigation.'
+description: 'Every UI component including DataTable, forms, modals, search, and navigation.'
 sidebar:
   order: 8
----
+---# Built-in Components Reference
 
-
-Martis ships with a set of React components that make up the admin panel UI. All components are designed to be replaceable through the [Override System](./overrides).
+Martis ships with a set of React components that make up the admin panel UI. All components are designed to be replaceable through the [Override System](overrides.md).
 
 ## Page Components
 
@@ -238,7 +237,7 @@ addToast('error', 'Failed to save record')
 
 ## Drawer Components
 
-Slide-in panels for inline CRUD operations. See [Override System](./overrides) for configuration details.
+Slide-in panels for inline CRUD operations. See [Override System](overrides.md) for configuration details.
 
 ### DrawerShell
 

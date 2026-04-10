@@ -3,8 +3,7 @@ title: 'Nova v5 Parity Map'
 description: 'Feature tracker: done, in progress, and planned items vs Laravel Nova v5.'
 sidebar:
   order: 4
----
-
+---# Parity Map — Martis vs Laravel Nova v5
 
 > Last updated: 2026-04-07
 > Coverage: Track B Foundation (Blocks 1-10) + Extended Fields + HasMany
