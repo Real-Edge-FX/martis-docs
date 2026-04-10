@@ -1,6 +1,58 @@
 import React from 'react';
 import { MARTIS_VERSION } from '../data/version';
 
+const MOBILE_STYLES = `
+@media (max-width: 768px) {
+  .lp-hero-grid {
+    grid-template-columns: 1fr !important;
+    gap: 32px !important;
+  }
+  .lp-hero-code {
+    display: none !important;
+  }
+  .lp-features-grid {
+    grid-template-columns: 1fr !important;
+  }
+  .lp-philosophy-grid {
+    grid-template-columns: 1fr !important;
+  }
+  .lp-parity-grid {
+    grid-template-columns: 1fr !important;
+    gap: 24px !important;
+  }
+  .lp-parity-cta {
+    text-align: left !important;
+    flex-shrink: unset !important;
+  }
+  .lp-nav a:not(.lp-nav-github) {
+    display: none !important;
+  }
+  .lp-install-row {
+    flex-wrap: wrap !important;
+    word-break: break-all !important;
+  }
+  .lp-install-row span:last-child {
+    font-size: 12px !important;
+  }
+  .lp-hero-section {
+    padding: 60px 16px 40px !important;
+  }
+}
+@media (max-width: 480px) {
+  .lp-hero-grid {
+    gap: 24px !important;
+  }
+  .lp-footer-inner {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+  }
+  .lp-footer-nav {
+    flex-wrap: wrap !important;
+    gap: 12px !important;
+  }
+}
+`;
+
 const CODE_SNIPPET = `// Define a resource
 class PostResource extends Resource
 {
@@ -130,6 +182,8 @@ function HeroCode() {
 
 export default function LandingPage() {
   return (
+    <>
+    <style dangerouslySetInnerHTML={{ __html: MOBILE_STYLES }} />
     <div style={{
       fontFamily: 'Inter, system-ui, -apple-system, sans-serif',
       color: '#f1f5f9',
@@ -157,11 +211,12 @@ export default function LandingPage() {
           <a href="/" style={{ display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none' }}>
             <img src="/logo.png" alt="Martis" style={{ height: 36 }} />
           </a>
-          <nav style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <nav className="lp-nav" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <a href="/getting-started/introduction/" style={navLinkStyle}>Docs</a>
             <a href="/core/resources/" style={navLinkStyle}>Resources</a>
             <a href="/reference/api/" style={navLinkStyle}>API</a>
             <a href="https://github.com/Real-Edge-FX/martis-package" target="_blank" rel="noopener"
+              className="lp-nav-github"
               style={{
                 ...navLinkStyle,
                 display: 'flex', alignItems: 'center', gap: 6,
@@ -176,7 +231,7 @@ export default function LandingPage() {
       </header>
 
       {/* HERO */}
-      <section style={{
+      <section className="lp-hero-section" style={{
         position: 'relative',
         overflow: 'hidden',
         padding: '100px 24px 80px',
@@ -203,7 +258,7 @@ export default function LandingPage() {
           pointerEvents: 'none',
         }} />
 
-        <div style={{
+        <div className="lp-hero-grid" style={{
           maxWidth: 1200,
           margin: '0 auto',
           display: 'grid',
@@ -280,7 +335,7 @@ export default function LandingPage() {
           </div>
 
           {/* Right - code preview */}
-          <div>
+          <div className="lp-hero-code">
             <HeroCode />
           </div>
         </div>
@@ -335,7 +390,7 @@ export default function LandingPage() {
             </p>
           </div>
 
-          <div style={{
+          <div className="lp-features-grid" style={{
             display: 'grid',
             gridTemplateColumns: 'repeat(3, 1fr)',
             gap: 24,
@@ -385,7 +440,7 @@ export default function LandingPage() {
             </p>
           </div>
 
-          <div style={{
+          <div className="lp-philosophy-grid" style={{
             display: 'grid',
             gridTemplateColumns: 'repeat(2, 1fr)',
             gap: 24,
@@ -456,7 +511,7 @@ export default function LandingPage() {
                 ['$', 'php artisan martis:install', '#a5b4fc'],
                 ['$', 'php artisan make:martis-resource Post', '#a5b4fc'],
               ].map(([prompt, cmd, color], i) => (
-                <div key={i} style={{ display: 'flex', gap: 12, marginBottom: i < 2 ? 12 : 0 }}>
+                <div key={i} className="lp-install-row" style={{ display: 'flex', gap: 12, marginBottom: i < 2 ? 12 : 0 }}>
                   <span style={{ color: '#475569', userSelect: 'none' }}>{prompt}</span>
                   <span style={{ color }}>{cmd}</span>
                 </div>
@@ -482,7 +537,7 @@ export default function LandingPage() {
             gridTemplateColumns: '1fr auto',
             gap: 40,
             alignItems: 'center',
-          }}>
+          }} className="lp-parity-grid">
             <div>
               <div style={{
                 fontSize: 12, fontWeight: 600, letterSpacing: '0.1em',
@@ -502,7 +557,7 @@ export default function LandingPage() {
                 React-first architecture, four-tier override resolution, and full escape hatches at every layer.
               </p>
             </div>
-            <div style={{ textAlign: 'center', flexShrink: 0 }}>
+            <div className="lp-parity-cta" style={{ textAlign: 'center', flexShrink: 0 }}>
               <a href="/reference/parity-map/" style={primaryBtnStyle}>
                 View Parity Map
               </a>
@@ -547,10 +602,10 @@ export default function LandingPage() {
       {/* FOOTER */}
       <footer style={{
         borderTop: '1px solid rgba(99,102,241,0.15)',
-        padding: '40px 24px',
+        padding: '40px 24px 32px',
         background: '#020817',
       }}>
-        <div style={{
+        <div className="lp-footer-inner" style={{
           maxWidth: 1200, margin: '0 auto',
           display: 'flex', justifyContent: 'space-between', alignItems: 'center',
           flexWrap: 'wrap', gap: 16,
@@ -561,7 +616,7 @@ export default function LandingPage() {
               Laravel Admin Engine · MIT License
             </span>
           </div>
-          <nav style={{ display: 'flex', gap: 24 }}>
+          <nav className="lp-footer-nav" style={{ display: 'flex', gap: 24 }}>
             {[
               ['Docs', '/getting-started/introduction/'],
               ['Resources', '/core/resources/'],
@@ -580,6 +635,7 @@ export default function LandingPage() {
         </div>
       </footer>
     </div>
+    </>
   );
 }
 
