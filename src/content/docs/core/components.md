@@ -5,7 +5,6 @@ sidebar:
   order: 8
 ---
 
-# Built-in Components Reference
 
 Martis ships with a set of React components that make up the admin panel UI. All components are designed to be replaceable through the [Override System](overrides.md).
 

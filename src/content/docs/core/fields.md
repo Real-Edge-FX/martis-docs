@@ -5,7 +5,6 @@ sidebar:
   order: 2
 ---
 
-# Fields — Complete Reference
 
 > Auto-generated from source code. **Every agent MUST update this file when adding or modifying fields or base field methods.**
 

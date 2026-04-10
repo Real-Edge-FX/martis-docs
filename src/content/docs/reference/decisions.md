@@ -5,7 +5,6 @@ sidebar:
   order: 3
 ---
 
-# Architectural Decision Records (ADRs)
 
 ## ADR-001: Monorepo
 

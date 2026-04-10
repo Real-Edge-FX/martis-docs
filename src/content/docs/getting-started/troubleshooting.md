@@ -5,7 +5,6 @@ sidebar:
   order: 4
 ---
 
-# Troubleshooting
 
 Common issues and solutions when working with the Martis development environment.
 

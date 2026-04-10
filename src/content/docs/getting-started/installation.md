@@ -5,7 +5,6 @@ sidebar:
   order: 1
 ---
 
-# Installation Guide
 
 Add Martis to any existing Laravel application as a Composer package.
 

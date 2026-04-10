@@ -5,7 +5,6 @@ sidebar:
   order: 7
 ---
 
-# Configuration
 
 Martis is configured through `config/martis.php`. Publish it with:
 

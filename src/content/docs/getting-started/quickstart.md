@@ -5,7 +5,6 @@ sidebar:
   order: 2
 ---
 
-# Quick Start
 
 Get up and running with the Martis development environment.
 

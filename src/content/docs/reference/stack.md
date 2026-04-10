@@ -5,7 +5,6 @@ sidebar:
   order: 2
 ---
 
-# Technology Stack
 
 ## Server Infrastructure
 

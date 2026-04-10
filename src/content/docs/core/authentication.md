@@ -5,7 +5,6 @@ sidebar:
   order: 6
 ---
 
-# Authentication
 
 Martis provides a complete authentication system with login, logout, two-factor authentication (2FA), and a user profile page — all configurable and overridable.
 

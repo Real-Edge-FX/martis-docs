@@ -5,7 +5,6 @@ sidebar:
   order: 3
 ---
 
-# Relationships
 
 This guide covers all relationship field types in Martis and how to use them.
 

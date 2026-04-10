@@ -1,24 +1,22 @@
 // @ts-check
 import { defineConfig } from 'astro/config';
 import starlight from '@astrojs/starlight';
+import react from '@astrojs/react';
 
 // https://astro.build/config
 export default defineConfig({
   integrations: [
+    react(),
     starlight({
       title: 'Martis',
       description: 'A modern, open-source admin engine for Laravel. React-first. Resource-driven. Override-first.',
       logo: {
-        light: './src/assets/logo-light.svg',
-        dark: './src/assets/logo-dark.svg',
-        replacesTitle: false,
+        src: './src/assets/logo.png',
+        replacesTitle: true,
       },
       social: [
         { icon: 'github', label: 'GitHub', href: 'https://github.com/Real-Edge-FX/martis' },
       ],
-      editLink: {
-        baseUrl: 'https://github.com/Real-Edge-FX/martis/edit/main/packages/martis/docs/',
-      },
       customCss: ['./src/styles/custom.css'],
       defaultLocale: 'root',
       locales: {
