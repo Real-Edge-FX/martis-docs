@@ -1,27 +1,225 @@
-/* Martis brand colors */
+/* ================================================================
+   MARTIS DOCS — Forced Dark Theme
+   Uses !important on computed properties because customCss is
+   injected BEFORE Starlight's own CSS in the bundle, so CSS
+   variable overrides lose to Starlight's later unlayered rules.
+   ================================================================ */
+
+/* ------------ Page background ------------ */
+html, body {
+  background-color: #020817 !important;
+  color: #d4daf0 !important;
+}
+
+/* Main content area */
+.main-frame,
+.content-panel,
+.sl-container {
+  background-color: #020817 !important;
+}
+
+/* ------------ Header / Nav bar ------------ */
+header.header,
+.header {
+  background: rgba(2, 8, 23, 0.96) !important;
+  border-bottom: 1px solid rgba(99, 102, 241, 0.15) !important;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+
+/* ------------ Sidebar ------------ */
+.sidebar-pane,
+.sidebar-content,
+nav.sidebar,
+.sl-sidebar,
+aside.sidebar {
+  background: #030c1f !important;
+  border-right: 1px solid rgba(99, 102, 241, 0.12) !important;
+}
+
+/* Sidebar items */
+.sidebar a {
+  color: #8b9cc5 !important;
+}
+.sidebar a[aria-current=page],
+.sidebar a:hover {
+  color: #a5b4fc !important;
+  background: rgba(99, 102, 241, 0.1) !important;
+}
+.sidebar summary,
+.sidebar .group-label {
+  color: #d4daf0 !important;
+}
+
+/* ------------ Right sidebar (TOC) ------------ */
+.right-sidebar,
+.right-sidebar-panel {
+  background: #020817 !important;
+  border-left: 1px solid rgba(99, 102, 241, 0.1) !important;
+}
+
+/* ------------ Main content text ------------ */
+.sl-markdown-content,
+.sl-markdown-content p,
+.sl-markdown-content li,
+.sl-markdown-content dt,
+.sl-markdown-content dd {
+  color: #d4daf0 !important;
+}
+.sl-markdown-content h2,
+.sl-markdown-content h3,
+.sl-markdown-content h4,
+.sl-markdown-content h5 {
+  color: #f0f2fc !important;
+}
+.sl-markdown-content a {
+  color: #818cf8 !important;
+}
+.sl-markdown-content a:hover {
+  color: #a5b4fc !important;
+}
+
+/* ------------ Page title gradient ------------ */
+.content-panel h1 {
+  background: linear-gradient(135deg, #a5b4fc 0%, #818cf8 50%, #67e8f9 100%) !important;
+  -webkit-background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+  background-clip: text !important;
+  color: #818cf8 !important;
+}
+
+/* ------------ Tables ------------ */
+.sl-markdown-content table {
+  border: 1px solid rgba(99, 102, 241, 0.18) !important;
+  border-collapse: collapse !important;
+  background: #060f24 !important;
+  color: #d4daf0 !important;
+}
+.sl-markdown-content th {
+  background: rgba(99, 102, 241, 0.12) !important;
+  border-bottom: 1px solid rgba(99, 102, 241, 0.25) !important;
+  color: #c7d2fe !important;
+}
+.sl-markdown-content td {
+  border-top: 1px solid rgba(26, 42, 80, 0.6) !important;
+  color: #d4daf0 !important;
+}
+
+/* ------------ Inline code ------------ */
+.sl-markdown-content :not(pre) > code {
+  background: rgba(99, 102, 241, 0.13) !important;
+  color: #a5b4fc !important;
+  border: 1px solid rgba(99, 102, 241, 0.2) !important;
+  border-radius: 4px;
+}
+
+/* ------------ Code blocks (expressive-code) ------------ */
+.expressive-code .frame {
+  border: 1px solid rgba(99, 102, 241, 0.2) !important;
+  background: #0d1117 !important;
+}
+.expressive-code pre {
+  background: #0d1117 !important;
+}
+
+/* ------------ Blockquotes ------------ */
+.sl-markdown-content blockquote {
+  border-left: 3px solid #818cf8 !important;
+  background: rgba(99, 102, 241, 0.06) !important;
+  color: #8b9cc5 !important;
+  border-radius: 0 6px 6px 0;
+}
+
+/* ------------ Dividers / HR ------------ */
+.sl-markdown-content hr {
+  border-color: rgba(99, 102, 241, 0.15) !important;
+}
+
+/* ------------ TOC links ------------ */
+starlight-toc a,
+.right-sidebar a {
+  color: #8b9cc5 !important;
+}
+starlight-toc a[aria-current=true],
+starlight-toc a:hover {
+  color: #818cf8 !important;
+}
+
+/* ------------ Search dialog ------------ */
+dialog,
+.search-dialog,
+#starlight__search dialog {
+  background: #0d1a3a !important;
+  color: #d4daf0 !important;
+  border: 1px solid rgba(99, 102, 241, 0.2) !important;
+  border-radius: 12px;
+}
+
+/* Pagefind variables (work in any injection order) */
 :root {
-  --sl-color-accent-low: #1a2f5e;
-  --sl-color-accent: #2563eb;
-  --sl-color-accent-high: #93c5fd;
+  --pagefind-ui-primary:      #818cf8;
+  --pagefind-ui-text:         #d4daf0;
+  --pagefind-ui-background:   #0d1a3a;
+  --pagefind-ui-border:       #1a2a50;
+  --pagefind-ui-tag:          #1e1b4b;
+  --pagefind-ui-border-width: 1px;
+  --pagefind-ui-border-radius: 8px;
+  --pagefind-ui-font: inherit;
 }
 
-:root[data-theme='light'] {
-  --sl-color-accent-low: #dbeafe;
-  --sl-color-accent: #1d4ed8;
-  --sl-color-accent-high: #1e3a8a;
+/* Remove gray divider lines between search results */
+.pagefind-ui__result {
+  border-top: none !important;
+  padding: 8px 12px !important;
+  border-radius: 8px;
+  margin: 2px 0 !important;
+}
+.pagefind-ui__results-area {
+  background: #0d1a3a !important;
+}
+.pagefind-ui__results-area mark {
+  color: #818cf8;
+  background: rgba(99, 102, 241, 0.15);
+  border-radius: 2px;
 }
 
-/* Hero tagline line breaks */
-.hero-tagline {
-  line-height: 1.6;
+/* Fix ugly blue hover on search results */
+.pagefind-ui__result:hover,
+.pagefind-ui__result:focus-within {
+  background: rgba(99, 102, 241, 0.1) !important;
+  outline: none !important;
+}
+.pagefind-ui__result-link {
+  color: #a5b4fc !important;
+}
+.pagefind-ui__result-link:hover {
+  color: #c7d2fe !important;
+  text-decoration: none !important;
+}
+.pagefind-ui__result-link:focus {
+  outline: 2px solid rgba(99, 102, 241, 0.4) !important;
+  box-shadow: none !important;
+  border-radius: 4px;
+}
+.pagefind-ui__search-input {
+  background: #0d1a3a !important;
+  color: #d4daf0 !important;
+  border-color: #1a2a50 !important;
+}
+.pagefind-ui__search-input:focus {
+  border-color: #818cf8 !important;
+  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2) !important;
+  outline: none !important;
 }
 
-/* Code blocks */
-.sl-markdown-content code:not(pre code) {
-  font-size: 0.875em;
+/* ------------ Pagination links ------------ */
+.pagination-links a {
+  background: rgba(6, 15, 36, 0.8) !important;
+  border: 1px solid rgba(99, 102, 241, 0.18) !important;
+  color: #d4daf0 !important;
+  border-radius: 8px;
 }
-
-/* Card improvements */
-.sl-markdown-content .card {
-  border-radius: 0.5rem;
+.pagination-links a:hover {
+  border-color: rgba(99, 102, 241, 0.4) !important;
+  background: rgba(99, 102, 241, 0.08) !important;
 }

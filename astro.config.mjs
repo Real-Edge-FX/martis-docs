@@ -68,6 +68,10 @@ export default defineConfig({
           tag: 'meta',
           attrs: { name: 'og:image', content: '/og-image.png' },
         },
+        {
+          tag: 'script',
+          content: "(function(){var t=localStorage.getItem('starlight-theme');if(!t){localStorage.setItem('starlight-theme','dark');document.documentElement.setAttribute('data-theme','dark');}})();",
+        },
       ],
     }),
   ],
