@@ -1,0 +1,102 @@
+---
+title: Martis — Laravel Admin Engine
+description: A modern, open-source admin engine for Laravel. React-first. Resource-driven. Override-first.
+template: splash
+hero:
+  tagline: A modern, open-source admin engine for Laravel.<br/>React-first. Resource-driven. Built for developers who ship.
+  image:
+    file: ../../assets/hero-graphic.svg
+  actions:
+    - text: Get Started
+      link: /getting-started/installation/
+      icon: right-arrow
+      variant: primary
+    - text: View on GitHub
+      link: https://github.com/Real-Edge-FX/martis
+      icon: github
+      variant: minimal
+---
+
+import { Card, CardGrid, Badge } from '@astrojs/starlight/components';
+
+## Why Martis?
+
+Martis is not a dashboard generator or a boilerplate. It is a **full-featured admin engine** for Laravel — designed with a clear philosophy: the backend defines the contract, React renders it beautifully, and everything is overrideable.
+
+<CardGrid stagger>
+  <Card title="Resource-Driven CRUD" icon="document">
+    Define a PHP resource class and get a complete, production-ready CRUD interface — index, detail, create, edit, and delete — with zero frontend code.
+  </Card>
+  <Card title="32 Built-in Field Types" icon="puzzle">
+    From `Text` and `Select` to `BelongsToMany`, `Trix`, `Code`, `Currency`, `Sparkline`, and more. Every field ships with display, form, and validation logic built in.
+  </Card>
+  <Card title="Override-First Architecture" icon="setting">
+    Replace any component — field renderer, layout, drawer, or entire page — without forking the package. Four-tier resolution: Project → Override → Custom → Default.
+  </Card>
+  <Card title="Context-Aware Fields" icon="magnifier">
+    The backend is the single source of truth. Fields automatically adapt to index, detail, create, and update contexts. No client-side filtering logic required.
+  </Card>
+  <Card title="Policy-Based Authorization" icon="approve-check">
+    Full Nova v5-compatible authorization: `viewAny`, `view`, `create`, `update`, `delete`, `attach`, `detach`, and more — all resolved via Laravel policies.
+  </Card>
+  <Card title="Actions System" icon="rocket">
+    Inline, bulk, destructive, queued, and pivot actions. Custom React components inside action modals. Rich `ActionResponse` types: message, redirect, download, drawer open, and more.
+  </Card>
+</CardGrid>
+
+---
+
+## Install in minutes
+
+```bash
+composer require martis/martis
+php artisan martis:install
+```
+
+Define a resource:
+
+```php
+class PostResource extends Resource
+{
+    public static function model(): string { return Post::class; }
+
+    public function fields(Request $request): array
+    {
+        return [
+            Text::make('title')->sortable()->searchable()->required(),
+            Textarea::make('body')->hideFromIndex()->rows(6),
+            BelongsTo::make('category_id', 'Category')->titleAttribute('name'),
+            DateTime::make('published_at')->sortable()->nullable(),
+        ];
+    }
+}
+```
+
+That's it. Martis auto-discovers resources in `app/Martis/` — no registration required.
+
+---
+
+## Core Philosophy
+
+<CardGrid>
+  <Card title="React-First Frontend" icon="laptop">
+    Built on **React 18 + PrimeReact + Tailwind CSS**. Every UI element is a proper React component. No Blade templates on the frontend.
+  </Card>
+  <Card title="Backend as Source of Truth" icon="information">
+    The `/schema` endpoint drives the entire UI. Field visibility, ordering, and permissions are resolved server-side, not filtered in the browser.
+  </Card>
+  <Card title="Composer Package" icon="download">
+    Martis is a proper Laravel package. Install via Composer, publish config and assets, and stay up to date with standard version management.
+  </Card>
+  <Card title="Full Escape Hatches" icon="open-book">
+    Sane defaults everywhere. But every default is replaceable. From field renderers to entire resource pages — you control as much or as little as you want.
+  </Card>
+</CardGrid>
+
+---
+
+## Nova v5 Parity & Beyond
+
+Martis targets functional equivalence with **Laravel Nova v5** — same resource model, same field API, same authorization contract — while going further in extensibility, DX, and frontend architecture.
+
+→ [View the full Nova v5 Parity Map](/reference/parity-map/)

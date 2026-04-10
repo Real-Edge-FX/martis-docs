@@ -1,0 +1,120 @@
+#!/usr/bin/env bash
+# sync-docs.sh — Synchronize documentation from the Martis package to the docs site
+#
+# Usage:
+#   ./scripts/sync-docs.sh [--check]
+#
+# Options:
+#   --check    Dry run: show which files would be updated, exit 1 if any differ
+#
+# Source of truth: the Martis package repository at $MARTIS_PACKAGE_DIR
+# Target: this project's src/content/docs/ directory
+#
+# Run this script after any documentation change in the Martis package.
+# The CI workflow calls this with --check to prevent silent divergence.
+
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+MARTIS_PACKAGE_DIR="${MARTIS_PACKAGE_DIR:-/home/martis/martis/packages/martis}"
+DEST_DIR="$REPO_DIR/src/content/docs"
+
+CHECK_MODE=false
+if [[ "${1:-}" == "--check" ]]; then
+  CHECK_MODE=true
+fi
+
+if [ ! -d "$MARTIS_PACKAGE_DIR/docs" ]; then
+  echo "ERROR: Martis package not found at $MARTIS_PACKAGE_DIR" >&2
+  echo "Set the MARTIS_PACKAGE_DIR env variable to the correct path." >&2
+  exit 1
+fi
+
+CHANGED=0
+
+# Mapping: source -> destination (relative to DEST_DIR), with frontmatter
+declare -A DOC_MAP=(
+  ["docs/installation-guide.md"]="getting-started/installation.md|Installation Guide|Step-by-step setup: Composer, assets, config, and first resource.|1"
+  ["docs/setup/quickstart.md"]="getting-started/quickstart.md|Quick Start|Development workflow, dev server, hot reload, and first CRUD.|2"
+  ["docs/setup/troubleshooting.md"]="getting-started/troubleshooting.md|Troubleshooting|Common issues, error messages, and solutions.|4"
+  ["docs/resources.md"]="core/resources.md|Resources|Resource classes, model binding, lifecycle hooks, authorization, search, pagination, soft deletes.|1"
+  ["docs/fields.md"]="core/fields.md|Fields Reference|All 32 field types with configuration, visibility flags, validation, and relationships.|2"
+  ["docs/relationships.md"]="core/relationships.md|Relationships|BelongsTo, HasMany, BelongsToMany with pivot fields, attach/detach, and MorphTo.|3"
+  ["docs/actions.md"]="core/actions.md|Actions|Inline, bulk, destructive, queued, and pivot actions with full authorization support.|4"
+  ["docs/overrides.md"]="core/overrides.md|Override System|Four-tier component resolution: replace any view, field, layout, or drawer without forking.|5"
+  ["docs/authentication.md"]="core/authentication.md|Authentication|Login, 2FA, user profile, avatar uploads, and user menu configuration.|6"
+  ["docs/configuration.md"]="core/configuration.md|Configuration|Complete config/martis.php reference with every option documented.|7"
+  ["docs/components.md"]="core/components.md|Built-in Components|Every UI component including DataTable, forms, modals, search, and navigation.|8"
+  ["docs/api/overview.md"]="reference/api.md|REST API Overview|All endpoints, request/response formats, authentication, and error handling.|1"
+  ["docs/architecture/stack.md"]="reference/stack.md|Technology Stack|PHP, Laravel, React, PrimeReact, Tailwind, Vite, and testing tools.|2"
+  ["docs/architecture/decisions.md"]="reference/decisions.md|Architectural Decisions|ADRs covering why Inertia, PrimeReact, contracts, and other design choices.|3"
+  ["docs/PARITY_MAP.md"]="reference/parity-map.md|Nova v5 Parity Map|Feature tracker: done, in progress, and planned items vs Laravel Nova v5.|4"
+)
+
+sync_file() {
+  local src_rel="$1"
+  local dest_info="$2"
+  local src_path="$MARTIS_PACKAGE_DIR/$src_rel"
+
+  IFS='|' read -r dest_rel title desc order <<< "$dest_info"
+  local dest_path="$DEST_DIR/$dest_rel"
+
+  if [ ! -f "$src_path" ]; then
+    echo "WARN: Source not found: $src_path" >&2
+    return
+  fi
+
+  # Build the new content with frontmatter
+  local new_content
+  new_content=$(cat <<FRONTMATTER
+---
+title: '$title'
+description: '$desc'
+sidebar:
+  order: $order
+---
+
+FRONTMATTER
+)
+  # Append the source content (skip any existing frontmatter)
+  if head -1 "$src_path" | grep -q '^---'; then
+    # Source has frontmatter — skip it
+    src_body=$(awk 'NR==1{found=0} /^---/{if(!found){found=1;next} else {skip=0;next}} found && !skip{print}' "$src_path")
+  else
+    src_body=$(cat "$src_path")
+  fi
+  new_content="$new_content$src_body"
+
+  if $CHECK_MODE; then
+    # In check mode: compare with existing file
+    if [ ! -f "$dest_path" ] || ! echo "$new_content" | diff -q - "$dest_path" > /dev/null 2>&1; then
+      echo "DRIFT: $dest_rel differs from $src_rel"
+      CHANGED=1
+    fi
+  else
+    # Write the file
+    mkdir -p "$(dirname "$dest_path")"
+    echo "$new_content" > "$dest_path"
+    echo "  synced: $dest_rel"
+  fi
+}
+
+echo "Syncing docs from $MARTIS_PACKAGE_DIR..."
+for src_rel in "${!DOC_MAP[@]}"; do
+  sync_file "$src_rel" "${DOC_MAP[$src_rel]}"
+done
+
+if $CHECK_MODE; then
+  if [ "$CHANGED" -eq 0 ]; then
+    echo "✓ All documentation is in sync."
+  else
+    echo ""
+    echo "ERROR: Documentation has drifted from the source package."
+    echo "Run ./scripts/sync-docs.sh to update."
+    exit 1
+  fi
+else
+  echo ""
+  echo "✓ Sync complete. Run 'pnpm build' to rebuild the site."
+fi

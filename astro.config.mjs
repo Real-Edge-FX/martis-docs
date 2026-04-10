@@ -1,0 +1,76 @@
+// @ts-check
+import { defineConfig } from 'astro/config';
+import starlight from '@astrojs/starlight';
+
+// https://astro.build/config
+export default defineConfig({
+  integrations: [
+    starlight({
+      title: 'Martis',
+      description: 'A modern, open-source admin engine for Laravel. React-first. Resource-driven. Override-first.',
+      logo: {
+        light: './src/assets/logo-light.svg',
+        dark: './src/assets/logo-dark.svg',
+        replacesTitle: false,
+      },
+      social: [
+        { icon: 'github', label: 'GitHub', href: 'https://github.com/Real-Edge-FX/martis' },
+      ],
+      editLink: {
+        baseUrl: 'https://github.com/Real-Edge-FX/martis/edit/main/packages/martis/docs/',
+      },
+      customCss: ['./src/styles/custom.css'],
+      defaultLocale: 'root',
+      locales: {
+        root: {
+          label: 'English',
+          lang: 'en',
+        },
+      },
+      sidebar: [
+        {
+          label: 'Getting Started',
+          items: [
+            { label: 'Introduction', slug: 'getting-started/introduction' },
+            { label: 'Installation', slug: 'getting-started/installation' },
+            { label: 'Quick Start', slug: 'getting-started/quickstart' },
+            { label: 'Troubleshooting', slug: 'getting-started/troubleshooting' },
+          ],
+        },
+        {
+          label: 'Core Concepts',
+          items: [
+            { label: 'Resources', slug: 'core/resources' },
+            { label: 'Fields Reference', slug: 'core/fields' },
+            { label: 'Relationships', slug: 'core/relationships' },
+            { label: 'Actions', slug: 'core/actions' },
+            { label: 'Override System', slug: 'core/overrides' },
+            { label: 'Authentication', slug: 'core/authentication' },
+            { label: 'Configuration', slug: 'core/configuration' },
+            { label: 'Built-in Components', slug: 'core/components' },
+          ],
+        },
+        {
+          label: 'API & Architecture',
+          items: [
+            { label: 'REST API Overview', slug: 'reference/api' },
+            { label: 'Technology Stack', slug: 'reference/stack' },
+            { label: 'Architectural Decisions', slug: 'reference/decisions' },
+          ],
+        },
+        {
+          label: 'Project Status',
+          items: [
+            { label: 'Nova v5 Parity Map', slug: 'reference/parity-map' },
+          ],
+        },
+      ],
+      head: [
+        {
+          tag: 'meta',
+          attrs: { name: 'og:image', content: '/og-image.png' },
+        },
+      ],
+    }),
+  ],
+});
