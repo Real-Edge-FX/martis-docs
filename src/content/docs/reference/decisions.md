@@ -1,142 +1,110 @@
 ---
 title: 'Architectural Decisions'
-description: 'ADRs covering why Inertia, PrimeReact, contracts, and other design choices.'
+description: 'Key architectural decisions behind Martis — why it is built the way it is.'
 sidebar:
   order: 3
 ---
 
-
-## ADR-001: Monorepo
-
-**Date:** 2026-04-02 | **Status:** Accepted
-
-**Decision:** Monorepo with `packages/martis/` + `playground/`
-**Rationale:** Package and playground evolve in parallel. A single `git clone` provides a fully working environment. Changes to the package are immediately reflected in the playground via Composer path repository with symlink.
+This page documents the key architectural decisions that shape the Martis package — why it works the way it does and what trade-offs were made. Understanding these decisions helps you extend the package confidently and predict its behaviour.
 
 ---
 
-## ADR-002: PNPM Workspaces
+## ADR-001: React-First Frontend
 
-**Date:** 2026-04-02 | **Status:** Accepted
+**Status:** Accepted
 
-**Decision:** PNPM 9 with workspaces
-**Rationale:** Native workspace support, strict mode that prevents phantom dependencies, 2-3x faster than npm. Workspaces allow the package and playground to share dependencies efficiently.
+**Decision:** The admin panel UI is built with React 18 and TypeScript. Blade templates are not used for the panel UI.
 
----
-
-## ADR-003: Docker for Services, Host for Runtime
-
-**Date:** 2026-04-02 | **Status:** Accepted
-
-**Decision:** MySQL 8.0 and Redis 7 in Docker containers; PHP 8.2 and Node.js 20 on the host
-**Rationale:** Isolates stateful services while keeping runtime tools directly accessible for better developer experience and lower overhead. Docker containers provide reproducible database/cache environments.
+**Rationale:** React provides the strongest ecosystem for building complex, interactive UIs with real-time data. TypeScript gives compile-time safety across the component tree. This choice enables the Override System — since components are React, any component can be swapped out with a custom React implementation, including third-party packages from the broader React ecosystem. Blade-based panels cannot offer this level of extensibility without reverting to template string concatenation.
 
 ---
 
-## ADR-004: MySQL 8.0
+## ADR-002: Resource-Driven Model
 
-**Date:** 2026-04-02 | **Status:** Accepted
+**Status:** Accepted
 
-**Decision:** MySQL 8.0 (not PostgreSQL)
-**Rationale:** Laravel Nova uses MySQL as its reference database. Martis must test against the same database engine that users will most commonly use. MySQL 8.0 also provides JSON column support, CTEs, and window functions.
+**Decision:** Every entity in the admin panel is described by a `Resource` class. The resource is the single source of truth for fields, actions, filters, policies, and UI configuration.
 
----
-
-## ADR-005: Caddy Web Server
-
-**Date:** 2026-04-02 | **Status:** Accepted
-
-**Decision:** Caddy as web server on port 80
-**Rationale:** Zero-config simplicity — the entire Caddyfile is a few lines. SSL is handled by the external proxy (an upstream reverse proxy). Caddy handles PHP-FPM proxying with minimal configuration.
+**Rationale:** A central resource class makes the panel predictable. Adding a new entity requires only one file. All configuration — what fields appear, what is searchable, what actions are available, who can create/edit/delete — lives in one place. This mirrors the way Laravel Nova v5 works, which is the standard that most Laravel developers already know.
 
 ---
 
-## ADR-006: Composer Path Repository
+## ADR-003: Override-First Architecture
 
-**Date:** 2026-04-02 | **Status:** Accepted
+**Status:** Accepted
 
-**Decision:** Playground uses `{"type": "path", "url": "../packages/martis"}` with symlink
-**Rationale:** Changes to the Martis package reflect immediately in the playground without running `composer update`. The symlink option ensures files are directly referenced, not copied.
+**Decision:** Every UI component in Martis can be replaced with a custom React component without modifying the package source.
 
----
-
-## ADR-007: CI via Makefile
-
-**Date:** 2026-04-02 | **Status:** Accepted
-
-**Decision:** All CI through `make ci` (lint + typecheck + test); git pre-push hook blocks push without green CI
-**Rationale:** Simple, reproducible, and works regardless of the CI platform. The pre-push hook ensures nothing is pushed without passing CI locally.
+**Rationale:** No admin package can anticipate every UI requirement. Rather than providing hundreds of configuration options or requiring users to fork the package, Martis uses a 4-tier component resolution chain: explicit component key → per-resource override → per-type override → built-in default. This means users get sensible defaults for free, but can replace any component at any scope — a single field instance, all fields of a type, or the global default — without touching Martis internals. See [Override System](./overrides) for details.
 
 ---
 
-## ADR-008: Scramble for API Documentation
+## ADR-004: Contract-First API Design
 
-**Date:** 2026-04-02 | **Status:** Accepted
+**Status:** Accepted
 
-**Decision:** `dedoc/scramble` for automatic API documentation
-**Rationale:** Zero annotations — Scramble generates OpenAPI specs from route definitions and type hints at runtime. Documentation is always in sync with the code. Available at `/docs/api`.
+**Decision:** Every public method on `Resource` and `Field` is defined in a corresponding PHP contract (`ResourceContract`, `FieldContract`). The backend never renders HTML — all panel communication goes through JSON.
 
----
-
-## ADR-009: Phosphor Icons
-
-**Date:** 2026-04-04 | **Status:** Accepted
-
-**Decision:** Phosphor Icons library (1,512 icons) for resource icons
-**Rationale:** Consistent visual style, open-source license (MIT), React-native components. Resources declare icons via `icon()` method using kebab-case or PascalCase names. Phosphor provides multiple weights (regular, bold, fill, duotone, thin, light).
+**Rationale:** Contracts enforce extensibility at every layer. Third-party developers can create custom field types or resource implementations as long as they satisfy the contract. PHPStan level 8 validates conformance. JSON-only communication between backend and frontend means the same resource can power different frontends (web, mobile, API clients) without any backend changes.
 
 ---
 
-## ADR-010: react-i18next for Internationalization
+## ADR-005: react-i18next for Internationalization
 
-**Date:** 2026-04-04 | **Status:** Accepted
+**Status:** Accepted
 
-**Decision:** react-i18next on the frontend; standard Laravel PHP language files on the backend
-**Rationale:** Laravel convention for backend translations (publishable lang files). React standard for frontend (react-i18next). Translations are served via `GET /martis/api/translations/{locale}` (public, no auth) and loaded dynamically at app startup.
+**Decision:** All strings in the frontend are translated via react-i18next. There are no hardcoded UI strings. The backend uses standard Laravel PHP language files.
 
 **Supported locales:** EN, PT-BR, PT-PT
 
----
-
-## ADR-011: GitHub Actions Self-Hosted Runner
-
-**Date:** 2026-04-04 | **Status:** Accepted
-
-**Decision:** Self-hosted runner via a self-hosted runner connecting to GitHub via HTTPS outbound
-**Rationale:** Server has no public internet access for external runners. The self-hosted runner connects outbound to GitHub, receives CI/CD triggers, and runs `make ci` locally. Automated deploy on push to `develop`.
+**Rationale:** Admin panels are often deployed in multilingual organisations. Supporting multiple locales from day one means users never need to monkey-patch strings. Translations are published to `lang/vendor/martis/` and can be overridden like any other Laravel vendor resource. Frontend translations are served via `GET /martis/api/translations/{locale}` and loaded at startup — no build step required to add or change a locale.
 
 ---
 
-## ADR-012: Post-Merge Deploy Hook
+## ADR-006: Action Model
 
-**Date:** 2026-04-04 | **Status:** Accepted
+**Status:** Accepted
 
-**Decision:** CI pipeline rebuilds frontend assets automatically when frontend files change
-**Rationale:** Eliminates the #1 cause of "changes not visible" issues — stale frontend assets being served. The hook detects `.tsx`, `.ts`, `.css` changes and runs the build. Fallback: `make deploy` for forced manual deploy.
+**Decision:** Custom operations on resources are expressed as `Action` classes — not as controller methods, form requests, or route macros. Four action types are provided: standard (bulk), inline (per-row), standalone (no selection), and sole (exactly one record).
 
----
-
-## ADR-013: 4-Tier Component Override System
-
-**Date:** 2026-04-04 | **Status:** Accepted
-
-**Decision:** Component resolution follows a 4-tier priority chain: explicit key > per-resource > per-type > built-in default
-**Rationale:** Provides maximum flexibility without complexity. Users can override at the most appropriate level — a single field instance, all fields of a type within a resource, all fields of a type globally, or accept the default. This is Martis's key architectural advantage over Nova.
+**Rationale:** Actions give a consistent UI surface for all custom operations. An action class encapsulates the authorization check, input fields, and handler in one place. The admin UI automatically renders the correct modal, dropdown, and confirmation dialog based on action metadata. This prevents logic from leaking into routes or controllers outside the admin panel scope.
 
 ---
 
-## ADR-014: Contract-First Architecture
+## ADR-007: TanStack Query for Server State
 
-**Date:** 2026-04-03 | **Status:** Accepted
+**Status:** Accepted
 
-**Decision:** Every public method in Resource.php and Field.php must exist in the corresponding contract (ResourceContract, FieldContract). Backend never renders UI — all frontend communication is through JSON contracts.
-**Rationale:** Enforces extensibility at every layer. Third-party developers can swap implementations as long as they satisfy the contract. PHPStan level 8 validates conformance.
+**Decision:** All data fetching, caching, and invalidation in the frontend uses TanStack Query (React Query v5).
+
+**Rationale:** TanStack Query provides automatic cache invalidation after mutations, background refetch, stale-while-revalidate, and optimistic updates — all without custom state management code. After an action runs, the index list is invalidated automatically. This removes an entire category of "data looks stale" bugs that plague custom admin implementations.
 
 ---
 
-## ADR-015: React + TypeScript (Not Blade/Vue)
+## ADR-008: Phosphor Icons
 
-**Date:** 2026-04-02 | **Status:** Accepted
+**Status:** Accepted
 
-**Decision:** Frontend built with React 18 + TypeScript, not Blade or Vue
-**Rationale:** React provides the strongest ecosystem for component-based UIs with TypeScript. TanStack Query handles server state management. React Router provides client-side routing with code splitting. This enables the override system to work at the component level.
+**Decision:** Resource icons are provided by the Phosphor Icons library (MIT licence, 1,512 icons, multiple weights).
+
+**Rationale:** Phosphor provides a consistent visual style with React-native components. Icons are referenced by kebab-case or PascalCase name in the `icon()` method on a resource. The library supports regular, bold, fill, duotone, thin, and light weights, giving visual flexibility without requiring a custom icon pipeline.
+
+---
+
+## ADR-009: Separate Composer Package
+
+**Status:** Accepted
+
+**Decision:** Martis is distributed as a standalone Composer package (`martis/martis`), not as a Laravel starter kit or skeleton application.
+
+**Rationale:** A package install leaves the user's application fully intact. There is no starter kit to maintain, no opinionated directory structure imposed, and no risk of package updates conflicting with application code. Users install one package and get the admin panel. Upgrades are handled by `composer update`.
+
+---
+
+## ADR-010: Artisan-Based Install and Scaffolding
+
+**Status:** Accepted
+
+**Decision:** Installation, resource creation, field scaffolding, component generation, and user creation are all driven by Artisan commands (`martis:install`, `martis:resource`, `martis:field`, `martis:action`, `martis:component`, `martis:user`).
+
+**Rationale:** Artisan commands integrate naturally into Laravel workflows. They are scriptable, repeatable, and easy to document. Users who already know `php artisan make:model` immediately understand `php artisan martis:resource`. Commands also provide guardrails — the install command runs migrations, publishes assets, and creates the config file in the correct order, preventing misconfiguration.

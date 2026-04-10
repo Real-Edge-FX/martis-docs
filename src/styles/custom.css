@@ -223,3 +223,10 @@ html[data-theme="light"] .pagefind-ui__result {
 html[data-theme="light"] .pagefind-ui__result:hover {
   background: rgba(99, 102, 241, 0.06) !important;
 }
+
+/* -------- Anchor scroll offset (prevents TOC from highlighting wrong item) -------- */
+.sl-markdown-content h2,
+.sl-markdown-content h3,
+.sl-markdown-content h4 {
+  scroll-margin-top: 5rem;
+}

@@ -1234,7 +1234,7 @@ When rendering a field, the React frontend resolves the component in this order:
 3. **Override global by type** — `componentRegistry.registerFieldDisplay(type, comp)`
 4. **Default component** — built-in Martis component for the type
 
-See [Override System](overrides.md) for details.
+See [Override System](./overrides) for details.
 
 ---
 

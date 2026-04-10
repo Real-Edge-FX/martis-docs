@@ -78,7 +78,7 @@ The URL prefix for the admin panel. The panel will be accessible at `/{path}` (e
 |-----|------|---------|---------|
 | `preset` | `string` | `'sidebar'` | `sidebar`, `topnav`, `minimal`, `custom` |
 
-Layouts can be overridden via the [Layout Registry](overrides.md#layout-overrides).
+Layouts can be overridden via the [Layout Registry](./overrides#layout-overrides).
 
 ## Localization
 
@@ -126,7 +126,7 @@ Shipped locales: `en` (English), `pt-BR` (Brazilian Portuguese), `pt-PT` (Europe
 | `allowToggle` | `bool` | `true` | Show the theme toggle in the user menu. |
 | `name` | `?string` | `null` | Custom theme name for the `martis:theme` artisan command. |
 
-Custom themes are scaffolded via `php artisan martis:theme`. See [Theming](components.md#theming).
+Custom themes are scaffolded via `php artisan martis:theme`. See [Theming](./components#theming).
 
 ## User Menu
 
@@ -290,7 +290,7 @@ Individual actions can opt out via `->withoutActionEvents()`.
 ],
 ```
 
-See [Authentication](authentication.md#user-profile) for full profile documentation.
+See [Authentication](./authentication#user-profile) for full profile documentation.
 
 ## Environment Variables
 
@@ -325,7 +325,7 @@ See [Authentication](authentication.md#user-profile) for full profile documentat
 
 ## Next Steps
 
-- [Installation Guide](installation-guide.md) — Initial setup
-- [Authentication](authentication.md) — Login, 2FA, profile
-- [Resources](resources.md) — Resource configuration
-- [Override System](overrides.md) — Customize the UI
+- [Installation Guide](/getting-started/installation) — Initial setup
+- [Authentication](./authentication) — Login, 2FA, profile
+- [Resources](./resources) — Resource configuration
+- [Override System](./overrides) — Customize the UI

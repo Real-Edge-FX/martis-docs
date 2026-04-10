@@ -11,7 +11,7 @@ This guide walks you through creating your first Martis resource after installin
 
 - Laravel 11 or 12 application
 - PHP 8.2+
-- Martis installed and configured ([Installation Guide](installation))
+- Martis installed and configured ([Installation Guide](/getting-started/installation))
 
 ## Create Your First Resource
 

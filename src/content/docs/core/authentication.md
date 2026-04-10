@@ -232,6 +232,6 @@ These are applied automatically by the Martis route definitions. You do not need
 
 ## Next Steps
 
-- [Resources](resources.md) — Define admin resources
-- [Authorization](resources.md#authorization) — Control access with policies
-- [Configuration](configuration.md) — Full config reference
+- [Resources](./resources) — Define admin resources
+- [Authorization](./resources#authorization) — Control access with policies
+- [Configuration](./configuration) — Full config reference

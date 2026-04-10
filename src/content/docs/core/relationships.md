@@ -8,8 +8,6 @@ sidebar:
 
 This guide covers all relationship field types in Martis and how to use them.
 
-## Overview
-
 Martis provides four relationship field types that map 1:1 to Laravel Eloquent relationships:
 
 | Field | Eloquent Relationship | Nova v5 Equivalent |
@@ -34,7 +32,7 @@ BelongsTo::make('user_id', 'Author')
     ->sortable()
 ```
 
-See [fields.md — BelongsTo](fields.md#belongsto) for full API reference.
+See [BelongsTo Reference](./fields#belongsto) for full API reference.
 
 ---
 
@@ -49,7 +47,7 @@ HasMany::make('Comments', 'comments')
     ->collapsedByDefault()
 ```
 
-See [fields.md — HasMany](fields.md) for full API reference.
+See [HasMany Reference](./fields) for full API reference.
 
 ---
 
@@ -193,7 +191,7 @@ MorphTo::make('commentable_id', 'Commentable')
     ->nullable()
 ```
 
-See [fields.md — MorphTo](fields.md#morphto) for full API reference.
+See [MorphTo Reference](./fields#morphto) for full API reference.
 
 ---
 

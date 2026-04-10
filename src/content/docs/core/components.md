@@ -6,7 +6,7 @@ sidebar:
 ---
 
 
-Martis ships with a set of React components that make up the admin panel UI. All components are designed to be replaceable through the [Override System](overrides.md).
+Martis ships with a set of React components that make up the admin panel UI. All components are designed to be replaceable through the [Override System](./overrides).
 
 ## Page Components
 
@@ -238,7 +238,7 @@ addToast('error', 'Failed to save record')
 
 ## Drawer Components
 
-Slide-in panels for inline CRUD operations. See [Override System](overrides.md) for configuration details.
+Slide-in panels for inline CRUD operations. See [Override System](./overrides) for configuration details.
 
 ### DrawerShell
 

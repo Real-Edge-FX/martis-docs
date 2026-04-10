@@ -70,7 +70,7 @@ public function fields(Request $request): array
 }
 ```
 
-See the [Fields Reference](fields.md) for all 31 available field types.
+See the [Fields Reference](./fields) for all 31 available field types.
 
 ## Configuration Methods
 
@@ -220,7 +220,7 @@ Email::make('email')->required()->unique(['users', 'email'], 'This email is alre
 Password::make('password')->required()->rules(['min:8']),
 ```
 
-See the [Fields Reference](fields.md) for all validation methods available on fields.
+See the [Fields Reference](./fields) for all validation methods available on fields.
 
 ### errorDisplay()
 
@@ -528,7 +528,7 @@ public function overrides(): array
 }
 ```
 
-See the [Override System](overrides.md) documentation for full details.
+See the [Override System](./overrides) documentation for full details.
 
 ## Complete Example
 

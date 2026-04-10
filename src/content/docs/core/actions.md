@@ -8,8 +8,6 @@ sidebar:
 
 > Last updated: 2026-04-09
 
-## Overview
-
 Martis Actions allow you to run custom operations on resources. Four distinct action types are supported:
 
 | Type | Description | Selection required? |
