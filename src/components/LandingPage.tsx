@@ -1,4 +1,5 @@
 import React from 'react';
+import { MARTIS_VERSION } from '../data/version';
 
 const CODE_SNIPPET = `// Define a resource
 class PostResource extends Resource
@@ -220,7 +221,7 @@ export default function LandingPage() {
               fontSize: 13, color: '#a5b4fc',
             }}>
               <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#6366f1', display: 'inline-block' }} />
-              Laravel Admin Engine · v0.2.0-alpha
+              Laravel Admin Engine · {MARTIS_VERSION}
             </div>
 
             <h1 style={{
