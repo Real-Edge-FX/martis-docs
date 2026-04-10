@@ -230,3 +230,27 @@ html[data-theme="light"] .pagefind-ui__result:hover {
 .sl-markdown-content h4 {
   scroll-margin-top: 5rem;
 }
+
+/* -------- Mobile responsiveness -------- */
+@media (max-width: 768px) {
+  /* Tables: horizontal scroll on mobile */
+  .sl-markdown-content table {
+    display: block !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    max-width: 100% !important;
+  }
+
+  /* Code blocks: ensure they don't overflow viewport */
+  .expressive-code,
+  .expressive-code .frame,
+  .expressive-code pre {
+    max-width: 100% !important;
+    overflow-x: auto !important;
+  }
+
+  /* Inline code: allow wrapping */
+  .sl-markdown-content :not(pre) > code {
+    word-break: break-word !important;
+  }
+}
