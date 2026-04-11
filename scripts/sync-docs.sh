@@ -42,6 +42,7 @@ declare -A DOC_MAP=(
   ["docs/fields.md"]="core/fields.md|Fields Reference|All 32 field types with configuration, visibility flags, validation, and relationships.|2"
   ["docs/relationships.md"]="core/relationships.md|Relationships|BelongsTo, HasMany, BelongsToMany with pivot fields, attach/detach, and MorphTo.|3"
   ["docs/actions.md"]="core/actions.md|Actions|Inline, bulk, destructive, queued, and pivot actions with full authorization support.|4"
+  ["docs/loader.md"]="core/loader.md|Loader|Loading indicator customization, override system, custom components, and vendor-publish stubs.|9"
   ["docs/overrides.md"]="core/overrides.md|Override System|Four-tier component resolution: replace any view, field, layout, or drawer without forking.|5"
   ["docs/authentication.md"]="core/authentication.md|Authentication|Login, 2FA, user profile, avatar uploads, and user menu configuration.|6"
   ["docs/configuration.md"]="core/configuration.md|Configuration|Complete config/martis.php reference with every option documented.|7"
