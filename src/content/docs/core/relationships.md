@@ -35,30 +35,6 @@ BelongsTo::make('user_id', 'Author')
 
 See [fields.md — BelongsTo](fields.md#belongsto) for full API reference.
 
-### Peek Card Customization
-
-By default, hovering over a BelongsTo link shows a preview card with the record title and ID. Use `peekColumns()` to display additional attributes:
-
-```php
-BelongsTo::make('user_id', 'Author')
-    ->relatedResource('users')
-    ->peekColumns(['name', 'email', 'role'])
-```
-
-### Inline Create Modal Customization
-
-The "+" button modal can display the related resource's icon and subtitle:
-
-```php
-BelongsTo::make('category_id', 'Category')
-    ->relatedResource('categories')
-    ->showCreateRelationButton()
-    ->createButtonIcon(PhosphorIcon::FolderPlus)   // custom create button icon
-    ->createButtonColor('#10B981')                  // custom create button color
-    ->resourceIcon()                                // show resource icon in modal header
-    ->resourceSubtitle(true)                        // show resource subtitle in modal header
-```
-
 ---
 
 ## HasMany

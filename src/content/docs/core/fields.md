@@ -660,22 +660,6 @@ BelongsTo::make('category_id', 'Category')
     ->modalSize('lg')
 ```
 
-```php
-// Peek card — custom columns shown on hover
-BelongsTo::make('user_id', 'Author')
-    ->relatedResource('users')
-    ->peekColumns(['name', 'email', 'role'])
-
-// Create button with custom icon/color + resource icon in modal header
-BelongsTo::make('category_id', 'Category (rich)')
-    ->relatedResource('categories')
-    ->showCreateRelationButton()
-    ->createButtonIcon(PhosphorIcon::FolderPlus)   // custom button icon
-    ->createButtonColor('#10B981')                  // custom button color
-    ->resourceIcon()                                // show resource icon in modal header
-    ->resourceSubtitle(true)                        // show resource subtitle in modal header
-```
-
 | Method | Signature | Returns | Description | Default |
 |--------|-----------|---------|-------------|---------|
 | `titleAttribute` | `titleAttribute(string $attribute): static` | `$this` | Attribute on related model for display label. | `'name'` |
@@ -688,18 +672,11 @@ BelongsTo::make('category_id', 'Category (rich)')
 | `hideCreateRelationButton` | `hideCreateRelationButton(): static` | `$this` | Explicitly hide the inline create button. | — |
 | `modalSize` | `modalSize(ModalSize|string $size): static` | `$this` | Set the inline create modal size (`sm`, `md`, `lg`, `xl`, `2xl`–`7xl`). | `'2xl'` |
 
-
-| `peekColumns` | `peekColumns(array $columns): static` | `$this` | Columns shown in the hover PeekCard. Without this, shows title + ID only. | `[]` |
-| `resourceIcon` | `resourceIcon(?PhosphorIcon $icon = null): static` | `$this` | Show resource icon in inline create modal header. No arg = resource `icon()`. With PhosphorIcon = explicit override. | off |
-| `resourceSubtitle` | `resourceSubtitle(bool|string $value = true): static` | `$this` | Show subtitle in modal header. `true` = resource `subtitle()`. String = fixed text. | off |
-| `createButtonIcon` | `createButtonIcon(PhosphorIcon $icon): static` | `$this` | Custom icon for the inline create button (PhosphorIcon enum). | Plus |
-| `createButtonColor` | `createButtonColor(string $color): static` | `$this` | Custom color for the inline create button. Hex or CSS color. | resource color |
-
 **Overrides:**
 - `resolve()` returns `{id, title}` (single) or `[{id, title}, ...]` (multiple).
 - `fill()` sets FK (single) or registers deferred pivot sync (multiple) via `DeferredRelationSync`.
 
-**Extra attributes:** `relationship`, `foreignKey`, `titleAttribute`, `relatedResource`, `relatedLabel`, `relationSearchable`, `multiple`, `displayAsLink`, `showCreateRelationButton`, `modalSize`, `peekColumns`, `resourceIconOverride`, `resourceSubtitle`, `createButtonIcon`, `createButtonColor`
+**Extra attributes:** `relationship`, `foreignKey`, `titleAttribute`, `relatedResource`, `relatedLabel`, `relationSearchable`, `multiple`, `displayAsLink`, `showCreateRelationButton`, `modalSize`
 
 ---
 
