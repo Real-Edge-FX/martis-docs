@@ -139,3 +139,52 @@ sidebar:
 
 **Decision:** Frontend built with React 18 + TypeScript, not Blade or Vue
 **Rationale:** React provides the strongest ecosystem for component-based UIs with TypeScript. TanStack Query handles server state management. React Router provides client-side routing with code splitting. This enables the override system to work at the component level.
+
+---
+
+## ADR-016: PrimeReact Tooltip as Application Standard
+
+**Date:** 2026-04-11 | **Status:** Accepted
+
+**Decision:** All tooltips in the Martis frontend must use PrimeReact's `<Tooltip>` component. HTML `title` attributes and custom tooltip implementations are forbidden.
+**Rationale:** The global Tooltip provider in `Layout.tsx` targets `[data-pr-tooltip]`, giving all elements with that attribute automatic tooltips with consistent delay and positioning. Using native `title` attributes breaks this contract and produces inconsistent UX across browsers.
+
+**Pattern:**
+```tsx
+// Preferred — data attribute (auto-picked up by global provider)
+<button data-pr-tooltip="Save record" data-pr-position="top">Save</button>
+
+// Acceptable — ref-based for complex/HTML tooltips
+import { Tooltip } from 'primereact/tooltip';
+const btnRef = useRef(null);
+<button ref={btnRef}>Save</button>
+<Tooltip target={btnRef} content="Save record" position="top" />
+```
+
+**Never:** `<button title="Save record">` — this bypasses the global provider and is inconsistent.
+
+---
+
+## ADR-017: DataTable key Reset for BelongsTo Navigation
+
+**Date:** 2026-04-11 | **Status:** Accepted
+
+**Decision:** The `BelongsToManyField` DataTable must receive a `key` prop derived from both the resource URI and the current page, forcing React to unmount/remount the DataTable when either changes.
+**Rationale:** PrimeReact's DataTable maintains internal column and state across renders. When navigating between BelongsTo relationships (different resources or pages), stale columns accumulated and were appended to the new resource's columns — a visual corruption bug. Adding `key={resource + page}` forces a clean mount, eliminating the race condition.
+
+**Implementation:**
+```tsx
+// In BelongsToManyField.tsx
+<DataTable key={`${relatedResource}-${currentPage}`} ... />
+```
+
+This prevents column accumulation when rapid navigation occurs between resources.
+
+---
+
+## ADR-018: Agent Task Scope Isolation
+
+**Date:** 2026-04-11 | **Status:** Accepted
+
+**Decision:** Development agents must never modify resources, files, or models outside the explicit scope of their assigned task.
+**Rationale:** An agent modified `PostResource.php` to add a demo of `resourceIcon()` while implementing BUG04 (REA-1256). This polluted the `develop` branch with demo code that violated the playground's clean state. Cleanup required an extra merge and deploy cycle. The rule: implement only what the task specifies, in only the files the task touches.
