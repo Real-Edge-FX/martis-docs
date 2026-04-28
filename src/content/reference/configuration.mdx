@@ -276,7 +276,7 @@ Custom themes are scaffolded via `php artisan martis:theme`. See [Theming](/docs
 | `enabled` | `bool` | `true` | Master switch for the entire keyboard-shortcuts registry. When `false`, every `addShortcut()` call returns a no-op disposer; no event listener is bound and the bundled `mod+k`, `/`, and `shift+?` combos do nothing. Use it when the host app ships a custom keyboard layer. |
 | `helpOverlay` | `bool` | `true` | When `false`, the bundled `Shift+?` help overlay is not registered. `addShortcut()` itself stays live for every other combo, so this is the right knob if the host app wants to expose its own help UI instead of the dialog. |
 
-Both flags are read live, so mid-session toggles via `window.MartisConfig` take effect on the next registration. See [Keyboard Shortcuts](keyboard-shortcuts.md) for the full API.
+Both flags are read live, so mid-session toggles via `window.MartisConfig` take effect on the next registration. See [Keyboard Shortcuts](/docs/reference/keyboard-shortcuts) for the full API.
 
 ## User Menu
 
@@ -564,7 +564,7 @@ See [Authentication](/docs/auth/authentication#user-profile) for full profile do
 | `allowBrandColor` | bool | `false` | When true, exposes a custom-hex brand colour picker in the preferences panel. |
 | `locale_labels` | array | `[]` | Override the human-readable labels surfaced in the locale dropdown. |
 
-See [User Preferences](preferences.md) for the D1/D2/D3 spec and [i18n](/docs/customization/i18n) for the locale layer.
+See [User Preferences](/docs/reference/preferences) for the D1/D2/D3 spec and [i18n](/docs/customization/i18n) for the locale layer.
 
 ## Sticky Views
 
@@ -608,7 +608,7 @@ See [Sticky Views](sticky_views.md) for the full behaviour spec.
 |---|---|---|---|
 | `disabled` | bool | `false` | Globally suppress the page loader. Useful in tests or for apps that ship their own loading UI. |
 
-See [Loader](loader.md) for the surface-by-surface behaviour matrix.
+See [Loader](/docs/customization/loader) for the surface-by-surface behaviour matrix.
 
 ## Impersonation
 
