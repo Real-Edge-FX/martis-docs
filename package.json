@@ -1,20 +1,42 @@
 {
   "name": "martis-docs",
+  "private": true,
   "type": "module",
-  "version": "0.0.1",
+  "version": "1.0.0",
+  "description": "Documentation site for the Martis admin engine — martis-docs.realedgefx.com",
   "scripts": {
-    "dev": "astro dev",
-    "start": "astro dev",
-    "build": "astro build",
-    "preview": "astro preview",
-    "astro": "astro"
+    "dev": "node scripts/build-search-index.mjs && vite",
+    "build": "node scripts/build-search-index.mjs && tsc -b && vite build",
+    "preview": "vite preview --port 4173",
+    "sync-docs": "node scripts/sync-docs.mjs",
+    "build-search": "node scripts/build-search-index.mjs"
   },
   "dependencies": {
-    "@astrojs/react": "^5.0.3",
-    "@astrojs/starlight": "^0.38.3",
-    "astro": "^6.0.1",
-    "react": "^19.2.5",
-    "react-dom": "^19.2.5",
-    "sharp": "^0.34.2"
+    "@mdx-js/react": "^3.1.0",
+    "@mdx-js/rollup": "^3.1.1",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-router-dom": "^6.30.0"
+  },
+  "devDependencies": {
+    "@tailwindcss/typography": "^0.5.18",
+    "@tailwindcss/vite": "^4.1.20",
+    "@types/mdx": "^2.0.13",
+    "@types/node": "^22.10.5",
+    "@types/react": "^18.3.18",
+    "@types/react-dom": "^18.3.5",
+    "@vitejs/plugin-react": "^4.7.0",
+    "rehype-autolink-headings": "^7.1.0",
+    "rehype-slug": "^6.0.0",
+    "remark-frontmatter": "^5.0.0",
+    "remark-gfm": "^4.0.1",
+    "remark-mdx-frontmatter": "^5.2.0",
+    "tailwindcss": "^4.1.20",
+    "typescript": "^5.7.3",
+    "vite": "^6.4.0"
+  },
+  "packageManager": "pnpm@9.15.9",
+  "engines": {
+    "node": ">=22.12.0"
   }
 }
