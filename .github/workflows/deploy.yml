@@ -1,0 +1,82 @@
+name: Deploy docs
+
+# Build and serve the Astro Starlight site directly from the
+# self-hosted runner at /home/martis/martis-docs. Caddy on the same
+# host serves /home/martis/martis-docs/dist on port 3000, which the
+# external reverse proxy (Nginx Proxy Manager) maps to
+# https://martis-docs.realedgefx.com. No extra deploy step is needed:
+# building in place IS the deploy.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# Only one deploy at a time; queued runs cancel any in-flight build
+# so the latest commit always wins without piling up jobs.
+concurrency:
+  group: docs-deploy
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build and publish dist/
+    runs-on: [self-hosted, linux, x64, martis-docs]
+    timeout-minutes: 10
+
+    # The runner already lives in /home/martis/martis-docs. We deploy
+    # by building IN that working directory, so the action checks out
+    # into the same path Caddy reads from.
+    defaults:
+      run:
+        shell: bash
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Activate Node 22 from nvm
+        # The runner host has nvm installed under /home/martis/.nvm
+        # with v22 already provisioned. Sourcing nvm here keeps the
+        # toolchain in lockstep with the manual build path used during
+        # initial setup.
+        run: |
+          export NVM_DIR="$HOME/.nvm"
+          . "$NVM_DIR/nvm.sh"
+          nvm use 22
+          {
+            echo "PATH=$PATH"
+            echo "NVM_BIN=$NVM_BIN"
+          } >> "$GITHUB_ENV"
+          node --version
+          pnpm --version || npm i -g pnpm@9
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build static site
+        run: pnpm build
+
+      - name: Publish to Caddy root
+        # The runner checks out into _work/<repo>/<repo>. Caddy serves
+        # /home/martis/martis-docs/dist. We sync the freshly built
+        # dist/ into that path atomically (rsync --delete) so the
+        # cutover is instant and stale assets are pruned.
+        run: |
+          set -euo pipefail
+          TARGET=/home/martis/martis-docs/dist
+          mkdir -p "$TARGET"
+          rsync -a --delete dist/ "$TARGET/"
+          echo "Published $(find "$TARGET" -type f | wc -l) files to $TARGET"
+
+      - name: Smoke test
+        run: |
+          set -euo pipefail
+          code=$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:3000/)
+          if [ "$code" != "200" ]; then
+            echo "::error::Caddy returned HTTP $code on /"
+            exit 1
+          fi
+          echo "Site responding HTTP 200 on local Caddy."
