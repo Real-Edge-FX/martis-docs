@@ -26,9 +26,7 @@ const FOOTER_COLS: {
   {
     heading: 'Legal',
     links: [
-      { label: 'MIT License',       href: 'https://github.com/Real-Edge-FX/martis-package/blob/main/LICENSE', external: true },
-      { label: 'Code of Conduct',   href: '#' },
-      { label: 'Contributing',      href: '#' },
+      { label: 'MIT License', href: 'https://github.com/Real-Edge-FX/martis-package/blob/main/LICENSE', external: true },
     ],
   },
 ]
