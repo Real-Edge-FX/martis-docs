@@ -7,3 +7,4 @@ dist/
 tsconfig.tsbuildinfo
 .astro/
 public/search-index.json
+.claude/
