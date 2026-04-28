@@ -39,7 +39,7 @@ export interface NavLink {
 }
 
 export const NAV_LINKS: NavLink[] = [
-  { label: 'Docs',       href: '/docs/getting-started/introduction' },
+  { label: 'Docs',       href: '/docs/getting-started/installation' },
   { label: 'Features',   href: '/#features' },
   { label: 'Components', href: '/#components' },
   { label: 'GitHub',     href: 'https://github.com/Real-Edge-FX/martis-package', external: true },

@@ -11,8 +11,8 @@ const FOOTER_COLS: {
     links: [
       { label: 'Installation',  href: '/docs/getting-started/installation' },
       { label: 'Quick Start',   href: '/docs/getting-started/quick-start' },
-      { label: 'Resources',     href: '/docs/resources' },
-      { label: 'Fields',        href: '/docs/fields' },
+      { label: 'Resources',     href: '/docs/core/resources' },
+      { label: 'Fields',        href: '/docs/core/fields' },
     ],
   },
   {

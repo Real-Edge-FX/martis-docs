@@ -54,10 +54,14 @@ const MAP = {
   'core/panels-and-tabs': 'panels-and-tabs.md',
   'core/repeater': 'repeater.md',
   'core/menus': 'menus.md',
+  'core/global-search': 'global-search.md',
   'customization/theming': 'theming.md',
   'customization/overrides': 'overrides.md',
   'customization/components': 'components.md',
   'customization/tools': 'tools.md',
+  'customization/tool-boot-patterns': 'tool-boot-patterns.md',
+  'customization/loader': 'loader.md',
+  'customization/generators': 'customizing-generators.md',
   'customization/i18n': 'i18n.md',
   'auth/authentication': 'authentication.md',
   'auth/sso': 'sso.md',
@@ -66,9 +70,12 @@ const MAP = {
   'reference/configuration': 'configuration.md',
   'reference/cache': 'cache.md',
   'reference/notifications': 'notifications.md',
+  'reference/keyboard-shortcuts': 'keyboard-shortcuts.md',
+  'reference/preferences': 'preferences.md',
   'reference/differentials': 'differentials.md',
   // 'reference/api' — hand-authored entry that links to the OpenAPI
-  // dump rather than re-rendering it.
+  // schema rather than mirroring api/overview.md (which contains
+  // server-private examples like admin@martis.local).
 }
 
 // Inverse map of package filename → public slug. Used to rewrite

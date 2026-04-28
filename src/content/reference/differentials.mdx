@@ -945,7 +945,7 @@ Martis ships a full preferences system backed by `martis_user_preferences` (one 
 
 **⭐ D3 — Density per surface + reduced-motion enforced.** `[data-density="dense"]` tokens cut row/button/input heights (including dashboard cards — StatCard, MetricCard, resource shortcuts, welcome hero). `[data-reduced-motion="true"]` clamps every `--martis-dur-*` to `1ms` AND applies a universal `*, *::before, *::after { transition-duration: 1ms; animation-duration: 1ms }` override so inline styles, third-party widgets, and raw Tailwind utilities also honour the preference. The same rules apply under the OS-level `prefers-reduced-motion: reduce` media query.
 
-The preferences panel is a compact topbar overlay — theme / accent / density / language / accessibility. See [preferences.md](preferences.md) for the resolver, API, and SSR no-flash mechanics.
+The preferences panel is a compact topbar overlay — theme / accent / density / language / accessibility. See [preferences.md](/docs/reference/preferences) for the resolver, API, and SSR no-flash mechanics.
 
 ### Comprehensive Theme System
 
