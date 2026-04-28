@@ -24,6 +24,7 @@ export function DocsSidebar() {
                 <li key={item.slug}>
                   <Link
                     to={`/docs/${item.slug}`}
+                    title={item.tooltip}
                     className={`flex items-center gap-2.5 h-8 px-2 rounded-md text-[13px] transition-colors ${
                       active
                         ? 'bg-cobalt-500/15 text-white'
@@ -36,7 +37,11 @@ export function DocsSidebar() {
                     />
                     <span className="flex-1">{item.label}</span>
                     {item.badge && (
-                      <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-ink-800 text-ink-300">
+                      <span
+                        title={item.tooltip}
+                        aria-label={item.tooltip}
+                        className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-ink-800 text-ink-300"
+                      >
                         {item.badge}
                       </span>
                     )}
