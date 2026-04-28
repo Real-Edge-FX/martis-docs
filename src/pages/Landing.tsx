@@ -4,6 +4,7 @@ import { Hero } from '@/components/landing/Hero'
 import { StatStrip } from '@/components/landing/StatStrip'
 import { FeatureGrid } from '@/components/landing/FeatureGrid'
 import { CodeUI } from '@/components/landing/CodeUI'
+import { Showcase } from '@/components/landing/Showcase'
 import { Stack } from '@/components/landing/Stack'
 import { Footer } from '@/components/landing/Footer'
 
@@ -27,6 +28,7 @@ export default function Landing() {
         <StatStrip />
         <FeatureGrid />
         <CodeUI />
+        <Showcase />
         <Stack />
       </main>
       <Footer />

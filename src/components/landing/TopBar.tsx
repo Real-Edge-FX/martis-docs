@@ -32,8 +32,7 @@ export function TopBar() {
     >
       <div className="max-w-[1280px] mx-auto px-6 h-16 flex items-center justify-between">
         <Link to="/" className="flex items-center gap-2.5 group">
-          <Logo size={26} />
-          <span className="text-[17px] font-medium tracking-tight text-white">Martis</span>
+          <Logo withWordmark size={28} />
           <span className="text-[10px] font-mono text-ink-300 px-1.5 py-0.5 rounded bg-ink-800 ring-faint">
             {VERSION}
           </span>
