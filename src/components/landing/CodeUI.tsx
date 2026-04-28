@@ -48,8 +48,12 @@ export function CodeUI() {
           ))}
         </div>
 
+        {/* `min-w-0` on the grid items is required: without it CSS
+            Grid keeps `min-width: auto` (= content width) and the wide
+            `<pre>` inside CodeBlock blows past the viewport on mobile,
+            forcing horizontal scroll for the whole page. */}
         <div className="grid lg:grid-cols-2 gap-6 items-start">
-          <div className="lg:sticky lg:top-24">
+          <div className="lg:sticky lg:top-24 min-w-0">
             <CodeBlock
               lang={sample.lang}
               filename={sample.file}
@@ -57,7 +61,7 @@ export function CodeUI() {
               lineNumbers
             />
           </div>
-          <div>
+          <div className="min-w-0">
             <div className="rounded-xl ring-1 ring-white/10 bg-ink-900 overflow-hidden">
               <div className="flex items-center gap-2 px-3 h-8 bg-ink-850 border-b border-white/5 text-[11px] font-mono text-ink-300">
                 <Icons.Eye size={11} /> rendered output

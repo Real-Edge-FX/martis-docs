@@ -41,6 +41,11 @@
 html {
   scroll-behavior: smooth;
   background: var(--color-ink-900);
+  /* Hard guarantee against horizontal scroll on mobile. `clip` is
+     stricter than `hidden`: it disables both the scrollbar AND the
+     scroll container behaviour, so a stray oversize element can never
+     spawn a horizontal scrollbar on the html element. */
+  overflow-x: clip;
 }
 
 body {
@@ -49,6 +54,16 @@ body {
   color: var(--color-ink-100);
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
+  overflow-x: clip;
+}
+
+/* Anchored sections in MDX (every heading is wrapped in an `<a>` by
+   rehype-autolink-headings with `behavior: 'wrap'`). Add a scroll-
+   margin-top so the sticky topbar never overlaps the heading the
+   browser just scrolled to. */
+:where(h1, h2, h3, h4, h5, h6)[id],
+article :where(h1, h2, h3, h4, h5, h6) {
+  scroll-margin-top: 80px;
 }
 
 /* ============================================================

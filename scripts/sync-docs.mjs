@@ -23,6 +23,10 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { compile } from '@mdx-js/mdx'
+import remarkFrontmatter from 'remark-frontmatter'
+import remarkMdxFrontmatter from 'remark-mdx-frontmatter'
+import remarkGfm from 'remark-gfm'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const ROOT = path.resolve(__dirname, '..')
@@ -127,10 +131,19 @@ function escapeMdxHazards(md) {
         return whole.replace(/>$/, ' />')
       })
     }
-    // 2. Escape `{` outside backticks — MDX would parse it as a JSX
-    //    expression and fail on the unmatched closing brace.
-    safe = safe.replace(/(`[^`]*`)|(\{)/g, (_, code, brace) =>
-      code ? code : '\\{',
+    // 2. Escape `{` outside backticks. Three branches in priority order:
+    //    a. backtick block       → leave untouched (literal code span)
+    //    b. `\{` already escaped → leave untouched (markdown-level escape)
+    //    c. bare `{`             → escape to `\{`
+    //    The original regex only had (a) and (c), so any `\{X}` from the
+    //    source was double-escaped to `\\{X}`, which markdown renders as
+    //    `\` + `{X}` and MDX then parses `{X}` as a JSX expression
+    //    (e.g. `ResourceBaseName` breaking /docs/core/resources at
+    //    runtime with "ReferenceError: ... is not defined").
+    safe = safe.replace(
+      /(`[^`]*`)|(\\\{)|(\{)/g,
+      (whole, code, alreadyEscaped) =>
+        code ? whole : alreadyEscaped ? whole : '\\{',
     )
     out.push(safe)
   }
@@ -205,6 +218,101 @@ for (const [slug, file] of Object.entries(MAP)) {
     }
   }
 }
+
+// Patterns we never want to ship to the public docs site. If any of
+// these survive a sync (e.g. someone adds an entry to MAP that points
+// at a leaky source file), abort the build. Tracked upstream in
+// Real-Edge-FX/martis-package#94.
+const FORBIDDEN_PATTERNS = [
+  { name: 'admin@martis.local',          re: /admin@martis\.local/ },
+  { name: 'martis.realedgefx.com',       re: /martis\.realedgefx\.com/ },
+  { name: 'martis-docs.realedgefx.com',  re: /martis-docs\.realedgefx\.com/ },
+  { name: 'internal IP 192.168.50.21',   re: /192\.168\.50\.21/ },
+  { name: 'SSH key path secrets/martis', re: /secrets\/martis[\w-]*ed25519/ },
+]
+
+function leakSweep() {
+  const offenders = []
+  function walk(dir) {
+    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+      const full = path.join(dir, entry.name)
+      if (entry.isDirectory()) walk(full)
+      else if (entry.isFile() && full.endsWith('.mdx')) {
+        const value = fs.readFileSync(full, 'utf8')
+        for (const { name, re } of FORBIDDEN_PATTERNS) {
+          if (re.test(value)) {
+            offenders.push({ file: path.relative(ROOT, full), pattern: name })
+          }
+        }
+      }
+    }
+  }
+  walk(CONTENT_DIR)
+  if (offenders.length) {
+    console.error(`\n${offenders.length} leak(s) found in src/content/:`)
+    for (const o of offenders) {
+      console.error(`  ✗ ${o.file} contains ${o.pattern}`)
+    }
+    console.error(
+      '\nRefusing to ship — see Real-Edge-FX/martis-package#94 ' +
+        'for the full list of forbidden patterns.',
+    )
+    process.exit(3)
+  }
+  console.log('✓ no forbidden patterns in src/content/.')
+}
+
+leakSweep()
+
+// Compile every MDX file (synced + hand-authored) through the same
+// remark/rehype pipeline the runtime uses. Catches MDX syntax errors
+// at sync time rather than letting them through to runtime as
+// "ReferenceError: <thing> is not defined" when the bundle tries to
+// evaluate a stray JSX expression.
+async function validateAll() {
+  const all = []
+  function walk(dir) {
+    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+      const full = path.join(dir, entry.name)
+      if (entry.isDirectory()) walk(full)
+      else if (entry.isFile() && full.endsWith('.mdx')) all.push(full)
+    }
+  }
+  walk(CONTENT_DIR)
+
+  const failures = []
+  for (const file of all) {
+    const value = fs.readFileSync(file, 'utf8')
+    try {
+      await compile(
+        { path: file, value },
+        {
+          providerImportSource: '@mdx-js/react',
+          remarkPlugins: [
+            remarkGfm,
+            remarkFrontmatter,
+            [remarkMdxFrontmatter, { name: 'frontmatter' }],
+          ],
+        },
+      )
+    } catch (err) {
+      failures.push({ file, err })
+    }
+  }
+
+  if (failures.length) {
+    console.error(`\n${failures.length} MDX file(s) FAILED to compile:`)
+    for (const { file, err } of failures) {
+      const rel = path.relative(ROOT, file)
+      const loc = err.line ? ` (${err.line}:${err.column})` : ''
+      console.error(`  ✗ ${rel}${loc}: ${err.reason ?? err.message}`)
+    }
+    process.exit(2)
+  }
+  console.log(`✓ ${all.length} MDX file(s) compile cleanly.`)
+}
+
+await validateAll()
 
 if (isCheckMode && stale > 0) {
   console.error(`\n${stale} doc(s) stale — run \`pnpm sync-docs\` to update.`)

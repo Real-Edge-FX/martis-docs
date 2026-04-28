@@ -28,19 +28,26 @@ export function Hero() {
 
       <div className="relative max-w-[1280px] mx-auto px-6 pt-20 pb-12">
         <div className="flex flex-col items-center text-center">
+          {/* Release badge: pill kept to a single row on every viewport.
+              On <sm the freeform changelog summary is hidden so the pill
+              shape is preserved (the user reported it wrapping into two
+              lines on mobile). The version chip + arrow always render. */}
           <Link
             to="/docs/getting-started/installation"
-            className="group inline-flex items-center gap-2 h-7 px-3 rounded-full bg-ink-850 ring-faint hover:bg-ink-800 transition-colors mb-7"
+            className="group inline-flex items-center gap-2 h-7 max-w-full px-3 rounded-full bg-ink-850 ring-faint hover:bg-ink-800 transition-colors mb-7 whitespace-nowrap overflow-hidden"
           >
-            <span className="text-[10px] font-mono uppercase tracking-wider text-cobalt-300 bg-cobalt-500/15 px-1.5 py-0.5 rounded">
+            <span className="shrink-0 text-[10px] font-mono uppercase tracking-wider text-cobalt-300 bg-cobalt-500/15 px-1.5 py-0.5 rounded">
               v1.1.1
             </span>
-            <span className="text-[12.5px] text-ink-200">
+            <span className="hidden sm:inline text-[12.5px] text-ink-200 truncate">
               5xx error triage + BooleanGroup backend validation
+            </span>
+            <span className="sm:hidden text-[12.5px] text-ink-200">
+              What&apos;s new
             </span>
             <Icons.ArrowRight
               size={11}
-              className="text-ink-300 group-hover:translate-x-0.5 transition-transform"
+              className="shrink-0 text-ink-300 group-hover:translate-x-0.5 transition-transform"
             />
           </Link>
 

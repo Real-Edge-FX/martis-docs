@@ -1,5 +1,5 @@
 import { useEffect, useState, type ComponentType } from 'react'
-import { Navigate, Routes, Route, useParams, Link } from 'react-router-dom'
+import { Navigate, Routes, Route, useParams, useLocation, Link } from 'react-router-dom'
 import { MDXProvider } from '@mdx-js/react'
 import { TopBar } from '@/components/landing/TopBar'
 import { Footer } from '@/components/landing/Footer'
@@ -35,6 +35,7 @@ export default function Docs() {
 
 function DocPage() {
   const params = useParams<{ '*': string }>()
+  const { hash } = useLocation()
   const slug = (params['*'] ?? '').replace(/^\/+|\/+$/g, '')
   const [Component, setComponent] = useState<ComponentType | null>(null)
   const [notFound, setNotFound] = useState(false)
@@ -63,6 +64,29 @@ function DocPage() {
       cancelled = true
     }
   }, [slug, meta])
+
+  // After the MDX module mounts, honour the URL hash by scrolling to
+  // the matching heading. Without this, hitting `/docs/foo#bar` directly
+  // (or having React Router navigate via Link to a hashed URL) leaves
+  // the page at the top — the headings only get IDs once the article
+  // is rendered, so the browser's default scroll-to-hash misses them.
+  useEffect(() => {
+    if (!Component || !hash) return
+    const id = hash.startsWith('#') ? hash.slice(1) : hash
+    const el = document.getElementById(decodeURIComponent(id))
+    if (el) {
+      requestAnimationFrame(() => {
+        el.scrollIntoView({ behavior: 'auto', block: 'start' })
+      })
+    }
+  }, [Component, hash])
+
+  // Slug change → scroll to top so a fresh page does not inherit the
+  // previous page's scroll position. Skipped when there is a hash.
+  useEffect(() => {
+    if (hash) return
+    window.scrollTo({ top: 0 })
+  }, [slug, hash])
 
   if (notFound) {
     return <DocNotFound slug={slug} />
