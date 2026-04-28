@@ -1,11 +1,10 @@
 name: Deploy docs
 
-# Build and serve the Astro Starlight site directly from the
-# self-hosted runner at /home/martis/martis-docs. Caddy on the same
-# host serves /home/martis/martis-docs/dist on port 3000, which the
-# external reverse proxy (Nginx Proxy Manager) maps to
-# https://martis-docs.realedgefx.com. No extra deploy step is needed:
-# building in place IS the deploy.
+# Build the Vite + React + MDX docs site directly on the self-hosted
+# runner at /home/martis/martis-docs and rsync `dist/` into the path
+# Caddy serves on port 3000. The external reverse proxy (Nginx Proxy
+# Manager) maps that to https://martis-docs.realedgefx.com. No extra
+# deploy step is needed: building in place IS the deploy.
 
 on:
   push:
@@ -59,6 +58,15 @@ jobs:
       - name: Build static site
         run: pnpm build
 
+      - name: SPA fallback (404.html)
+        # The site is a client-rendered SPA — every URL must boot from
+        # /index.html. Caddy's file_server falls back to /404.html for
+        # any path it cannot match, so we ship a copy of index.html
+        # under that name. (The Caddyfile on the host should also have
+        # `try_files {path} /index.html`, but 404.html is a robust
+        # safety net that works even with a default file_server.)
+        run: cp dist/index.html dist/404.html
+
       - name: Publish to Caddy root
         # The runner checks out into _work/<repo>/<repo>. Caddy serves
         # /home/martis/martis-docs/dist. We sync the freshly built
@@ -74,9 +82,11 @@ jobs:
       - name: Smoke test
         run: |
           set -euo pipefail
-          code=$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:3000/)
-          if [ "$code" != "200" ]; then
-            echo "::error::Caddy returned HTTP $code on /"
-            exit 1
-          fi
-          echo "Site responding HTTP 200 on local Caddy."
+          for path in / /docs /docs/getting-started/installation /search-index.json; do
+            code=$(curl -s -o /dev/null -w '%{http_code}' "http://127.0.0.1:3000${path}")
+            if [ "$code" != "200" ]; then
+              echo "::error::Caddy returned HTTP $code on $path"
+              exit 1
+            fi
+            echo "OK ${path} → HTTP 200"
+          done

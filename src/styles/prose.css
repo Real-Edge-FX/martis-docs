@@ -1,0 +1,139 @@
+/* ============================================================
+   Martis prose — typography rules for MDX-rendered doc content.
+   Direct port from design-system/Martis Docs/index.html so the
+   spacing / sizes / colours match the reference exactly. Apply
+   the `.prose-martis` class to the article wrapper.
+   ============================================================ */
+
+.prose-martis h1 {
+  font-size: 2.25rem;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  font-weight: 600;
+  color: #fff;
+  margin-bottom: 0.5rem;
+}
+
+.prose-martis h2 {
+  font-size: 1.4rem;
+  line-height: 1.2;
+  letter-spacing: -0.015em;
+  font-weight: 600;
+  color: #fff;
+  margin-top: 2.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.prose-martis h3 {
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: #fff;
+  margin-top: 1.75rem;
+  margin-bottom: 0.5rem;
+}
+
+.prose-martis p {
+  color: #B8B8D0;
+  line-height: 1.7;
+  margin-bottom: 1rem;
+}
+
+.prose-martis ul {
+  color: #B8B8D0;
+  margin-bottom: 1rem;
+  padding-left: 1.25rem;
+}
+
+.prose-martis ul li {
+  list-style: disc;
+  margin-bottom: 0.35rem;
+}
+
+.prose-martis ul li::marker { color: #5A5A78; }
+
+.prose-martis ol {
+  color: #B8B8D0;
+  margin-bottom: 1rem;
+  padding-left: 1.5rem;
+  list-style: decimal;
+}
+
+.prose-martis ol li { margin-bottom: 0.35rem; }
+.prose-martis ol li::marker { color: #5A5A78; }
+
+.prose-martis strong { color: #fff; font-weight: 600; }
+
+.prose-martis a {
+  color: #A0B3FF;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-color: rgba(160, 179, 255, 0.35);
+}
+
+.prose-martis a:hover { text-decoration-color: #A0B3FF; }
+
+/* Inline `code` (NOT `pre code` — that gets shiki styling). */
+.prose-martis code:not(pre code) {
+  font-size: 0.85em;
+  padding: 1px 6px;
+  border-radius: 5px;
+  background: #181826;
+  color: #C9D2FF;
+  border: 1px solid #1F1F2E;
+}
+
+/* Code blocks rendered by Shiki get their own theme; the wrapper
+   gets a subtle border so it does not look like a raw paint job. */
+.prose-martis pre {
+  background: #0B0B14;
+  border: 1px solid #1F1F2E;
+  border-radius: 0.5rem;
+  padding: 1rem 1.25rem;
+  margin-bottom: 1rem;
+  overflow-x: auto;
+  font-family: var(--font-mono);
+  font-size: 0.875rem;
+  line-height: 1.6;
+}
+
+.prose-martis pre code { background: transparent; border: 0; padding: 0; color: #E4E4F0; }
+
+/* Blockquotes for callouts. */
+.prose-martis blockquote {
+  border-left: 3px solid #5B7FFF;
+  background: rgba(91, 127, 255, 0.06);
+  padding: 0.75rem 1rem;
+  margin: 1rem 0;
+  border-radius: 0 0.375rem 0.375rem 0;
+  color: #B8B8D0;
+}
+
+.prose-martis blockquote p { margin: 0; }
+
+/* Tables. */
+.prose-martis table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 1.25rem;
+  font-size: 0.875rem;
+}
+
+.prose-martis thead { border-bottom: 1px solid #2A2A3D; }
+.prose-martis th { text-align: left; padding: 0.5rem 0.75rem; color: #fff; font-weight: 600; }
+.prose-martis td { padding: 0.5rem 0.75rem; color: #B8B8D0; border-bottom: 1px solid #1F1F2E; }
+.prose-martis tr:last-child td { border-bottom: 0; }
+
+/* Horizontal rule for section separation. */
+.prose-martis hr {
+  border: 0;
+  border-top: 1px solid #1F1F2E;
+  margin: 2rem 0;
+}
+
+/* Image inside docs — never overflow, soft border. */
+.prose-martis img {
+  max-width: 100%;
+  border-radius: 0.5rem;
+  border: 1px solid #1F1F2E;
+  margin: 1rem 0;
+}

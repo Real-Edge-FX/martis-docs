@@ -1,0 +1,211 @@
+---
+title: "Troubleshooting"
+description: "Common problems when installing or running Martis, and how to fix them — assets, caches, permissions, locale, generators."
+---
+
+# Troubleshooting
+
+Common problems when installing or running Martis, and how to fix them. If your issue isn't here, search the [GitHub issues](https://github.com/Real-Edge-FX/martis-package/issues) or open a new one.
+
+## Install
+
+### `composer require martis/martis` cannot resolve the version
+
+Martis requires PHP 8.2+ and Laravel 11+. Check `php -v` and your application's `composer.json` constraints.
+
+```bash
+php -v
+cat composer.json | grep "laravel/framework"
+```
+
+If you are on Laravel 10, upgrade first or pin Martis to a compatible older version.
+
+### `php artisan martis:install` fails on `martis-config` publish
+
+The publish step copies `config/martis.php` and `config/martis-theme.php`. If a previous (incomplete) install left these files in place, the command exits without overwriting. Use `--force`:
+
+```bash
+php artisan martis:install --force
+```
+
+If you want to re-run the full installer including the optional `--with-profile` (creates a default `Profile` model + admin user):
+
+```bash
+php artisan martis:install --force --with-profile
+```
+
+### Assets 404 after install
+
+The package ships compiled assets under `public/vendor/martis`. Republish them:
+
+```bash
+php artisan vendor:publish --tag=martis-assets --force
+```
+
+Then clear caches:
+
+```bash
+php artisan optimize:clear
+```
+
+If you are behind a reverse proxy (NPM, Cloudflare, custom Nginx), set `ASSET_URL` in `.env` to the public origin:
+
+```env
+ASSET_URL=https://your-app.example.com
+```
+
+Without it, Laravel's `asset()` helper falls back to the request `Host` header, which can be the proxy's internal IP.
+
+### Class `Martis\Fields\ID` not found on Linux but works on macOS
+
+The class is `Martis\Fields\Id` (lowercase `d`). macOS APFS is case-insensitive by default, Linux ext4 is not. Update the import:
+
+```php
+use Martis\Fields\Id; // not ID
+```
+
+This bites users who copy-paste examples written on macOS.
+
+## Auth
+
+### Login page redirects in a loop
+
+Check `config/auth.php` providers. Martis uses Laravel's default `users` provider unless you override `martis.auth.guard`. If your app already redefines `web` guard or uses a custom user provider, set:
+
+```php
+// config/martis.php
+'auth' => [
+    'guard'     => 'martis',   // optional named guard
+    'provider'  => 'martis',   // matches config/auth.php
+    'driver'    => 'session',
+],
+```
+
+Then declare the guard in `config/auth.php`:
+
+```php
+'guards' => [
+    'martis' => [
+        'driver'   => 'session',
+        'provider' => 'users',
+    ],
+],
+```
+
+### SSO callback returns 404
+
+The SSO routes are registered conditionally. Make sure each enabled provider has its credentials set in `.env`:
+
+```env
+MARTIS_SSO_AZURE_ENABLED=true
+MARTIS_SSO_AZURE_CLIENT_ID=...
+MARTIS_SSO_AZURE_CLIENT_SECRET=...
+MARTIS_SSO_AZURE_TENANT_ID=...
+```
+
+See [SSO](/docs/auth/sso) for the full provider matrix.
+
+### 2FA loop after enabling TOTP
+
+If you enabled 2FA on your user but lost the secret, log in via the Artisan tinker fallback:
+
+```bash
+php artisan tinker
+> $u = \App\Models\User::find(1);
+> $u->two_factor_secret = null;
+> $u->two_factor_recovery_codes = null;
+> $u->save();
+```
+
+## Catalog and detail page
+
+### "Resource not found" on a slug that exists
+
+The resource must be registered in `config/martis.php` under `resources`. The installer wires this automatically; manually-created resources need to be added. Check that the class is autoloaded:
+
+```bash
+composer dump-autoload
+php artisan optimize:clear
+```
+
+### Sortable column has no effect
+
+`->sortable()` only emits a flag. The query layer reads it from the resource's `fields()` and applies `orderBy()`. If you have a custom `indexQuery()` that re-sorts, your sort will win and the toggle silently no-ops. Remove the override or apply it conditionally.
+
+### Searchable returns 0 results
+
+`->searchable()` defaults to `LIKE %term%` against the column. For relational fields you must declare the columns explicitly:
+
+```php
+Text::make('Owner', 'owner.name')->searchable()->relationshipSearchable(),
+```
+
+See [Fields](/docs/core/fields#searchable) for the full search behaviour.
+
+## Theme and components
+
+### Theme tokens not applied
+
+Theme tokens live in `config/martis-theme.php` and are emitted at runtime. After editing tokens you must clear the config cache:
+
+```bash
+php artisan config:clear
+```
+
+If you are using the `martis:theme` generator, run it again to regenerate the published file.
+
+### Custom override not picked up
+
+Check the override registry order: app overrides win over package, but only if the slug matches exactly. Run:
+
+```bash
+php artisan martis:list-overrides
+```
+
+This prints every active override and its source. See [Override system](/docs/customization/overrides) for resolution rules.
+
+## Performance
+
+### Catalog page slow with relations
+
+Eager-load relations on the resource's `indexQuery`:
+
+```php
+public static function indexQuery(Request $request, Builder $query): Builder
+{
+    return $query->with(['owner', 'invoices']);
+}
+```
+
+Without this, every row triggers N+1 queries when the field accessor traverses the relation.
+
+### Metrics card is slow
+
+Metrics cache by default. If you removed `cacheFor()` from the metric, it re-queries on every page load. Add it back:
+
+```php
+public function cacheFor(): int
+{
+    return 300; // five minutes
+}
+```
+
+See [Metrics](/docs/core/metrics) for the cache key and ranges.
+
+## i18n
+
+### Translations fall back to English even with locale set
+
+Martis resolves locale from the user's `Profile->locale` first, then `app()->getLocale()`. If you switch the app locale at runtime, also set the user's profile locale or call `Martis::setLocale($locale)`.
+
+```php
+Martis::setLocale('pt_PT');
+```
+
+See [Internationalisation](/docs/customization/i18n) for the resolution order.
+
+## Still stuck?
+
+- [Open a GitHub issue](https://github.com/Real-Edge-FX/martis-package/issues/new) with PHP version, Laravel version, and the smallest reproducer you can produce.
+- Check the [release history](https://github.com/Real-Edge-FX/martis-package/releases) — your problem may be fixed in a newer tag.
+- Read [Configuration](/docs/reference/configuration) for the full list of `MARTIS_*` env flags.

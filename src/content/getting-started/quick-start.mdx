@@ -1,0 +1,129 @@
+---
+title: "Quick Start"
+description: "Build your first Martis resource in five minutes — model, resource class, register, done."
+---
+
+# Quick Start
+
+Build your first Martis resource in five minutes. By the end you will have a fully working CRUD surface for a `Client` model with searchable name, sortable creation date, a status badge, and one bulk action.
+
+This guide assumes Martis is already installed. If not, see [Installation](/docs/getting-started/installation).
+
+## 1. Generate the model and migration
+
+```bash
+php artisan make:model Client -m
+```
+
+Edit the migration:
+
+```php
+Schema::create('clients', function (Blueprint $table) {
+    $table->id();
+    $table->string('name');
+    $table->string('email')->unique();
+    $table->enum('status', ['active', 'paused', 'archived'])->default('active');
+    $table->timestamps();
+});
+```
+
+Run it:
+
+```bash
+php artisan migrate
+```
+
+## 2. Generate a Martis resource
+
+```bash
+php artisan martis:resource Client
+```
+
+This creates `app/Martis/ClientResource.php`. Edit it to declare the fields:
+
+```php
+namespace App\Martis;
+
+use App\Models\Client;
+use Illuminate\Http\Request;
+use Martis\Fields\{Id, Text, Email, Select, Badge};
+use Martis\Resource;
+
+class ClientResource extends Resource
+{
+    public static function model(): string
+    {
+        return Client::class;
+    }
+
+    public function fields(Request $request): array
+    {
+        return [
+            Id::make('id'),
+            Text::make('name')->sortable()->searchable()->required(),
+            Email::make('email')->sortable()->searchable()->required(),
+            Select::make('status')
+                ->options([
+                    'active'   => 'Active',
+                    'paused'   => 'Paused',
+                    'archived' => 'Archived',
+                ])
+                ->displayUsingLabels(),
+            Badge::make('status')->map([
+                'active'   => 'success',
+                'paused'   => 'warning',
+                'archived' => 'secondary',
+            ])->onlyOnIndex(),
+        ];
+    }
+}
+```
+
+## 3. Register the resource
+
+In `config/martis.php`, add the resource to the `resources` array (the install command auto-registers, but if you generated manually add it here):
+
+```php
+'resources' => [
+    \App\Martis\ClientResource::class,
+],
+```
+
+## 4. Visit the panel
+
+Boot the dev server and navigate to `/martis`. You will see the Clients menu item, the catalog page with sortable/searchable columns, the badge in the status column, and a working detail/edit page out of the box.
+
+## 5. Add a bulk action
+
+```bash
+php artisan martis:action ArchiveClients
+```
+
+In the generated `app/Martis/Actions/ArchiveClients.php`:
+
+```php
+public function handle(ActionFields $fields, Collection $models): array
+{
+    $models->each->update(['status' => 'archived']);
+    return Action::message(count($models) . ' clients archived.');
+}
+```
+
+Wire it on the resource:
+
+```php
+public function actions(Request $request): array
+{
+    return [new \App\Martis\Actions\ArchiveClients()];
+}
+```
+
+Reload the catalog. Select rows, open the action menu, archive in bulk.
+
+## What's next
+
+- [Fields](/docs/core/fields) — the full catalogue of 50 field types.
+- [Relationships](/docs/core/relationships) — wire up `BelongsTo`, `HasMany`, `MorphToMany`, and the rest.
+- [Filters & lenses](/docs/core/filters) — build sticky views and alternative queries.
+- [Metrics & dashboards](/docs/core/metrics) — value, trend, partition, progress cards.
+- [Override system](/docs/customization/overrides) — replace any view, field, or layout without forking.
