@@ -92,9 +92,10 @@ export function Hero() {
           </div>
         </div>
 
-        {/* Hero placeholder — a styled chrome window with a gradient
-            backdrop. Drop screenshots into public/screenshots/ and
-            swap this block for an <img src="..."> when ready. */}
+        {/* Hero screenshot — real dashboard from the playground. The
+            two floating screenshots (resource index + system cache)
+            are clipped on small viewports so the main shot stays
+            centred and intelligible. */}
         <div className="relative mt-16">
           <div className="absolute -inset-x-20 -top-10 -bottom-10 accent-glow opacity-60 pointer-events-none" />
           <div className="relative rounded-2xl ring-1 ring-white/10 bg-ink-900 overflow-hidden shadow-[0_30px_120px_-20px_rgba(91,127,255,0.35)]">
@@ -106,14 +107,29 @@ export function Hero() {
                 <Icons.Lock size={10} /> martis.realedgefx.com/martis
               </div>
             </div>
-            <div className="aspect-[16/9] grid place-items-center bg-gradient-to-br from-ink-900 via-ink-850 to-ink-900">
-              <div className="text-center px-8">
-                <Icons.Stack size={48} className="text-cobalt-400 mx-auto opacity-60" />
-                <div className="mt-4 text-[13px] font-mono text-ink-300">
-                  Drop screenshots into <code>/public/screenshots/dashboard.png</code>
-                </div>
-              </div>
-            </div>
+            <img
+              src="/screenshots/dashboard.png"
+              alt="Martis dashboard"
+              className="w-full block"
+              loading="eager"
+            />
+          </div>
+
+          <div className="hidden lg:block absolute -right-4 -bottom-10 w-[280px] rounded-xl ring-1 ring-white/10 bg-ink-900 overflow-hidden shadow-2xl rotate-3">
+            <img
+              src="/screenshots/resource-index.png"
+              alt="Resource index"
+              className="w-full block opacity-95"
+              loading="lazy"
+            />
+          </div>
+          <div className="hidden lg:block absolute -left-6 -bottom-4 w-[220px] rounded-xl ring-1 ring-white/10 bg-ink-900 overflow-hidden shadow-2xl -rotate-3">
+            <img
+              src="/screenshots/system-cache.png"
+              alt="System cache"
+              className="w-full block opacity-95"
+              loading="lazy"
+            />
           </div>
         </div>
       </div>

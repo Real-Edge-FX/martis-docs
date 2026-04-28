@@ -3,10 +3,10 @@ import { CodeBlock } from '@/components/CodeBlock'
 import { Icons } from '@/components/icons'
 import { CODE_SAMPLES, type CodeSampleKey } from '@/data/landing'
 
-const TABS: { id: CodeSampleKey; label: string; lines: number }[] = [
-  { id: 'resource', label: 'Resource', lines: 22 },
-  { id: 'metric',   label: 'Metric',   lines: 18 },
-  { id: 'action',   label: 'Action',   lines: 28 },
+const TABS: { id: CodeSampleKey; label: string; lines: number; preview: string; alt: string }[] = [
+  { id: 'resource', label: 'Resource', lines: 22, preview: '/screenshots/resource-index.png',  alt: 'Resource index'  },
+  { id: 'metric',   label: 'Metric',   lines: 18, preview: '/screenshots/dashboard.png',       alt: 'Dashboard'       },
+  { id: 'action',   label: 'Action',   lines: 28, preview: '/screenshots/resource-create.png', alt: 'Create form'     },
 ]
 
 export function CodeUI() {
@@ -62,14 +62,12 @@ export function CodeUI() {
               <div className="flex items-center gap-2 px-3 h-8 bg-ink-850 border-b border-white/5 text-[11px] font-mono text-ink-300">
                 <Icons.Eye size={11} /> rendered output
               </div>
-              <div className="aspect-[16/10] grid place-items-center bg-gradient-to-br from-ink-900 via-ink-850 to-ink-900">
-                <div className="text-center px-6">
-                  <Icons.Stack size={36} className="text-cobalt-400 mx-auto opacity-50" />
-                  <div className="mt-3 text-[11.5px] font-mono text-ink-400">
-                    Screenshot for <span className="text-cobalt-300">{cur.label}</span> goes here
-                  </div>
-                </div>
-              </div>
+              <img
+                src={cur.preview}
+                alt={cur.alt}
+                className="w-full block"
+                loading="lazy"
+              />
             </div>
             <div className="mt-3 text-[12.5px] text-ink-300 font-mono">
               <span className="text-cobalt-300">→</span> auto-discovered, no
