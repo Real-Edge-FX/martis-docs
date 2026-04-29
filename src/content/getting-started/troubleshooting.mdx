@@ -94,13 +94,20 @@ Then declare the guard in `config/auth.php`:
 
 ### SSO callback returns 404
 
-The SSO routes are registered conditionally. Make sure each enabled provider has its credentials set in `.env`:
+The SSO routes are registered conditionally. Make sure SSO is enabled and the provider credentials are set. Martis uses two flags (master + per-provider) plus the standard Socialite environment variables, **not** prefixed with `MARTIS_`:
 
 ```env
+# Enable the SSO subsystem (master switch)
+MARTIS_SSO_ENABLED=true
+
+# Enable a specific provider
 MARTIS_SSO_AZURE_ENABLED=true
-MARTIS_SSO_AZURE_CLIENT_ID=...
-MARTIS_SSO_AZURE_CLIENT_SECRET=...
-MARTIS_SSO_AZURE_TENANT_ID=...
+
+# Provider credentials (raw Socialite names, no MARTIS_ prefix)
+AZURE_CLIENT_ID=...
+AZURE_CLIENT_SECRET=...
+AZURE_REDIRECT_URI=https://your-app.example.com/martis/sso/azure/callback
+AZURE_RESOURCE_ID=...
 ```
 
 See [SSO](/docs/auth/sso) for the full provider matrix.
@@ -156,13 +163,18 @@ If you are using the `martis:theme` generator, run it again to regenerate the pu
 
 ### Custom override not picked up
 
-Check the override registry order: app overrides win over package, but only if the slug matches exactly. Run:
+Check the override registry order: app overrides win over package, but only if the slug matches exactly. The cheapest way to introspect the registry is via `tinker`:
 
 ```bash
-php artisan martis:list-overrides
+php artisan tinker
+> app(\Martis\Components\ComponentRegistry::class)->all();
 ```
 
-This prints every active override and its source. See [Override system](/docs/customization/overrides) for resolution rules.
+That dumps every registered slug → component-class mapping with the source provider. Common culprits:
+
+- **App override never registered** — your `MartisServiceProvider::registerComponentOverrides()` was not booted. Confirm the provider is listed in `config/app.php` (or `bootstrap/providers.php` on Laravel 11+).
+- **Slug typo** — the registry is case-sensitive and dot-delimited. `field.text` and `Field.Text` are different slugs.
+- **Wrong build directory** — frontend overrides need `MARTIS_USER_DIR` pointing at your extensions folder when running `npm run build`. See [Override System](/docs/customization/overrides) for the exact resolution chain.
 
 ## Performance
 
