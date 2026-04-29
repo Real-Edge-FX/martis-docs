@@ -46,6 +46,8 @@ export const DOC_NAV: DocGroup[] = [
       { slug: 'core/metrics',         label: 'Metrics',       icon: 'Activity', badge: '6',  tooltip: '6 metric types: Value, Trend, Partition, Progress, ActivityFeed, EndpointTable' },
       { slug: 'core/dashboards',      label: 'Dashboards',    icon: 'Activity' },
       { slug: 'core/actions',         label: 'Actions',       icon: 'Bolt',     badge: '4',  tooltip: '4 action types: inline, bulk, standalone, destructive (queueable)' },
+      { slug: 'core/default-row-actions', label: 'Default row actions', icon: 'Bolt' },
+      { slug: 'core/sticky-views',    label: 'Sticky views',  icon: 'Eye' },
       { slug: 'core/grid-layout',     label: 'Grid layout',   icon: 'Layers' },
       { slug: 'core/panels-and-tabs', label: 'Panels & Tabs', icon: 'Stack' },
       { slug: 'core/repeater',        label: 'Repeater',      icon: 'Stack' },
