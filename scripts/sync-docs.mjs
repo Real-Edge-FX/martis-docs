@@ -77,9 +77,11 @@ const MAP = {
   'reference/keyboard-shortcuts': 'keyboard-shortcuts.md',
   'reference/preferences': 'preferences.md',
   'reference/differentials': 'differentials.md',
-  // 'reference/api' — hand-authored entry that links to the OpenAPI
-  // schema rather than mirroring api/overview.md (which contains
-  // server-private examples like admin@martis.local).
+  // martis-package v1.2.0 sanitised api/overview.md (no more
+  // admin@martis.local / martis.realedgefx.com leaks) and shipped the
+  // OpenAPI surface promised on the page, so the docs site no longer
+  // needs the hand-authored override and can sync it directly.
+  'reference/api': 'api/overview.md',
 }
 
 // Inverse map of package filename → public slug. Used to rewrite
