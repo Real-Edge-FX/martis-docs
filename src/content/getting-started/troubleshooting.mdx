@@ -163,18 +163,23 @@ If you are using the `martis:theme` generator, run it again to regenerate the pu
 
 ### Custom override not picked up
 
-Check the override registry order: app overrides win over package, but only if the slug matches exactly. The cheapest way to introspect the registry is via `tinker`:
+Most often this is a key mismatch between the PHP layer (which declares "I want a component called `<key>`") and the frontend `boot.ts` (which registers the actual React component under that key). The `martis:list-overrides` command shows every key the PHP layer expects:
 
 ```bash
-php artisan tinker
-> app(\Martis\Components\ComponentRegistry::class)->all();
+php artisan martis:list-overrides
 ```
 
-That dumps every registered slug → component-class mapping with the source provider. Common culprits:
+Then in the browser devtools console (after the SPA boots), confirm the registered set:
 
-- **App override never registered** — your `MartisServiceProvider::registerComponentOverrides()` was not booted. Confirm the provider is listed in `config/app.php` (or `bootstrap/providers.php` on Laravel 11+).
-- **Slug typo** — the registry is case-sensitive and dot-delimited. `field.text` and `Field.Text` are different slugs.
+```js
+window.componentRegistry.keys()
+```
+
+Any key in the artisan output that is **not** in `componentRegistry.keys()` is a missing registration in your `boot.ts`. Common culprits:
+
+- **`boot.ts` not imported** — your app entry must `import './boot'` somewhere.
 - **Wrong build directory** — frontend overrides need `MARTIS_USER_DIR` pointing at your extensions folder when running `npm run build`. See [Override System](/docs/customization/overrides) for the exact resolution chain.
+- **Slug typo** — keys are case-sensitive. `field.text` and `Field.Text` are different.
 
 ## Performance
 
