@@ -71,6 +71,7 @@ export const DOC_NAV: DocGroup[] = [
     items: [
       { slug: 'auth/authentication', label: 'Authentication', icon: 'Lock' },
       { slug: 'auth/sso',            label: 'SSO',            icon: 'Shield', badge: '3', tooltip: '3 OAuth providers: Azure AD, Google, GitHub' },
+      { slug: 'auth/roles',          label: 'Roles & Permissions', icon: 'Shield', badge: 'v1.6', tooltip: 'martis:roles — admin UI for users, roles, permissions on top of Spatie' },
       { slug: 'auth/impersonation',  label: 'Impersonation',  icon: 'Lock' },
       { slug: 'auth/authorization',  label: 'Authorization',  icon: 'Shield' },
     ],
