@@ -37,10 +37,10 @@ export function Hero() {
             className="group inline-flex items-center gap-2 h-7 max-w-full px-3 rounded-full bg-ink-850 ring-faint hover:bg-ink-800 transition-colors mb-7 whitespace-nowrap overflow-hidden"
           >
             <span className="shrink-0 text-[10px] font-mono uppercase tracking-wider text-cobalt-300 bg-cobalt-500/15 px-1.5 py-0.5 rounded">
-              v1.7.3
+              v1.7.4
             </span>
             <span className="hidden sm:inline text-[12.5px] text-ink-200 truncate">
-              guest pref persistence on login
+              UserPreference cast + i18n localStorage
             </span>
             <span className="sm:hidden text-[12.5px] text-ink-200">
               What&apos;s new
