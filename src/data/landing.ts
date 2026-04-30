@@ -154,4 +154,4 @@ class SendInvoice extends Action
 
 export type CodeSampleKey = keyof typeof CODE_SAMPLES
 
-export const VERSION = 'v1.7.1'
+export const VERSION = 'v1.7.2'
