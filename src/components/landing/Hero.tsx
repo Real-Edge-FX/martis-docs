@@ -41,7 +41,7 @@ export function Hero() {
               {VERSION}
             </span>
             <span className="hidden sm:inline text-[12.5px] text-ink-200 truncate">
-              GuardSelect, configurable auth copy, count compaction
+              auto-required, dependsOn form draft, password reset URL
             </span>
             <span className="sm:hidden text-[12.5px] text-ink-200">
               What&apos;s new
