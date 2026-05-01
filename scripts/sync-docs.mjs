@@ -54,6 +54,7 @@ const MAP = {
   'core/metrics': 'metrics.md',
   'core/dashboards': 'dashboards.md',
   'core/actions': 'actions.md',
+  'core/default-row-actions': 'default_row_actions.md',
   'core/grid-layout': 'grid-layout.md',
   'core/panels-and-tabs': 'panels-and-tabs.md',
   'core/repeater': 'repeater.md',
