@@ -470,6 +470,34 @@ Both flags are read live, so mid-session toggles via `window.MartisConfig` take 
 | `showMetrics` | `bool` | `true` | Show summary metrics row (total resources, groups). |
 | `showResourceCards` | `bool` | `true` | Show resource quick-access cards grid. |
 
+### Customising the greeting strings
+
+The dashboard renders TWO independent welcome strings — make sure you edit the right one:
+
+| Visible string | Translation key | Customisation |
+|---|---|---|
+| `Hello, {name}` (greeting line) | `martis::resources.hello` | Lang files only |
+| **`Welcome to Martis Admin Engine.`** (subtitle under the greeting) | `martis::resources.welcome` | **Lang files only** (no env var) |
+| `Welcome to Martis` (animated `<WelcomeCard>` heading, optional) | `martis::resources.welcome_card_heading` | `MARTIS_WELCOME_HEADING` env **or** lang files |
+| `<WelcomeCard>` body | `martis::resources.welcome_card_description` | `MARTIS_WELCOME_DESCRIPTION` env **or** lang files |
+
+The `<WelcomeCard>` is a separate animated hero — only visible when `dashboard.showWelcomeCard !== false`. The env vars `MARTIS_WELCOME_HEADING` / `MARTIS_WELCOME_DESCRIPTION` only touch this card; **they do NOT change** the greeting subtitle.
+
+To customise the greeting subtitle:
+
+```bash
+php artisan vendor:publish --tag=martis-lang --force
+```
+
+```php
+// resources/lang/vendor/martis/{en,pt_BR,pt_PT}/resources.php
+return [
+    'welcome' => 'Welcome to EdgeFlow — your market quality terminal.',
+];
+```
+
+Laravel deep-merges, so unset keys fall through.
+
 ## Toast Notifications
 
 ```php
