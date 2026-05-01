@@ -41,7 +41,7 @@ export function Hero() {
               {VERSION}
             </span>
             <span className="hidden sm:inline text-[12.5px] text-ink-200 truncate">
-              auto-required, dependsOn form draft, password reset URL
+              relationship pickers hidden on create form by default
             </span>
             <span className="sm:hidden text-[12.5px] text-ink-200">
               What&apos;s new
