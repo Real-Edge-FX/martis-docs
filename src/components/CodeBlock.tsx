@@ -15,10 +15,10 @@ interface CodeBlockProps {
 
 /**
  * Code block matching the design-system reference. Until shiki is
- * wired in, a tiny regex pass over PHP/TS/JS keywords + strings +
- * comments is good enough to ship the landing screenshots without
- * a placeholder grey block. The output uses the `.tok-*` classes
- * defined in `globals.css`.
+ * wired in, a tiny tokenising pass over PHP/TS/JS keywords + strings
+ * + comments is good enough to ship the landing screenshots without
+ * a grey block. The output uses the `.tok-*` classes defined in
+ * `globals.css`.
  */
 export function CodeBlock({ code, lang = 'php', filename, lineNumbers = false }: CodeBlockProps) {
   const [copied, setCopied] = useState(false)
@@ -71,33 +71,72 @@ export function CodeBlock({ code, lang = 'php', filename, lineNumbers = false }:
 
 // Tiny, deliberately-naive syntax highlighter. Good enough for the
 // landing/code samples; full shiki kicks in once we wire it.
-function highlight(line: string, lang: string): string {
-  let out = escape(line)
+//
+// Tokeniser over the raw source line (NOT the escaped HTML) prevents
+// the previous regex-cascade bug, where the keyword pass matched the
+// literal word `class` inside `<span class="tok-str">` it had just
+// generated, leaking attribute markup into rendered text such as
+// `class="tok-str">'name';`. We tokenise first, escape per-token, and
+// only emit HTML at the end.
+type Tok = { cls: string | null; text: string }
 
+const KEYWORDS = new Set([
+  'class', 'extends', 'implements', 'public', 'protected', 'private',
+  'static', 'function', 'return', 'use', 'namespace', 'new', 'null',
+  'true', 'false', 'const', 'interface', 'abstract', 'throw', 'throws',
+  'if', 'else', 'foreach', 'for', 'while', 'in', 'out', 'as', 'from',
+  'import', 'export', 'default', 'async', 'await', 'let', 'var', 'type',
+])
+
+function highlight(line: string, lang: string): string {
   if (lang === 'bash' || lang === 'shell') {
-    out = out.replace(/^(\$ )(.+)$/, '<span class="tok-pun">$1</span><span class="tok-var">$2</span>')
-    return out
+    const m = /^(\$ )(.+)$/.exec(line)
+    if (m) {
+      return '<span class="tok-pun">' + escape(m[1]) + '</span>'
+        + '<span class="tok-var">' + escape(m[2]) + '</span>'
+    }
+    return escape(line)
   }
 
-  // Comments first so the patterns below do not chew them.
-  out = out.replace(/(\/\/.*)$/g, '<span class="tok-com">$1</span>')
+  const tokens: Tok[] = []
+  let i = 0
+  const n = line.length
 
-  // Strings (single + double).
-  out = out.replace(/('[^']*'|"[^"]*")/g, '<span class="tok-str">$1</span>')
+  // Single regex with alternation, scanned linearly so each character
+  // belongs to exactly one token. Order matters: comments and strings
+  // come first so identifiers inside them are not classified.
+  const re = /(\/\/.*)|('[^']*'|"[^"]*")|(\$[A-Za-z_]\w*)|([A-Za-z_]\w*)/g
+  let lastEnd = 0
+  for (let m = re.exec(line); m; m = re.exec(line)) {
+    if (m.index > lastEnd) {
+      tokens.push({ cls: null, text: line.slice(lastEnd, m.index) })
+    }
+    if (m[1] !== undefined) {
+      tokens.push({ cls: 'tok-com', text: m[1] })
+    } else if (m[2] !== undefined) {
+      tokens.push({ cls: 'tok-str', text: m[2] })
+    } else if (m[3] !== undefined) {
+      tokens.push({ cls: 'tok-var', text: m[3] })
+    } else if (m[4] !== undefined) {
+      const word = m[4]
+      if (KEYWORDS.has(word)) {
+        tokens.push({ cls: 'tok-kw', text: word })
+      } else if (/^[A-Z]/.test(word)) {
+        tokens.push({ cls: 'tok-cls', text: word })
+      } else {
+        tokens.push({ cls: null, text: word })
+      }
+    }
+    lastEnd = m.index + m[0].length
+    i = lastEnd
+  }
+  if (i < n) {
+    tokens.push({ cls: null, text: line.slice(i) })
+  }
 
-  // PHP / TS keywords.
-  out = out.replace(
-    /\b(class|extends|implements|public|protected|private|static|function|return|use|namespace|new|null|true|false|const|interface|abstract|throw|throws|if|else|foreach|for|while|in|out|as|from|import|export|default|async|await|let|const|var|type)\b/g,
-    '<span class="tok-kw">$1</span>',
-  )
-
-  // PHP variables ($foo) — keep name token coloured.
-  out = out.replace(/(\$[A-Za-z_]\w*)/g, '<span class="tok-var">$1</span>')
-
-  // ClassName / TypeName (CapitalCase identifiers).
-  out = out.replace(/\b([A-Z][A-Za-z0-9]*)\b/g, '<span class="tok-cls">$1</span>')
-
-  return out
+  return tokens
+    .map((t) => (t.cls ? '<span class="' + t.cls + '">' + escape(t.text) + '</span>' : escape(t.text)))
+    .join('')
 }
 
 function escape(s: string): string {
