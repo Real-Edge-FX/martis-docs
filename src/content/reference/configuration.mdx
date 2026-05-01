@@ -58,11 +58,11 @@ The URL prefix for the admin panel. The panel will be accessible at `/{path}` (e
 | Key | Type | Default | Description |
 |-----|------|---------|-------------|
 | `name` | `string` | `'Martis'` | Displayed in the sidebar header and used as the `{brand}` interpolation for the bundled page title translation. |
-| `logo` | `?string` | `null` | **Full horizontal lockup** (icon + wordmark in one asset). When set, the SPA renders the lockup alone — the separate `brand.name` text next to it is hidden in the sidebar / topbar / auth frame to avoid a duplicated wordmark. |
+| `logo` | `?string` | `null` | **Full horizontal lockup** (icon + wordmark in one asset). When set, the SPA renders the lockup alone — the separate `brand.name` text next to it is hidden in the sidebar / topbar / auth frame to avoid a duplicated wordmark. Relative paths resolve against `public/` (`/img/logo.svg`); full URLs pass through unchanged. |
 | `icon` | `?string` | `null` | **Small square brand icon** (replaces just the bundled cube next to `brand.name`). Use this when you want to keep the brand text rendered by Martis but swap the mark. Independent from `logo` — Martis prefers `logo` when both are set. |
 | `favicon` | `?string` | `null` | Path to a custom favicon (relative to `public/`). When `null`, Martis serves its own default favicon from the package — no `vendor:publish` step required. |
 | `page_title` | `string \| callable \| null` | `null` | Browser tab title shown in `<title>`. `null` uses the bundled translation (e.g. "Acme — Admin Control"). A plain string overrides it. A callable (invokable class or array callable) receives the current `Request` and returns the title. |
-| `version` | `?string` | `null` | Optional version string printed in the sidebar footer (e.g. `v1.6.3`, `2026.04.30`). |
+| `version` | `?string` | `null` | Optional version string printed in the sidebar footer (e.g. `v1.5.2`, `2026.04.29`). |
 | `docs_url` | `?string` | `null` | Optional docs link rendered on the right-hand side of the sidebar footer. |
 
 ### Choosing your brand mode
@@ -76,7 +76,13 @@ MARTIS_BRAND_LOGO=/img/edgeflow-lockup.svg
 # leave MARTIS_BRAND_ICON unset
 ```
 
-Renders the lockup image alone. The `brand.name` text is **hidden** next to it. Best when the SVG already contains the mark + wordmark in one piece.
+Renders the lockup image alone. The `brand.name` text is **hidden** next to it (the wordmark inside your asset replaces it). Best for brands like EdgeFlow where the SVG already contains the mark + wordmark in one piece.
+
+```
++------------------------+
+| [EdgeFlow lockup]      |
++------------------------+
+```
 
 The image is sized to ~40px tall in the sidebar / topnav and ~40px tall in the auth card, scaling width to preserve the asset's aspect ratio (capped at the column width so a wide lockup never overflows).
 
@@ -88,7 +94,13 @@ MARTIS_BRAND_NAME="EdgeFlow"
 # leave MARTIS_BRAND_LOGO unset
 ```
 
-Renders `[icon] {brand.name}`. Same shape as the bundled experience but with your icon. Best when the wordmark isn't part of your asset, or when the brand text needs to vary per locale.
+Renders `[icon] {brand.name}`. Same shape as the bundled experience but with your icon. Best when the wordmark isn't part of your asset, or when the brand text needs to vary per locale (`MARTIS_BRAND_NAME` can be left empty so a translation file drives it).
+
+```
++------------------------+
+| [icon] EdgeFlow        |
++------------------------+
+```
 
 The icon is constrained to a 28×28 square in the sidebar / topnav, 32×32 in the auth card. Provide a square asset.
 
@@ -116,11 +128,15 @@ MARTIS_BRAND_ICON=/img/edgeflow-icon.png
 |---|---|
 | Sidebar header (`sidebar` preset) | `brand.logo` → `brand.icon` → bundled cube |
 | Topnav header (`topnav` preset) | `brand.logo` → `brand.icon` → bundled cube |
-| Auth card (Login, Register, Forgot password, Reset password, 2FA challenge, error screens) | `brand.logo` → `brand.icon` → bundled lockup |
-| Browser tab favicon | `brand.favicon` (independent — see below) |
-| Browser tab title | `brand.page_title` + `brand.name` (independent — see below) |
+| Auth card (Login, Register, Forgot password, Reset password, 2FA challenge, error screens) | `brand.logo` → `brand.icon` → bundled lockup (with wordmark) |
+| Browser tab favicon | `brand.favicon` (independent — see "Customising the favicon" below) |
+| Browser tab title | `brand.page_title` + `brand.name` (independent — see "Customising the page title" below) |
+
+Three rows, three env vars, one consistent rendering rule. Pick the mode that matches the asset you have.
 
 ### Switching modes after deployment
+
+After editing `.env`:
 
 ```bash
 php artisan optimize:clear
@@ -128,7 +144,7 @@ php artisan config:cache
 php artisan martis:cache:clear
 ```
 
-The config cache holds the env values; the Martis cache holds the navigation payload. Both must be cleared for the mode swap to land. The frontend bundle does NOT need rebuilding — `window.MartisConfig` is rendered on every request.
+The config cache holds the env values; the Martis cache holds the navigation payload (which embeds the brand). Both must be cleared for the mode swap to land. The frontend bundle does NOT need rebuilding — `window.MartisConfig` is rendered on every request.
 
 ### Theme-aware variants (v1.7.0)
 
@@ -141,18 +157,23 @@ MARTIS_BRAND_ICON=/img/icon-light.png
 MARTIS_BRAND_ICON_DARK=/img/icon-dark.png
 ```
 
-When only one variant of a pair is set, it is reused for both themes (backwards-compat).
+Resolution rule per asset:
+
+- Both set → render variant matching the active theme.
+- Only one set → use it for both themes (backwards-compat with v1.6.x consumers that only have `MARTIS_BRAND_LOGO`).
+
+The auth card honours the same rule. When the user toggles theme via the in-app PreferencesMenu, the variant flip is instant. Browser-OS dark mode (`prefers-color-scheme`) is not consulted because Martis's own toggle takes precedence over the OS.
 
 ### Asset sizing (v1.7.0)
 
-Override per surface:
+The SPA renders brand assets at fixed heights. Override per surface:
 
 ```env
 MARTIS_BRAND_LOGO_HEIGHT_MENU=40   # sidebar / topnav. Default 40. Range 20–56.
 MARTIS_BRAND_LOGO_HEIGHT_AUTH=48   # auth card.        Default 48. Range 24–80.
 ```
 
-The package clamps both values to the listed ranges. The icon-mode size (28×28 menu, 32×32 auth) is fixed.
+The package clamps both values to the listed ranges — an absurd value cannot break the layout. The icon-mode size (28×28 in the menu, 32×32 in the auth card) is fixed and not configurable.
 
 ### Asset requirements (v1.8.0 — issue #127)
 
@@ -174,7 +195,7 @@ Tracking issue: [#127](https://github.com/Real-Edge-FX/martis-package/issues/127
 
 ### Sidebar collapse behaviour (v1.7.0)
 
-When the sidebar collapses (240 px → 64 px rail) **and** `brand.icon` is set, the icon wins regardless of `brand.logo`. A horizontal lockup at 64 px rail width gets distorted; the square icon fits cleanly. When only `brand.logo` is set, the logo shrinks (the v1.6.x fallback). The brand text is always hidden in collapsed mode.
+When the sidebar collapses (240 px → 64 px rail) **and** `brand.icon` is set, the icon wins regardless of `brand.logo`. A horizontal lockup at 64 px rail width gets distorted; the square icon fits cleanly. When only `brand.logo` is set, the logo shrinks (the v1.6.x fallback). The sidebar text (`brand.name`) is always hidden in collapsed mode.
 
 ### Customising the page title
 
@@ -267,14 +288,84 @@ Resolution precedence (highest first):
 ```php
 'footer' => [
     'enabled' => true,
-    'text' => null,
+    'text' => env('MARTIS_FOOTER_TEXT'),
 ],
 ```
 
 | Key | Type | Default | Description |
 |-----|------|---------|-------------|
 | `enabled` | `bool` | `true` | Set `false` to hide the footer entirely. |
-| `text` | `?string` | `null` | Custom footer text. When `null`, displays "Powered by Martis". |
+| `text` | `?string` | `null` | Custom footer text. When `null`, the bundled translation renders ("© \{brand.name} · Powered by Martis"). |
+
+> **i18n trade-off.** `MARTIS_FOOTER_TEXT` is a single string that overrides every locale. For per-locale footer copy, leave the env var unset and publish the lang files with `php artisan vendor:publish --tag=martis-lang`, then edit each locale file directly.
+
+## Dashboard greeting & welcome card
+
+The dashboard renders TWO different welcome strings — make sure you edit the right one:
+
+| Visible string | Translation key | Customisation |
+|---|---|---|
+| `Hello, {name}` (greeting line) | `martis::resources.hello` | Lang files only (publish + edit) |
+| **`Welcome to Martis Admin Engine.`** (subtitle under the greeting) | `martis::resources.welcome` | **Lang files only** (no env var) |
+| `Welcome to Martis` (animated `<WelcomeCard>` heading, optional) | `martis::resources.welcome_card_heading` | `MARTIS_WELCOME_HEADING` env **or** lang files |
+| Welcome card body | `martis::resources.welcome_card_description` | `MARTIS_WELCOME_DESCRIPTION` env **or** lang files |
+
+The `<WelcomeCard>` is the animated hero shown when `dashboard.showWelcomeCard !== false` — it sits at the top of the dashboard and is what the env vars below control. The greeting line ("Hello, X" + "Welcome to Martis Admin Engine") is a **separate** simple text block; **only lang files override it**. Frequent confusion: setting `MARTIS_WELCOME_HEADING` does not change the greeting subtitle.
+
+```php
+'welcome' => [
+    'heading' => env('MARTIS_WELCOME_HEADING'),
+    'description' => env('MARTIS_WELCOME_DESCRIPTION'),
+],
+```
+
+| Key | Type | Default | Description |
+|-----|------|---------|-------------|
+| `heading` | `?string` | `null` | Custom heading for the dashboard's animated `<WelcomeCard>`. When `null`, uses the bundled `welcome_card_heading` translation. |
+| `description` | `?string` | `null` | Custom description shown below the heading. When `null`, uses the bundled `welcome_card_description` translation. |
+
+### Customising the greeting subtitle ("Welcome to Martis Admin Engine.")
+
+Publish the lang files and edit the `welcome` key:
+
+```bash
+php artisan vendor:publish --tag=martis-lang --force
+```
+
+Then `resources/lang/vendor/martis/{en,pt_BR,pt_PT}/resources.php`:
+
+```php
+<?php
+return [
+    'welcome' => 'Welcome to EdgeFlow — your market quality terminal.',
+];
+```
+
+Laravel deep-merges with the package shipped file — only `welcome` changes; everything else falls through. After editing, `php artisan optimize:clear`.
+
+### Resolution order for the `<WelcomeCard>`
+
+(First non-null wins.)
+
+1. Prop passed at render-time (rare — only if the host overrides the React component itself).
+2. `welcome.heading` / `welcome.description` from `config/martis.php` (env-driven).
+3. `martis::resources.welcome_card_heading` / `welcome_card_description` translations (which honour your published lang overrides if any).
+
+> **i18n trade-off.** `MARTIS_WELCOME_HEADING` and `MARTIS_WELCOME_DESCRIPTION` are single strings that override every locale. For per-locale copy, leave both env vars unset and publish the lang files. The two paths are mutually exclusive — env wins when set.
+
+### Example: branding the dashboard from `.env`
+
+```env
+MARTIS_BRAND_NAME="EdgeFlow"
+MARTIS_BRAND_LOGO="/img/edgeflow-logo.svg"
+MARTIS_FAVICON="brand/favicon.ico"
+MARTIS_PAGE_TITLE="EdgeFlow"
+MARTIS_FOOTER_TEXT="© 2026 EdgeFlow. All rights reserved."
+MARTIS_WELCOME_HEADING="Welcome to EdgeFlow"
+MARTIS_WELCOME_DESCRIPTION="NQ/ES/YM regime intelligence for futures traders."
+```
+
+No code changes, no `vendor:publish`. The SPA picks all of this up at boot via `window.MartisConfig`.
 
 ## Layout
 
@@ -470,34 +561,6 @@ Both flags are read live, so mid-session toggles via `window.MartisConfig` take 
 | `showMetrics` | `bool` | `true` | Show summary metrics row (total resources, groups). |
 | `showResourceCards` | `bool` | `true` | Show resource quick-access cards grid. |
 
-### Customising the greeting strings
-
-The dashboard renders TWO independent welcome strings — make sure you edit the right one:
-
-| Visible string | Translation key | Customisation |
-|---|---|---|
-| `Hello, {name}` (greeting line) | `martis::resources.hello` | Lang files only |
-| **`Welcome to Martis Admin Engine.`** (subtitle under the greeting) | `martis::resources.welcome` | **Lang files only** (no env var) |
-| `Welcome to Martis` (animated `<WelcomeCard>` heading, optional) | `martis::resources.welcome_card_heading` | `MARTIS_WELCOME_HEADING` env **or** lang files |
-| `<WelcomeCard>` body | `martis::resources.welcome_card_description` | `MARTIS_WELCOME_DESCRIPTION` env **or** lang files |
-
-The `<WelcomeCard>` is a separate animated hero — only visible when `dashboard.showWelcomeCard !== false`. The env vars `MARTIS_WELCOME_HEADING` / `MARTIS_WELCOME_DESCRIPTION` only touch this card; **they do NOT change** the greeting subtitle.
-
-To customise the greeting subtitle:
-
-```bash
-php artisan vendor:publish --tag=martis-lang --force
-```
-
-```php
-// resources/lang/vendor/martis/{en,pt_BR,pt_PT}/resources.php
-return [
-    'welcome' => 'Welcome to EdgeFlow — your market quality terminal.',
-];
-```
-
-Laravel deep-merges, so unset keys fall through.
-
 ## Toast Notifications
 
 ```php
@@ -663,6 +726,64 @@ Why a dedicated provider instead of `AppServiceProvider`?
 
 To republish the stub manually (e.g. after package upgrade adds a new section): `php artisan vendor:publish --tag=martis-provider --force`.
 
+## Preferences (v1.7.0 defaults)
+
+The preferences subsystem has been env-driven since v0.10. v1.7.0 surfaces three more knobs so a host can pick the look-and-feel that every brand-new user sees on first sign-in.
+
+```env
+MARTIS_DEFAULT_THEME=dark           # dark | light | system
+MARTIS_DEFAULT_ACCENT=martis        # martis | blue | teal | violet | amber | <custom name>
+MARTIS_DEFAULT_DENSITY=comfortable  # comfortable | dense
+MARTIS_DEFAULT_LOCALE=en            # any locale shipped under resources/lang
+```
+
+Invalid values fall through to the safe defaults — a typo in `.env` never crashes the request.
+
+### Custom accent colours
+
+The accent swatches in the PreferencesMenu can be extended with arbitrary brand colours via a single env var:
+
+```env
+MARTIS_CUSTOM_ACCENTS="edgeflow:#1a73e8,sunset:#ff6b35,emerald:#10b981"
+```
+
+Format: comma-separated `name:hex` pairs. Whitespace around the separators is tolerated.
+
+**Validation rules** (invalid entries are dropped silently with a `Log::warning`):
+
+| Field | Pattern / rule |
+|---|---|
+| `name` | `[a-z][a-z0-9_-]{0,31}` — lowercase, alphanumeric + dash / underscore. Must NOT collide with a bundled enum value (`martis`, `blue`, `teal`, `violet`, `amber`, `custom`). |
+| `hex` | `#RRGGBB` (6-digit hex with leading `#`). |
+| Duplicates | Last-wins (env-override semantics). |
+| Limit | Up to 24 custom accents. Beyond that the parser truncates. |
+
+Each registered accent:
+
+- Adds an extra swatch at the end of the PreferencesMenu accent picker.
+- Becomes a valid value for `MARTIS_DEFAULT_ACCENT` (so a new user lands on it without having to click).
+- Becomes a valid value for the user's persisted `accent` preference column.
+
+### How the colour is rendered
+
+Martis injects an inline `<style>` block at boot for every custom accent:
+
+```css
+html[data-accent="edgeflow"] {
+  --martis-accent: #1a73e8;
+  --martis-accent-hover:  color-mix(in srgb, #1a73e8 88%, black);
+  --martis-accent-soft:   color-mix(in srgb, #1a73e8 18%, transparent);
+  --martis-accent-strong: color-mix(in srgb, #1a73e8 92%, black);
+  --martis-accent-text:   #ffffff;
+}
+```
+
+Hover / soft / strong variants are derived from the base hex via `color-mix(in srgb, …)`, so the consumer only ships one colour per accent. Browser support: Chrome 111+, Safari 16.2+, Firefox 113+.
+
+### Removing a custom accent
+
+Drop the entry from `MARTIS_CUSTOM_ACCENTS` and `php artisan config:cache`. Users who had picked the removed name keep the value in their `user_preferences.accent` row, but the resolver falls back to `martis` on the next request — no migration needed.
+
 ## Cache
 
 ```php
@@ -792,8 +913,23 @@ The package ships **no default Gate**. Define `martis-impersonate` in your `Auth
 | `MARTIS_PATH` | `path` | `martis` |
 | `MARTIS_GUARD` | `guard` | `null` |
 | `MARTIS_BRAND_NAME` | `brand.name` | `Martis` |
+| `MARTIS_BRAND_LOGO` | `brand.logo` | `null` |
+| `MARTIS_BRAND_LOGO_DARK` | `brand.logo_dark` | `null` (v1.7.0) |
+| `MARTIS_BRAND_ICON` | `brand.icon` | `null` |
+| `MARTIS_BRAND_ICON_DARK` | `brand.icon_dark` | `null` (v1.7.0) |
+| `MARTIS_BRAND_LOGO_HEIGHT_MENU` | `brand.logo_height.menu` | `40` (v1.7.0) |
+| `MARTIS_BRAND_LOGO_HEIGHT_AUTH` | `brand.logo_height.auth` | `48` (v1.7.0) |
+| `MARTIS_BRAND_VERSION` | `brand.version` | `null` |
+| `MARTIS_BRAND_DOCS_URL` | `brand.docs_url` | `null` |
 | `MARTIS_FAVICON` | `brand.favicon` | `null` |
 | `MARTIS_PAGE_TITLE` | `brand.page_title` | `null` (uses translation) |
+| `MARTIS_FOOTER_TEXT` | `footer.text` | `null` (uses translation) |
+| `MARTIS_WELCOME_HEADING` | `welcome.heading` | `null` (uses translation) |
+| `MARTIS_WELCOME_DESCRIPTION` | `welcome.description` | `null` (uses translation) |
+| `MARTIS_DEFAULT_THEME` | `preferences.defaults.theme` | `dark` (v1.7.0) |
+| `MARTIS_DEFAULT_ACCENT` | `preferences.defaults.accent` | `martis` (v1.7.0) |
+| `MARTIS_DEFAULT_DENSITY` | `preferences.defaults.density` | `comfortable` (v1.7.0) |
+| `MARTIS_CUSTOM_ACCENTS` | `preferences.custom_accents` | `null` (v1.7.0) |
 | `MARTIS_LAYOUT` | `layout.preset` | `sidebar` |
 | `MARTIS_NAV_COUNTS` | `navigation.counts.enabled` | `true` |
 | `MARTIS_NAV_POLL_MS` | `navigation.poll_interval` | `60000` |
@@ -820,46 +956,6 @@ The package ships **no default Gate**. Define `martis-impersonate` in your `Auth
 | `MARTIS_AVATAR_COLUMN` | `profile.avatar.column` | `profile_picture` |
 | `MARTIS_2FA_ENABLED` | `profile.two_factor.enabled` | `true` |
 | `MARTIS_2FA_RECOVERY_CODES` | `profile.two_factor.recovery_codes` | `8` |
-
-## Preferences (v1.7.0 defaults)
-
-The preferences subsystem has been env-driven since v0.10. v1.7.0 surfaces three more knobs so a host can pick the look-and-feel that every brand-new user sees on first sign-in.
-
-```env
-MARTIS_DEFAULT_THEME=dark           # dark | light | system
-MARTIS_DEFAULT_ACCENT=martis        # martis | blue | teal | violet | amber | <custom name>
-MARTIS_DEFAULT_DENSITY=comfortable  # comfortable | dense
-MARTIS_DEFAULT_LOCALE=en
-```
-
-Invalid values fall through to the safe defaults — a typo in `.env` never crashes the request.
-
-### Custom accent colours
-
-The accent swatches in the PreferencesMenu can be extended with arbitrary brand colours via a single env var:
-
-```env
-MARTIS_CUSTOM_ACCENTS="edgeflow:#1a73e8,sunset:#ff6b35,emerald:#10b981"
-```
-
-Format: comma-separated `name:hex` pairs.
-
-**Validation rules** (invalid entries dropped silently with a `Log::warning`):
-
-| Field | Pattern / rule |
-|---|---|
-| `name` | `[a-z][a-z0-9_-]{0,31}` — lowercase, alphanumeric + dash / underscore. Must NOT collide with a bundled enum value (`martis`, `blue`, `teal`, `violet`, `amber`, `custom`). |
-| `hex` | `#RRGGBB` (6-digit hex with leading `#`). |
-| Duplicates | Last-wins (env-override semantics). |
-| Limit | Up to 24 custom accents. |
-
-Each registered accent:
-
-- Adds an extra swatch at the end of the PreferencesMenu accent picker.
-- Becomes a valid value for `MARTIS_DEFAULT_ACCENT`.
-- Becomes a valid value for the user's persisted `accent` column.
-
-Hover / soft / strong CSS variants auto-derive from the base hex via `color-mix(in srgb, ...)` (Chrome 111+, Safari 16.2+, Firefox 113+) — the consumer only ships one colour per accent.
 
 ## Next Steps
 
