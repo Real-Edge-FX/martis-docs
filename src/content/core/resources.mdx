@@ -203,7 +203,7 @@ public function searchOrderBy(Builder $query, string $term): Builder
 
 ### `$stickyView` (⭐ Martis differential)
 
-Controls whether this resource participates in the [Sticky Views](sticky_views.md) feature — per-user view state persistence on the index page (filters, sort, pagination, per-page, search). Default: `true`.
+Controls whether this resource participates in the [Sticky Views](/docs/core/sticky-views) feature — per-user view state persistence on the index page (filters, sort, pagination, per-page, search). Default: `true`.
 
 ```php
 class AuditEventResource extends Resource
@@ -646,7 +646,7 @@ The string travels back to the SPA in the create/update response under `meta.red
 The index toolbar surfaces two reset affordances:
 
 - **Reset filters** — clears only the active filters and resets to page 1. Sort, search, pagination size, and the trashed-toggle are preserved. Visible whenever any filter is active.
-- **Reset view** — the bigger hammer that clears filters + search + sort + per-page + trashed-toggle and forgets the [sticky view](sticky_views.md) for this resource. Visible whenever any of those drift away from the resource's defaults.
+- **Reset view** — the bigger hammer that clears filters + search + sort + per-page + trashed-toggle and forgets the [sticky view](/docs/core/sticky-views) for this resource. Visible whenever any of those drift away from the resource's defaults.
 
 Both buttons coexist on the toolbar — they target different aggressiveness levels so users can pick the right one for the moment.
 
