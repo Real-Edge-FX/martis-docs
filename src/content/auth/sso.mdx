@@ -5,6 +5,7 @@ sourcePath: "martis-package/docs/sso.md"
 ---
 
 # SSO (Single Sign-On) — ⭐ Martis differential
+
 > Pluggable single sign-on for Laravel admin panels. Azure AD, Google Workspace, GitHub, Okta — or any custom IdP — with role mapping, Spatie/laravel-permission integration, environment-aware config, and a generator command (`php artisan martis:sso <provider>`) that scaffolds everything.
 
 This document is the long-form reference. For a 30-second TL;DR see the **Quick start** below. For step-by-step Azure setup, jump to **[Azure AD — full step-by-step](#azure-ad--full-step-by-step)**.
@@ -978,5 +979,4 @@ vendor/bin/pest tests/Unit/Sso tests/Feature/SsoControllerTest.php tests/Feature
 
 The counts grow with each release — see CI output for the live total.
 
-> Looking to swap the React `LoginPage` (multi-provider button strip + email/password form) for a custom shell? See [Override System](/docs/customization/overrides) — the auth pages sit under registry keys `auth:login`, `auth:register`, `auth:forgot-password`, `auth:reset-password`, `auth:email-verify-notice`.
-
+> Looking to swap the React `LoginPage` (multi-provider button strip + email/password form) for a custom shell? See [Override System](overrides.md) — the auth pages sit under registry keys `auth:login`, `auth:register`, `auth:forgot-password`, `auth:reset-password`, `auth:email-verify-notice`.

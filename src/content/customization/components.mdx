@@ -5,7 +5,8 @@ sourcePath: "martis-package/docs/components.md"
 ---
 
 # Built-in Components Reference
-Martis ships with a set of React components that make up the admin panel UI. All components are designed to be replaceable through the [Override System](/docs/customization/overrides).
+
+Martis ships with a set of React components that make up the admin panel UI. All components are designed to be replaceable through the [Override System](overrides.md).
 
 ## Page Components
 
@@ -92,7 +93,7 @@ All six unauthenticated surfaces (Login, Register, 2FA challenge, 404, 403, 500)
 - **2FA challenge** — 6-cell OTP row with auto-advance + paste-to-fill, a 30 s visual countdown, and a backup-code toggle that swaps the OTP grid for a plain recovery-code input.
 - **Error pages** — `ErrorScreen.tsx` drives 404 / 403 / 500 with a faded watermark code, accent icon, optional `incidentId` chip with copy button, and primary + secondary CTAs.
 
-See [Authentication](/docs/auth/authentication) for the full config surface (`config.auth`), backend recipes for SSO / Google, and the registration contract.
+See [Authentication](authentication.md) for the full config surface (`config.auth`), backend recipes for SSO / Google, and the registration contract.
 
 ## Layout Components
 
@@ -374,7 +375,7 @@ addToast('error', 'Failed to save record')
 
 ## Drawer Components
 
-Slide-in panels for inline CRUD operations. See [Override System](/docs/customization/overrides) for configuration details.
+Slide-in panels for inline CRUD operations. See [Override System](overrides.md) for configuration details.
 
 ### DrawerShell
 
@@ -820,7 +821,7 @@ import { MartisLoader } from '@/components/Loader'
 </MartisLoader>
 ```
 
-**Configuration:** All visual options (message, icon, logo, colors, opacity) are controlled via `config/martis.php` under the `loader` key. See the [Loader documentation](/docs/customization/loader) for the full configuration reference and customization guide.
+**Configuration:** All visual options (message, icon, logo, colors, opacity) are controlled via `config/martis.php` under the `loader` key. See the [Loader documentation](loader.md) for the full configuration reference and customization guide.
 
 **Custom loader component:** Replace the built-in loader entirely via the component registry:
 
@@ -831,7 +832,7 @@ componentRegistry.register('loader', MyCustomLoader)
 
 ## CSS Utility Classes
 
-Every component inside Martis is themed via design tokens (see [theming.md](/docs/customization/theming)), but a small set of standalone utility classes is also exposed so consumer overrides, custom actions and bespoke pages can drop in chips, badges and avatars without reinventing them.
+Every component inside Martis is themed via design tokens (see [theming.md](theming.md)), but a small set of standalone utility classes is also exposed so consumer overrides, custom actions and bespoke pages can drop in chips, badges and avatars without reinventing them.
 
 ### Buttons
 
@@ -1062,4 +1063,3 @@ Public wrapper used by `martis:card` scaffolds and by any custom dashboard panel
 | `martis-card` | Surface + border + 16/18 padding + `--martis-radius-lg`. |
 | `martis-card-head` | Flex row, space-between alignment, baseline gap. Pair with `.martis-kpi-label` for the title. |
 | `martis-card-body` | Vertical stack with token-driven gap. |
-

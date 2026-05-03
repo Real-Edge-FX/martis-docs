@@ -5,11 +5,12 @@ sourcePath: "martis-package/docs/customizing-generators.md"
 ---
 
 # Customising Martis Generators
+
 Every Martis make-command (e.g. `martis:resource`, `martis:action`, `martis:lens`, `martis:trend`, `martis:tool`) renders a class from a `.stub` template shipped inside the package. The defaults aim for "drop-in" with sane Laravel-style headers and docblocks. Once a project has its own conventions (custom file headers, opinionated docblocks, organisation imports, project-specific traits) the default stubs become a friction point.
 
 `martis:stubs` publishes every template into `stubs/martis/` so consumers can edit them in place.
 
-> **Stub overrides vs component overrides.** This page is about **scaffolding** — the source code emitted once when you run `php artisan martis:resource Foo`. It does not affect runtime rendering. To swap a React component the panel uses live, see the [Override System](/docs/customization/overrides) (`componentRegistry`, `layoutRegistry`).
+> **Stub overrides vs component overrides.** This page is about **scaffolding** — the source code emitted once when you run `php artisan martis:resource Foo`. It does not affect runtime rendering. To swap a React component the panel uses live, see the [Override System](overrides.md) (`componentRegistry`, `layoutRegistry`).
 
 ## Quick start
 
@@ -143,4 +144,3 @@ Drop the override file from `stubs/martis/` and the resolver falls back to the p
 rm -rf stubs/martis/                   # full reset
 rm stubs/martis/resource.stub          # revert just one
 ```
-

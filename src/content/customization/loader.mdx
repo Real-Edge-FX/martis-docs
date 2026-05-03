@@ -5,6 +5,7 @@ sourcePath: "martis-package/docs/loader.md"
 ---
 
 # Loader
+
 The Martis Loader is a built-in loading indicator that appears automatically during data fetches, page transitions, and async operations. It is fully configurable and replaceable without forking the package.
 
 ## Where It Appears
@@ -161,12 +162,16 @@ interface MartisLoaderProps {
   /**
    * Context identifier used to check `loader.disableOn` config.
    * Supported: "table" | "search" | "detail" | "components".
+   * Pages pass this so a single config flag can opt one surface out
+   * without having to thread `disabled={...}` everywhere.
    */
   context?: 'table' | 'search' | 'detail' | 'components'
   /**
-   * Per-instance config override merged on top of the global
-   * `config.loader`. The wrapper passes the active resource's
-   * `Resource::loaderConfig()` here automatically.
+   * Per-instance config override. Merged on top of the global
+   * `config.loader` for this one render. The wrapper passes the
+   * active resource's `Resource::loaderConfig()` here automatically;
+   * call sites can also pass an inline override to win over both
+   * global config and the resource override.
    */
   configOverride?: Partial<MartisLoaderConfig>
 }
@@ -330,4 +335,3 @@ public function indexQuery(Request $request): Builder
 ### Verify component override
 
 After registering a custom component via `componentRegistry.register('loader', MyLoader)`, reload any resource page and confirm your component renders instead of the default spinner.
-

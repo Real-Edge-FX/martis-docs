@@ -127,6 +127,17 @@ The same guard list is also served as JSON at `GET /martis/api/_meta/guards` (au
 }
 ```
 
+## Customising the resources
+
+Open the file under `app/Martis/Resources/UserResource.php` (or wherever you scaffolded it) and edit. The package never reads these files directly — Martis loads them through the registry, which means you have full control:
+
+- Add `Boolean::make('Subscription tier', ...)` if your app has tiered access.
+- Tighten the policy methods to scope per-tenant.
+- Drop the `Permissions` resource from the sidebar entirely if your app only ever assigns roles, never raw permissions.
+- Swap the icon, add filters, attach lenses.
+
+The generator never re-touches a file once it exists. Re-run with `--force` only when you want a fresh scaffold and have backed up your custom changes.
+
 ## Using permissions in your code
 
 Permissions are pure DB rows. The Spatie helpers read them on demand — there is no separate registration step. Once a row exists in the `permissions` table and is attached to one of the user's roles (via `role_has_permissions` + `model_has_roles`), the standard Laravel authorisation primitives work:
@@ -191,7 +202,7 @@ public function delete(User $user, Post $post): bool
 }
 ```
 
-Register the policy once in your service provider:
+Register the policy once in `App\Providers\AuthServiceProvider`:
 
 ```php
 protected $policies = [
@@ -221,17 +232,6 @@ if (! Auth::user()->can('exports.run')) {
 
 Whatever you typed (or scaffolded) in the Permission admin page. The string is just a label your code agrees on; no enum, no registry. A common pattern: `<resource>.<action>` (`posts.publish`, `users.delete`) or the Spatie dot-notation seeded by `Slug::make('name')->separator('.')`. Pick a convention and stick to it — typos here become silent permission failures, so a Slug-backed input on the admin form is worth the few minutes it saves.
 
-## Customising the resources
-
-Open the file under `app/Martis/Resources/UserResource.php` (or wherever you scaffolded it) and edit. The package never reads these files directly — Martis loads them through the registry, which means you have full control:
-
-- Add `Boolean::make('Subscription tier', ...)` if your app has tiered access.
-- Tighten the policy methods to scope per-tenant.
-- Drop the `Permissions` resource from the sidebar entirely if your app only ever assigns roles, never raw permissions.
-- Swap the icon, add filters, attach lenses.
-
-The generator never re-touches a file once it exists. Re-run with `--force` only when you want a fresh scaffold and have backed up your custom changes.
-
 ## Customising the policies
 
 The generated policies all return `$user->hasRole('admin')` from every method. Tighten or relax as needed:
@@ -251,7 +251,7 @@ public function update(User $actor, User $target): bool
 
 ## Interaction with SSO group sync
 
-When `martis:sso azure --with-spatie --with-migration` ran in the same project, Spatie roles gain a `provider_group_name` column (see [SSO](/docs/auth/sso#7-spatie--laravel-permission-integration)). The generated `UserResource` filters out any role tied to an SSO provider from its picker, because:
+When `martis:sso azure --with-spatie --with-migration` ran in the same project, Spatie roles gain a `provider_group_name` column (see [`docs/sso.md`](sso.md#7-spatie--laravel-permission-integration)). The generated `UserResource` filters out any role tied to an SSO provider from its picker, because:
 
 1. The IdP owns those roles. The next sign-in would overwrite any manual change.
 2. The operator should grant local-only roles via the admin UI; SSO-driven roles flow in automatically.
@@ -368,8 +368,6 @@ public function boot(): void
 }
 ```
 
-Auto-detection for Laravel 11+ is tracked in [issue #122](https://github.com/Real-Edge-FX/martis-package/issues/122) for v1.7.0.
-
 ## Removing the generated UI
 
 The generated files are yours, so nothing in the package keeps them alive. To remove the surface entirely:
@@ -380,10 +378,10 @@ rm app/Policies/{User,Role,Permission}Policy.php
 rm database/seeders/MartisRolesSeeder.php
 ```
 
-Remove the `Gate::policy(...)` block from your service provider and (optionally) the `HasRoles` trait from your User model.
+Remove the `Gate::policy(...)` block from `App\Providers\AuthServiceProvider::boot()` and (optionally) the `HasRoles` trait from your User model.
 
 ## Next steps
 
-- [Authorization](/docs/auth/authorization) — policy patterns and gate basics.
-- [SSO](/docs/auth/sso) — wire Azure AD, Google, or a custom IdP and let it manage a subset of roles.
-- [Resources](/docs/core/resources) — extend the generated User / Role / Permission classes with fields, filters, lenses.
+- [Authorization](authorization.md) — policy patterns and gate basics.
+- [SSO](sso.md) — wire Azure AD, Google, or a custom IdP and let it manage a subset of roles.
+- [Resources](resources.md) — extend the generated User / Role / Permission classes with fields, filters, lenses.

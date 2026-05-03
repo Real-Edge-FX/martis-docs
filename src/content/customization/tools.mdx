@@ -5,6 +5,7 @@ sourcePath: "martis-package/docs/tools.md"
 ---
 
 # Custom Tools
+
 > Free-form sidebar pages — non-resource, non-dashboard, non-lens. Use Tools when you need an admin page that isn't backed by a model: import wizards, system status, ad-hoc reports, third-party embeds, generated docs, etc.
 >
 > **Status:** shipped in v0.10. Includes a `boot()` per-tool lifecycle hook, a `ToolServiceProvider` for Composer-package distribution, asset/file publishing helpers, and a `martis:tool` artisan generator.
@@ -133,7 +134,7 @@ $this->canSee(fn (Request $request) =>
 
 The most powerful per-tool hook. Runs **once per request lifecycle**, lazily on the first hit that needs the tools registry, **after** Martis has loaded its own routes / views / config — so tool-owned routes register on top of an initialised package.
 
-> **When to put setup in `Tool::boot()` vs `AppServiceProvider::boot()`?** Read [tool-boot-patterns.md](/docs/customization/tool-boot-patterns) — it has a decision rubric and 4 worked examples (routes, gates, schedules, event listeners) with the trade-offs spelt out.
+> **When to put setup in `Tool::boot()` vs `AppServiceProvider::boot()`?** Read [tool-boot-patterns.md](tool-boot-patterns.md) — it has a decision rubric and 4 worked examples (routes, gates, schedules, event listeners) with the trade-offs spelt out.
 
 ```php
 public function boot(): void
@@ -540,4 +541,3 @@ Run the focused suites:
 vendor/bin/pest tests/Feature/ToolsControllerTest.php
 vendor/bin/pest tests/Feature/ParitySurfaceTest.php
 ```
-

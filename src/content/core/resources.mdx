@@ -5,6 +5,7 @@ sourcePath: "martis-package/docs/resources.md"
 ---
 
 # Resources — Complete Reference
+
 The `Resource` class is the core building block of Martis. Each resource maps to an Eloquent model and defines its CRUD interface, fields, authorization, and behavior.
 
 ## Creating a Resource
@@ -69,7 +70,7 @@ public function fields(Request $request): array
 }
 ```
 
-See the [Fields Reference](/docs/core/fields) for all 50 available field types.
+See the [Fields Reference](fields.md) for all 50 available field types.
 
 ### detailSidebar() (⭐ Martis differential)
 
@@ -122,7 +123,7 @@ public function cards(Request $request): array    { return [new RevenueTrend()];
 public static function dashboards(): array        { return [SalesDashboard::class]; }
 ```
 
-See [Filters](/docs/core/filters), [Lenses](/docs/core/lenses), [Metrics](/docs/core/metrics), and [Dashboards](/docs/core/dashboards) for the per-class authoring guide.
+See [Filters](filters.md), [Lenses](lenses.md), [Metrics](metrics.md), and [Dashboards](dashboards.md) for the per-class authoring guide.
 
 ### Eager-load relations declaratively — `static $with`
 
@@ -203,7 +204,7 @@ public function searchOrderBy(Builder $query, string $term): Builder
 
 ### `$stickyView` (⭐ Martis differential)
 
-Controls whether this resource participates in the [Sticky Views](/docs/core/sticky-views) feature — per-user view state persistence on the index page (filters, sort, pagination, per-page, search). Default: `true`.
+Controls whether this resource participates in the [Sticky Views](sticky_views.md) feature — per-user view state persistence on the index page (filters, sort, pagination, per-page, search). Default: `true`.
 
 ```php
 class AuditEventResource extends Resource
@@ -246,7 +247,7 @@ The values surface in the index payload as:
 }
 ```
 
-Lenses use the same shape (see [lenses.md](/docs/core/lenses)) — they inherit nothing from the resource, so each Lens declares its own polling cadence if it wants one.
+Lenses use the same shape (see [lenses.md](lenses.md)) — they inherit nothing from the resource, so each Lens declares its own polling cadence if it wants one.
 
 ## Configuration Methods
 
@@ -387,14 +388,14 @@ Three rules govern it:
 
 1. `perPageOptions()` is the canonical list. The dropdown renders exactly what this returns.
 2. If `perPage()` is not in `perPageOptions()`, Martis clamps to `perPageOptions()[0]`. The clamp is silent (no warning, no exception).
-3. Relation fields (`HasMany`, `MorphMany`, `BelongsToMany`, `MorphToMany`) inherit the related resource's `perPageOptions()` when the developer did not call `->perPageOptions([...])` on the field itself. See [relationships.md](/docs/core/relationships).
+3. Relation fields (`HasMany`, `MorphMany`, `BelongsToMany`, `MorphToMany`) inherit the related resource's `perPageOptions()` when the developer did not call `->perPageOptions([...])` on the field itself. See [relationships.md](relationships.md).
 
 Two public accessors expose the clamped value:
 
 | Method | Return | Notes |
 |---|---|---|
 | `Resource::resolvedPerPage(): int` | Clamped value used everywhere the backend or API needs a single "effective" per-page. | Use this in custom controllers instead of `perPage()`. |
-| `Lens::resolvedPerPage(): int` | Same rule for lenses. | See [lenses.md — Effective per-page](/docs/core/lenses#effective-per-page). |
+| `Lens::resolvedPerPage(): int` | Same rule for lenses. | See [lenses.md — Effective per-page](lenses.md#effective-per-page). |
 
 ```php
 public static function perPageOptions(): array { return [10, 25, 50, 100]; }
@@ -531,7 +532,7 @@ public static function bulkActionsMenuLabel(): ?string    { return 'Batch tools'
 
 Whether clicking a row in the index opens the detail page is controlled by `rowClickOpensDetail(Request $request): ?bool` (per-resource override) and resolved to a concrete boolean by `resolveRowClickOpensDetail(Request $request): bool`. When the per-resource method returns `null`, the resolver falls back to `config('martis.index.row_click_opens_detail')`.
 
-See [Default Row Actions — Row-click redundancy](/docs/core/default-row-actions#row-click-redundancy) for the full decision matrix.
+See [Default Row Actions — Row-click redundancy](default_row_actions.md#row-click-redundancy) for the full decision matrix.
 
 ### confirmUnsavedChanges()
 
@@ -576,7 +577,7 @@ Email::make('email')->required()->unique(['users', 'email'], 'This email is alre
 Password::make('password')->required()->rules(['min:8']),
 ```
 
-See the [Fields Reference](/docs/core/fields) for all 50 field types and validation methods.
+See the [Fields Reference](fields.md) for all 50 field types and validation methods.
 
 ### errorDisplay()
 
@@ -646,7 +647,7 @@ The string travels back to the SPA in the create/update response under `meta.red
 The index toolbar surfaces two reset affordances:
 
 - **Reset filters** — clears only the active filters and resets to page 1. Sort, search, pagination size, and the trashed-toggle are preserved. Visible whenever any filter is active.
-- **Reset view** — the bigger hammer that clears filters + search + sort + per-page + trashed-toggle and forgets the [sticky view](/docs/core/sticky-views) for this resource. Visible whenever any of those drift away from the resource's defaults.
+- **Reset view** — the bigger hammer that clears filters + search + sort + per-page + trashed-toggle and forgets the [sticky view](sticky_views.md) for this resource. Visible whenever any of those drift away from the resource's defaults.
 
 Both buttons coexist on the toolbar — they target different aggressiveness levels so users can pick the right one for the moment.
 
@@ -870,7 +871,7 @@ Martis provides dedicated resource policies, auto-discovery, and comprehensive a
 When checking authorization, Martis resolves the policy in this order:
 
 1. **Explicit $policy property** on the Resource class
-2. **Auto-discovery** by convention: \{policy_namespace}\{ResourceBaseName}Policy
+2. **Auto-discovery** by convention: `{policy_namespace}\{ResourceBaseName}Policy`
 3. **Laravel Gate** policy registered for the model class
 4. **No policy found** → permissive defaults (all allowed)
 
@@ -910,10 +911,10 @@ Override these directly on a Resource to hardcode behaviour without writing a Po
 
 | Ability | Controls | Default (no method) |
 |---------|----------|-------------------|
-| add\{Model} | Inline create related record | allowed |
-| attach\{Model} | Attach specific related record | allowed |
-| attachAny\{Model} | Show attach button | allowed |
-| detach\{Model} | Detach related record | allowed |
+| `add{Model}` | Inline create related record | allowed |
+| `attach{Model}` | Attach specific related record | allowed |
+| `attachAny{Model}` | Show attach button | allowed |
+| `detach{Model}` | Detach related record | allowed |
 
 ### Authorization Metadata
 
@@ -1026,7 +1027,7 @@ public function overrides(): array
 }
 ```
 
-See the [Override System](/docs/customization/overrides) documentation for full details.
+See the [Override System](overrides.md) documentation for full details.
 
 ## Exception Handling
 
@@ -1138,4 +1139,3 @@ class PostResource extends Resource
     }
 }
 ```
-

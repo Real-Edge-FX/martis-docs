@@ -5,9 +5,10 @@ sourcePath: "martis-package/docs/dashboards.md"
 ---
 
 # Dashboards
+
 Dashboards are containers for metric cards. Martis supports multiple dashboards, each with its own set of cards, filters, and authorization.
 
-> See [Metrics](/docs/core/metrics) for the metric types (`ValueMetric`, `TrendMetric`, `PartitionMetric`, `ProgressMetric`, `ActivityFeedMetric`, `EndpointTableMetric`) you mount on a dashboard.
+> See [Metrics](metrics.md) for the metric types (`ValueMetric`, `TrendMetric`, `PartitionMetric`, `ProgressMetric`, `ActivityFeedMetric`, `EndpointTableMetric`) you mount on a dashboard.
 
 ## Creating a Dashboard
 
@@ -157,7 +158,7 @@ Cache defaults live under the `cache` block of `config/martis.php`. Each subsyst
 ],
 ```
 
-`ttl` is in minutes; `null` disables caching for that subsystem. Individual metrics override the global value via `cacheFor()`. Runtime overrides set with `php artisan martis:cache:disable {type}` survive restarts and take precedence over both layers. See [metrics.md — Cache Configuration](/docs/core/metrics#cache-configuration-martis-extension) for the full block.
+`ttl` is in minutes; `null` disables caching for that subsystem. Individual metrics override the global value via `cacheFor()`. Runtime overrides set with `php artisan martis:cache:disable {type}` survive restarts and take precedence over both layers. See [metrics.md — Cache Configuration](metrics.md#cache-configuration-martis-extension) for the full block.
 
 ## Default Dashboard
 
@@ -201,4 +202,3 @@ GET /api/dashboards/{dashboard}
 ```
 GET /api/dashboards/{dashboard}/cards/{card}?range=30&filters={...}
 ```
-

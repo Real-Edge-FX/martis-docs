@@ -5,6 +5,7 @@ sourcePath: "martis-package/docs/metrics.md"
 ---
 
 # Metrics
+
 Metrics compute and display analytical data on dashboards and resource index pages. Martis provides six built-in metric types: `Value`, `Trend`, `Partition`, `Progress`, `ActivityFeed`, and `EndpointTable`.
 
 ## Metric Types
@@ -477,4 +478,3 @@ abstract public function toArray(): array;
 Concrete subclasses (`ValueResult`, `TrendResult`, `PartitionResult`, `ProgressResult`, `ActivityFeedResult`, `EndpointTableResult`) implement this to serialise their specific shape into the API payload the React component consumes. Most consumers never touch the base class directly — you build results via the helpers on the metric class (`$this->result($value)`, `$this->trend($values)`, etc.) and let the metric handle serialisation.
 
 Subclass `MetricResult` directly only if you're shipping a brand-new metric kind. Document the result shape in your own metric's docblock so consumers can read the payload without diving into source.
-

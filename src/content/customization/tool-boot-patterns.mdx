@@ -5,7 +5,8 @@ sourcePath: "martis-package/docs/tool-boot-patterns.md"
 ---
 
 # In-app Tools: when (and how) to use `boot()`
-> Companion notes to [tools.md](/docs/customization/tools). Focused on Tools that live INSIDE your application (not Composer packages). For the contrast with Nova 5 conventions (auto-loaded `routes/tool.php`, `Tool::menu()`, sub-nav slot, etc.), see [Differences from Nova 5](/docs/customization/tools#differences-from-nova-5).
+
+> Companion notes to [tools.md](tools.md). Focused on Tools that live INSIDE your application (not Composer packages). For the contrast with Nova 5 conventions (auto-loaded `routes/tool.php`, `Tool::menu()`, sub-nav slot, etc.), see [Differences from Nova 5](tools.md#differences-from-nova-5).
 >
 > Live reference: a playground demo ships a real `boot()` with all four core patterns wired up — `app/Martis/Tools/SystemStatus.php` (the Tool), `app/Http/Controllers/SystemStatusController.php` (the routes' backend), and `resources/js/tools/SystemStatusTool.tsx` (the React consumer).
 
@@ -89,7 +90,7 @@ public function boot(): void
 }
 ```
 
-See [Loading routes from a sibling file](/docs/customization/tools#loading-routes-from-a-sibling-file) for the full signature, including custom `middleware` and `prefix`. The inline group above remains valid; `loadRoutes()` is a readability optimisation, not a replacement.
+See [Loading routes from a sibling file](tools.md#loading-routes-from-a-sibling-file) for the full signature, including custom `middleware` and `prefix`. The inline group above remains valid; `loadRoutes()` is a readability optimisation, not a replacement.
 
 ### Pattern 2 — Per-tool Gate
 
@@ -227,4 +228,3 @@ public function boot(): void
 `Tool::boot()` is **co-location**. It lets you keep all the setup that "exists because of this Tool" inside the Tool file — routes, gates, schedules, listeners, console commands, view / translation namespaces. Cleaner diffs, no orphaned wiring, easier to see at a glance what each Tool actually does.
 
 For setup that's app-wide, `AppServiceProvider::boot()` is still the right home. The two complement each other; they don't compete.
-

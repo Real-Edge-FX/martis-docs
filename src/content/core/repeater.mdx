@@ -5,6 +5,7 @@ sourcePath: "martis-package/docs/repeater.md"
 ---
 
 # Repeater
+
 Repeatable row widget backed by JSON, a child table (HasMany), or a single
 polymorphic child table. Ships five differentials: parent-context injection
 (`dependsOn`), collapsible rows with cardinality limits, dynamic row headers,
@@ -321,4 +322,3 @@ All storage modes ship rows to the frontend in the same shape:
 In polymorphic mode the `id` comes from `uniqueField` (typically a UUID
 column), `type` matches `Repeatable::shortName()`, and `fields` is the
 deserialised `payload` column.
-

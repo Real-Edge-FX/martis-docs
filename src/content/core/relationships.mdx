@@ -5,6 +5,7 @@ sourcePath: "martis-package/docs/relationships.md"
 ---
 
 # Relationships
+
 This guide covers all relationship field types in Martis and how to use them.
 
 ## Overview
@@ -169,7 +170,7 @@ BelongsTo::make('user_id', 'Author')
     ->sortable()
 ```
 
-See [fields.md — BelongsTo](/docs/core/fields#belongsto) for full API reference.
+See [fields.md — BelongsTo](fields.md#belongsto) for full API reference.
 
 ---
 
@@ -184,7 +185,7 @@ HasMany::make('Comments', 'comments')
     ->collapsedByDefault()
 ```
 
-See [fields.md — HasMany](/docs/core/fields) for full API reference.
+See [fields.md — HasMany](fields.md) for full API reference.
 
 ---
 
@@ -336,7 +337,7 @@ MorphTo::make('commentable', 'Commentable')
 
 Pass the **relationship method name** (e.g. `commentable`), not the FK column. MorphTo writes both `commentable_type` and `commentable_id` based on the resolved related record.
 
-See [fields.md — MorphTo](/docs/core/fields#morphto) for full API reference.
+See [fields.md — MorphTo](fields.md#morphto) for full API reference.
 
 ---
 
@@ -357,7 +358,7 @@ HasOne::make('Profile', 'profile', ProfileResource::class)
     ->canDelete(false)
 ```
 
-See [fields.md § HasOne](/docs/core/fields#hasone) for the full API.
+See [fields.md § HasOne](fields.md#hasone) for the full API.
 
 Note the static factory `HasOne::ofMany($name, $relationship, $resourceClass)`
 promotes a `hasMany()->latestOfMany()` relation into a
@@ -390,7 +391,7 @@ public function latestInvoice(): HasOne
 }
 ```
 
-See [fields.md § HasOneOfMany](/docs/core/fields#hasoneofmany) for the full API.
+See [fields.md § HasOneOfMany](fields.md#hasoneofmany) for the full API.
 
 **⭐ Martis differentials:**
 
@@ -425,7 +426,7 @@ public function accountManager(): HasOneThrough
 }
 ```
 
-See [fields.md § HasOneThrough](/docs/core/fields#hasonethrough) for the full API.
+See [fields.md § HasOneThrough](fields.md#hasonethrough) for the full API.
 All `HasOne` methods are inherited; `canCreate/canUpdate/canDelete` default to
 `false`. `throughBreadcrumb(bool)` ⭐ adds a "through" hint next to the
 section heading.
@@ -450,7 +451,7 @@ MorphOne::make('Thumbnail', 'thumbnail', ThumbnailResource::class)
     ->canUpdate(false)
 ```
 
-See [fields.md § MorphOne](/docs/core/fields#morphone) for the full API.
+See [fields.md § MorphOne](fields.md#morphone) for the full API.
 
 ---
 
@@ -509,7 +510,7 @@ public function managedProjects(): HasManyThrough
 }
 ```
 
-See [fields.md § HasManyThrough](/docs/core/fields#hasmanythrough) for the full API.
+See [fields.md § HasManyThrough](fields.md#hasmanythrough) for the full API.
 All `HasMany` methods are inherited; `canCreate/canUpdate/canDelete` default
 to `false`. Adds `throughBreadcrumb(bool)` ⭐ and `countBadge(bool)` ⭐.
 
@@ -536,7 +537,7 @@ MorphMany::make('Comments', 'comments', CommentResource::class)
     ->canCreate(false)
 ```
 
-See [fields.md § MorphMany](/docs/core/fields#morphmany) for the full API.
+See [fields.md § MorphMany](fields.md#morphmany) for the full API.
 
 ---
 
@@ -558,7 +559,7 @@ MorphToMany::make('Tags', 'tags', TagResource::class)
     ])
 ```
 
-See [fields.md § MorphToMany](/docs/core/fields#morphtomany) for the full API.
+See [fields.md § MorphToMany](fields.md#morphtomany) for the full API.
 
 
 
@@ -711,4 +712,3 @@ BelongsTo::make('Author', 'author', UserResource::class)
 ```
 
 `relatableQueryUsing()` runs alongside the resolver and stacks on top of any resource-level method. See `tests/Feature/RelationshipsHardeningTest.php` for the full priority matrix.
-

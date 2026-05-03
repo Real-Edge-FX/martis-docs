@@ -5,6 +5,7 @@ sourcePath: "martis-package/docs/authorization.md"
 ---
 
 # Authorization & Policies
+
 Martis uses the standard Laravel policy system. Every write-side
 endpoint consults a Laravel policy; the frontend receives the resolved
 booleans and hides or disables controls accordingly. The backend remains
@@ -294,5 +295,4 @@ Available helpers: `assertCan` / `assertCannot` (generic), plus typed shortcuts 
 
 - A single `Policy::before(User $user, string $ability): ?bool` short-circuits all checks when it returns non-null. Useful for super-admin flags.
 - Every `Resource::authorizedTo*()` method delegates to Laravel's `Gate::denies()` under the hood, so consumer code that calls `$user->can('update', $post)` directly always agrees with what the admin UI hides — single source of truth, single set of policy methods.
-- For testing, the package ships an `AssertsAuthorization` Pest trait. See [Testing helpers](#testing-helpers) above.
-
+- For testing, the package ships an `AssertsAuthorization` Pest trait. See [Testing helpers](#testing-helpers) below.

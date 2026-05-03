@@ -5,6 +5,7 @@ sourcePath: "martis-package/docs/theming.md"
 ---
 
 # Theming
+
 > Complete guide to customizing the visual appearance of Martis.
 
 Martis uses **CSS custom properties** (variables) for all styling. A theme is a CSS file that overrides these variables. Themes apply globally and support both **dark** and **light** modes.
@@ -593,4 +594,3 @@ Chart.js receives resolved color strings, not CSS variables. The theme system al
 
 ### Typography variables not applied
 Ensure variables are declared in **both** `:root` (dark) and `html:not(.dark)` (light) blocks. Typography variables are inherited from `body` — applied automatically to all elements unless overridden.
-
