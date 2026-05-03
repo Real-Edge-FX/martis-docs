@@ -5,9 +5,10 @@ sourcePath: "martis-package/docs/authentication.md"
 ---
 
 # Authentication
+
 Martis provides a complete authentication system with login, logout, two-factor authentication (2FA), magic-link, browser-session management, and a user profile page — all configurable and overridable.
 
-> See also: [SSO](/docs/auth/sso) for OAuth/OIDC providers (Azure / Google / GitHub / custom), and [Impersonation](/docs/auth/impersonation) for the login-as-another-user subsystem (admins surfacing a switch from the user menu and from the User Resource detail page).
+> See also: [SSO](sso.md) for OAuth/OIDC providers (Azure / Google / GitHub / custom), and [Impersonation](impersonation.md) for the login-as-another-user subsystem (admins surfacing a switch from the user menu and from the User Resource detail page).
 
 ## Login Flow
 
@@ -151,7 +152,7 @@ All flags default to `false`. A fresh `composer require martis/martis` install s
 
 | Block | Shape | Purpose |
 |---|---|---|
-| `sso` | `enabled` + `providers` map | Renders one button per enabled provider. Martis owns the OAuth dance end-to-end. See [`sso.md`](/docs/auth/sso). |
+| `sso` | `enabled` + `providers` map | Renders one button per enabled provider. Martis owns the OAuth dance end-to-end. See [`sso.md`](sso.md). |
 | `passwordReset` | `enabled` + `url` + `broker` | Renders the "Forgot?" link, hosts `/forgot-password` and `/reset-password/{token}` pages, and POST endpoints. `url` redirects off-platform. `broker` selects the Laravel password broker. |
 | `registration` | `enabled` + `url` + `default_role` | Renders the "Create an account" link, hosts `/register` page and POST endpoint. `default_role` is auto-assigned via `assignRole()` when set. |
 | `controls` | `theme` + `locale` | Top-right widget visibility on every auth surface. |
@@ -486,6 +487,14 @@ The Martis-shipped `DefaultRegistersUsers` fires `Registered` on every successfu
 
 Martis intentionally does not force the contract on the consumer's User model. Some apps do not want email verification at all; others have their own delivery flow (magic links, SSO-only, etc.).
 
+> **Block-on-misconfiguration (v1.8.9+).** When `MARTIS_AUTH_EMAIL_VERIFICATION_ENABLED=true` AND your User model does NOT implement `MustVerifyEmail`, the `martis.verified` middleware now falls back to checking the `email_verified_at` column directly. The standard Laravel `users` migration ships that column, so on a default install:
+>
+> - The user is **blocked** from the panel after registration (column is null).
+> - But no verification email is sent (Laravel's listener is keyed on the contract).
+> - `DefaultRegistersUsers` writes a clear warning to `laravel.log` so the dev sees the misconfiguration on the first signup.
+>
+> Pre-v1.8.9 the middleware silently let unverified non-`MustVerifyEmail` users in — a security regression closed by this change. Add `implements MustVerifyEmail` to `App\Models\User` to unblock the email send + verify-link flow.
+
 ### Enable the full Martis verification flow
 
 Three steps:
@@ -494,7 +503,7 @@ Three steps:
    ```php
    use Illuminate\Contracts\Auth\MustVerifyEmail;
 
-   class User extends Authenticatable implements MustVerifyEmail \{ /* … */ }
+   class User extends Authenticatable implements MustVerifyEmail { /* … */ }
    ```
 
 2. **Set the master flag**:
@@ -505,6 +514,18 @@ Three steps:
    ```
 
 3. **Mailer must be configured** (Postmark, Resend, Mailgun, SES, SMTP — anything Laravel supports). The verification notification goes through the default mail channel.
+
+### What happens when the flag is on but the mailer isn't?
+
+The package does not pre-validate `MAIL_*` env on boot. Three scenarios depending on the value of `MAIL_MAILER`:
+
+| `MAIL_MAILER` | Effect on registration | Effect on user | What to do |
+|---|---|---|---|
+| `log` (Laravel's default on a fresh install) | Registration succeeds. Verification URL is written to `storage/logs/laravel.log`. | Login still blocks the user at `/email/verify` with a "resend" button. The link is reachable from the log file for the dev to forward / paste. | Acceptable in dev. **Set a real mailer before going live** so users actually receive the link. |
+| `smtp` / `postmark` / `resend` / `ses` / `mailgun` configured AND reachable | Registration succeeds. Email is sent through the host's mailer. | Standard flow — user clicks link, lands on `/email/verify/{id}/{hash}`, column gets populated, panel unlocks. | Nothing extra. |
+| `smtp` (or any external transport) configured but **broken** (wrong host, wrong creds, network unreachable) | `Mail::send` throws. Registration POST returns **500**. The user is created server-side but never sees the success response. | The user can still log in (account exists, unverified), reaches `/email/verify`, hits "Resend" — which throws again. | Fix the mailer. Until then, set `MAIL_MAILER=log` so registration completes cleanly even with no real outbound email. |
+
+A 500 on registration is bad UX, but Martis intentionally does not swallow mailer exceptions: a silent send failure would leave the operator thinking the system worked while every newly registered user is stuck. Loud failure surfaces the misconfiguration immediately. If you want a custom recovery path (e.g. queue the email and retry), bind your own `SendsEmailVerification` implementation — see "Customising the verification email" below.
 
 Once `enabled=true`, the package:
 
@@ -609,13 +630,13 @@ Tokens are persisted in the same `password_reset_tokens` table Laravel ships wit
 
 - **One-shot.** Consuming a token deletes the row. Replays return `expired`.
 - **Short TTL.** Default 15 minutes — a magic-link is mailbox-equivalent, so the leak window matches the threat profile.
-- **Per-email throttle.** The request endpoint sits behind both per-IP `throttle:N,1` and the `martis-login` named limiter (per-email + IP).
-- **No account enumeration.** When the email is unknown the endpoint still returns `200 { ok: true }` and sends nothing.
-- **Auto-register opt-in.** Default false. When you flip it on, an unknown email triggers a user create with a random password before the login completes.
+- **Per-email throttle.** The request endpoint sits behind both per-IP `throttle:N,1` and the `martis-login` named limiter (per-email + IP). A flood against `victim@example.com` is blocked even when distributed across IPs.
+- **No account enumeration.** When the email is unknown the endpoint still returns `200 { ok: true }` and sends nothing. The frontend toast is identical to the success path.
+- **Auto-register opt-in.** Default false. When you flip it on, an unknown email triggers a user create with a random password before the login completes — useful for invite-by-link flows.
 
 ### Customising the email
 
-Bind a subclass of `Martis\Auth\MagicLinkNotification` against the FQCN, or override `MagicLinkController` entirely if you need to swap the storage strategy.
+Bind a subclass of `Martis\Auth\MagicLinkNotification` against the FQCN, or override `MagicLinkController` entirely if you need to swap the storage strategy. The notification uses the standard `MailMessage` shape so consumer-side `php artisan vendor:publish --tag=laravel-notifications` to publish the email template still applies.
 
 ## Browser sessions
 
@@ -850,7 +871,6 @@ These are applied automatically by the Martis route definitions. You do not need
 
 ## Next Steps
 
-- [Resources](/docs/core/resources) — Define admin resources
-- [Authorization](/docs/core/resources#authorization) — Control access with policies
-- [Configuration](/docs/reference/configuration) — Full config reference
-
+- [Resources](resources.md) — Define admin resources
+- [Authorization](resources.md#authorization) — Control access with policies
+- [Configuration](configuration.md) — Full config reference
