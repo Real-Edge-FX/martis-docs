@@ -52,18 +52,29 @@ function parseFrontmatter(raw) {
 
 function stripMarkdown(md) {
   return md
-    // fenced code blocks
-    .replace(/```[\s\S]*?```/g, ' ')
-    // inline code
-    .replace(/`[^`]*`/g, ' ')
+    // fenced code blocks — KEEP the content (identifiers like
+    // `plan_resolver`, `withIcon`, `requirePlan` only appear inside
+    // fences in many pages; dropping them buried the API surface in
+    // the search index). Strip only the opening fence + lang tag and
+    // the closing fence; the body becomes plain text inline with the
+    // rest of the prose.
+    .replace(/```[a-zA-Z0-9_-]*\n?/g, ' ')
+    .replace(/```/g, ' ')
+    // inline code — keep the content for the same reason; only drop
+    // the surrounding backticks.
+    .replace(/`([^`]*)`/g, '$1')
     // images
     .replace(/!\[[^\]]*\]\([^)]+\)/g, ' ')
     // links — keep text
     .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
     // headings markers
     .replace(/^#{1,6}\s+/gm, '')
-    // emphasis markers
-    .replace(/[*_~]+/g, '')
+    // emphasis markers — only `*` and `~` (strikethrough). DO NOT
+    // strip `_` raw: tech docs use snake_case identifiers
+    // (`plan_resolver`, `email_verified_at`) that would otherwise lose
+    // the underscore and become unsearchable. Underscore-emphasis is
+    // rare in this codebase; if it appears, tolerate the trailing `_`.
+    .replace(/[*~]+/g, '')
     // blockquote markers
     .replace(/^>\s?/gm, '')
     // lists markers
