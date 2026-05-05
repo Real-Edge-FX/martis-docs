@@ -45,6 +45,7 @@ export const DOC_NAV: DocGroup[] = [
       { slug: 'core/lenses',          label: 'Lenses',        icon: 'Eye' },
       { slug: 'core/metrics',         label: 'Metrics',       icon: 'Activity', badge: '6',  tooltip: '6 metric types: Value, Trend, Partition, Progress, ActivityFeed, EndpointTable' },
       { slug: 'core/dashboards',      label: 'Dashboards',    icon: 'Activity' },
+      { slug: 'core/gates',           label: 'Soft-gates & badges', icon: 'Lock', tooltip: 'Tag pills + soft-gate modals for plan-gated features (v1.11+)' },
       { slug: 'core/actions',         label: 'Actions',       icon: 'Bolt',     badge: '4',  tooltip: '4 action types: inline, bulk, standalone, destructive (queueable)' },
       { slug: 'core/default-row-actions', label: 'Default row actions', icon: 'Bolt' },
       { slug: 'core/sticky-views',    label: 'Sticky views',  icon: 'Eye' },
