@@ -128,7 +128,17 @@ async function loadIndex(): Promise<IndexPayload | null> {
   if (indexPromise) return indexPromise
   indexPromise = (async () => {
     try {
-      const r = await fetch('/search-index.json', { cache: 'force-cache' })
+      // `cache: 'no-cache'` forces the browser to revalidate against
+      // the server's ETag / Last-Modified instead of serving an
+      // indefinitely-fresh copy. Without this the previous `force-cache`
+      // strategy locked sessions to whichever index.json they fetched
+      // first; users with old tabs would never see new pages
+      // (e.g. searching for `mcp` after we published the agent-
+      // guidelines page returned no matches because their cached
+      // index predated the entry). The file is small enough (~320KB)
+      // that one revalidation per session is cheap; in practice the
+      // server returns 304 and the body is reused.
+      const r = await fetch('/search-index.json', { cache: 'no-cache' })
       if (!r.ok) return null
       return (await r.json()) as IndexPayload
     } catch {
