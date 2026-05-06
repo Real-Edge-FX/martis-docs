@@ -67,6 +67,7 @@ export const DOC_NAV: DocGroup[] = [
       { slug: 'customization/loader',             label: 'Loader screen',          icon: 'Layers' },
       { slug: 'customization/generators',         label: 'Customising generators', icon: 'Bolt',      badge: '18', tooltip: '18 Artisan generators (martis:resource, martis:action, …)' },
       { slug: 'customization/i18n',               label: 'Internationalisation',   icon: 'Translate', badge: '3',  tooltip: '3 bundled locales: en, pt_PT, pt_BR' },
+      { slug: 'customization/agent-guidelines',   label: 'Agent guidelines + MCP', icon: 'Bolt',      tooltip: 'Generate AI agent guidelines and wire the Martis MCP server (v1.12.0+).' },
     ],
   },
   {
