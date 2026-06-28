@@ -165,6 +165,59 @@ kbd {
 }
 .pulse-soft { animation: pulse-soft 2.4s ease-in-out infinite; }
 
+/* ============================================================
+   Landing AI-redesign — motion-era additions. Layered on top of
+   the design-system port above; nothing here overrides the
+   pixel-identical base utilities.
+   ============================================================ */
+
+/* Frosted card surface used by the hero composition. */
+.glass {
+  background: rgba(15, 15, 26, 0.55);
+  backdrop-filter: blur(12px) saturate(1.1);
+  -webkit-backdrop-filter: blur(12px) saturate(1.1);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.07),
+    0 10px 40px -14px rgba(0, 0, 0, 0.65);
+}
+
+/* Cursor-following glow for cards. Position comes from --mx/--my set
+   on the element by the <Spotlight> component; radius from --spot-r. */
+.spotlight::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: radial-gradient(
+    var(--spot-r, 260px) circle at var(--mx, 50%) var(--my, 50%),
+    rgba(139, 91, 255, 0.16),
+    rgba(91, 127, 255, 0.10) 42%,
+    transparent 70%
+  );
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+  z-index: 0;
+}
+.spotlight:hover::before { opacity: 1; }
+
+/* Conic brand ring used on the hero badge / accent chips. */
+@keyframes spin-slow { to { transform: rotate(360deg); } }
+.spin-slow { animation: spin-slow 6s linear infinite; }
+
+/* Respect reduced-motion: silence the ambient loops site-wide. The
+   JS layers (motion, WebGL aurora, count-up) already opt out via
+   useReducedMotion / matchMedia; this covers the pure-CSS ones. */
+@media (prefers-reduced-motion: reduce) {
+  .pulse-soft,
+  .marquee-track,
+  .spark,
+  .spin-slow {
+    animation: none !important;
+  }
+  html { scroll-behavior: auto; }
+}
+
 /* Custom scrollbar — quieter than the OS default. */
 ::-webkit-scrollbar { width: 12px; height: 12px; }
 ::-webkit-scrollbar-track { background: var(--color-ink-900); }
