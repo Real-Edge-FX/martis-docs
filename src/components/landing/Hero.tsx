@@ -1,10 +1,31 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { motion, useReducedMotion, useScroll, useTransform } from 'motion/react'
 import { Icons } from '@/components/icons'
 import { VERSION } from '@/data/landing'
+import { AuroraBackdrop } from '@/components/landing/AuroraBackdrop'
+
+const EASE = [0.22, 1, 0.36, 1] as const
+
+// Headline split into words so each rises in sequence. The emphasised
+// "actually" keeps its serif italic treatment.
+const HEAD_WORDS: { t: string; em?: boolean }[] = [
+  { t: 'The' }, { t: 'admin' }, { t: 'engine' }, { t: 'Laravel' },
+  { t: 'devs' }, { t: 'actually', em: true }, { t: 'ship' }, { t: 'with.' },
+]
 
 export function Hero() {
   const [copied, setCopied] = useState(false)
+  const reduce = useReducedMotion()
+  const heroRef = useRef<HTMLDivElement | null>(null)
+
+  const { scrollYProgress } = useScroll({
+    target: heroRef,
+    offset: ['start start', 'end start'],
+  })
+  const yMain = useTransform(scrollYProgress, [0, 1], [0, 70])
+  const yLeft = useTransform(scrollYProgress, [0, 1], [0, 150])
+  const yRight = useTransform(scrollYProgress, [0, 1], [0, 40])
 
   function copyInstall() {
     navigator.clipboard?.writeText('composer require martis/martis').then(() => {
@@ -13,67 +34,91 @@ export function Hero() {
     })
   }
 
+  const container = {
+    hidden: {},
+    show: { transition: { staggerChildren: 0.06, delayChildren: 0.05 } },
+  }
+  const rise = {
+    hidden: { opacity: 0, y: reduce ? 0 : 18 },
+    show: { opacity: 1, y: 0, transition: { duration: 0.6, ease: EASE } },
+  }
+
   return (
-    <section className="relative overflow-hidden">
+    <section ref={heroRef} className="relative overflow-hidden">
+      <AuroraBackdrop />
+
+      {/* Fine grid + noise sit above the aurora but below content. */}
       <div
-        className="absolute inset-0 grid-bg opacity-60 pointer-events-none"
+        className="absolute inset-0 grid-bg opacity-30 pointer-events-none"
         style={{
-          maskImage:
-            'radial-gradient(ellipse at 50% 30%, black 30%, transparent 75%)',
-          WebkitMaskImage:
-            'radial-gradient(ellipse at 50% 30%, black 30%, transparent 75%)',
+          maskImage: 'radial-gradient(ellipse at 50% 25%, black 25%, transparent 70%)',
+          WebkitMaskImage: 'radial-gradient(ellipse at 50% 25%, black 25%, transparent 70%)',
         }}
       />
-      <div className="absolute -top-32 left-1/2 -translate-x-1/2 w-[1100px] h-[700px] accent-glow pointer-events-none" />
       <div className="noise" />
 
-      <div className="relative max-w-[1280px] mx-auto px-6 pt-20 pb-12">
-        <div className="flex flex-col items-center text-center">
-          {/* Release badge: pill kept to a single row on every viewport.
-              On <sm the freeform changelog summary is hidden so the pill
-              shape is preserved (the user reported it wrapping into two
-              lines on mobile). The version chip + arrow always render. */}
-          <Link
-            to="/docs/getting-started/installation"
-            className="group inline-flex items-center gap-2 h-7 max-w-full px-3 rounded-full bg-ink-850 ring-faint hover:bg-ink-800 transition-colors mb-7 whitespace-nowrap overflow-hidden"
-          >
-            <span className="shrink-0 text-[10px] font-mono uppercase tracking-wider text-cobalt-300 bg-cobalt-500/15 px-1.5 py-0.5 rounded">
-              {VERSION}
-            </span>
-            <span className="hidden sm:inline text-[12.5px] text-ink-200 truncate">
-              toast double-close fix + auth copy publish path
-            </span>
-            <span className="sm:hidden text-[12.5px] text-ink-200">
-              What&apos;s new
-            </span>
-            <Icons.ArrowRight
-              size={11}
-              className="shrink-0 text-ink-300 group-hover:translate-x-0.5 transition-transform"
-            />
-          </Link>
+      <div className="relative max-w-[1280px] mx-auto px-6 pt-24 pb-12">
+        <motion.div
+          className="flex flex-col items-center text-center"
+          variants={container}
+          initial="hidden"
+          animate="show"
+        >
+          {/* Release badge */}
+          <motion.div variants={rise}>
+            <Link
+              to="/docs/getting-started/installation"
+              className="group inline-flex items-center gap-2 h-7 max-w-full px-3 rounded-full glass hover:bg-ink-800/70 transition-colors mb-7 whitespace-nowrap overflow-hidden"
+            >
+              <span className="shrink-0 text-[10px] font-mono uppercase tracking-wider text-cobalt-300 bg-cobalt-500/15 px-1.5 py-0.5 rounded">
+                {VERSION}
+              </span>
+              <span className="hidden sm:inline text-[12.5px] text-ink-200 truncate">
+                toast double-close fix + auth copy publish path
+              </span>
+              <span className="sm:hidden text-[12.5px] text-ink-200">What&apos;s new</span>
+              <Icons.ArrowRight
+                size={11}
+                className="shrink-0 text-ink-300 group-hover:translate-x-0.5 transition-transform"
+              />
+            </Link>
+          </motion.div>
 
+          {/* Headline — word-by-word rise */}
           <h1 className="text-[clamp(2.4rem,6vw,4.6rem)] leading-[1.02] tracking-[-0.035em] font-medium gradient-text max-w-[14ch]">
-            The admin engine Laravel devs{' '}
-            <span className="font-serif italic font-normal text-violet-400">actually</span>{' '}
-            ship with.
+            {HEAD_WORDS.map((w, i) => (
+              <motion.span key={i} variants={rise} className="inline-block mr-[0.25em]">
+                {w.em ? (
+                  <span className="font-serif italic font-normal text-violet-400">{w.t}</span>
+                ) : (
+                  w.t
+                )}
+              </motion.span>
+            ))}
           </h1>
 
-          <p className="mt-6 max-w-[58ch] text-[16.5px] leading-relaxed text-ink-200">
+          <motion.p
+            variants={rise}
+            className="mt-6 max-w-[58ch] text-[16.5px] leading-relaxed text-ink-200"
+          >
             Martis is a React-first admin panel for Laravel — built on PrimeReact,
             Tailwind, React Router and TanStack Query. Resources, fields, lenses,
             metrics, dashboards, actions and tools out of the box. Override anything
             without forking.
-          </p>
+          </motion.p>
 
-          <div className="mt-9 flex flex-col sm:flex-row items-center gap-3">
-            <div className="flex items-center h-12 pl-4 pr-2 rounded-xl bg-ink-850 ring-faint font-mono text-[13.5px]">
+          <motion.div
+            variants={rise}
+            className="mt-9 flex flex-col sm:flex-row items-center gap-3"
+          >
+            <div className="flex items-center h-12 pl-4 pr-2 rounded-xl glass font-mono text-[13.5px]">
               <span className="text-violet-400 mr-2">$</span>
               <span className="text-ink-100">composer require</span>
               <span className="text-cobalt-300 ml-1.5">martis/martis</span>
               <button
                 type="button"
                 onClick={copyInstall}
-                className="ml-3 h-8 w-8 grid place-items-center rounded-lg hover:bg-white/5 text-ink-300 hover:text-white"
+                className="ml-3 h-8 w-8 grid place-items-center rounded-lg hover:bg-white/5 text-ink-300 hover:text-white transition-colors"
                 aria-label="Copy install command"
               >
                 {copied ? <Icons.Check size={13} /> : <Icons.Copy size={13} />}
@@ -82,13 +127,16 @@ export function Hero() {
 
             <Link
               to="/docs/getting-started/installation"
-              className="h-12 px-5 inline-flex items-center gap-2 rounded-xl btn-primary text-white text-[14px] font-medium"
+              className="h-12 px-5 inline-flex items-center gap-2 rounded-xl btn-primary text-white text-[14px] font-medium hover:gap-3 transition-all"
             >
               Get started <Icons.ArrowRight size={14} />
             </Link>
-          </div>
+          </motion.div>
 
-          <div className="mt-6 flex items-center gap-5 text-[12px] text-ink-300 font-mono">
+          <motion.div
+            variants={rise}
+            className="mt-6 flex items-center gap-5 text-[12px] text-ink-300 font-mono"
+          >
             <span className="flex items-center gap-1.5">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 pulse-soft" />
               1,653 tests passing
@@ -97,16 +145,20 @@ export function Hero() {
             <span className="hidden sm:inline">MIT licensed</span>
             <span className="hidden sm:inline">·</span>
             <span className="hidden sm:inline">PHP 8.2+ / Laravel 11+</span>
-          </div>
-        </div>
+          </motion.div>
+        </motion.div>
 
-        {/* Hero screenshot — real dashboard from the playground. The
-            two floating screenshots (resource index + system cache)
-            are clipped on small viewports so the main shot stays
-            centred and intelligible. */}
+        {/* Hero screenshot composition with scroll parallax. */}
         <div className="relative mt-16">
-          <div className="absolute -inset-x-20 -top-10 -bottom-10 accent-glow opacity-60 pointer-events-none" />
-          <div className="relative rounded-2xl ring-1 ring-white/10 bg-ink-900 overflow-hidden shadow-[0_30px_120px_-20px_rgba(91,127,255,0.35)]">
+          <div className="absolute -inset-x-20 -top-10 -bottom-10 accent-glow opacity-50 pointer-events-none" />
+
+          <motion.div
+            initial={{ opacity: 0, y: reduce ? 0 : 40, scale: reduce ? 1 : 0.97 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            transition={{ duration: 0.8, ease: EASE, delay: 0.45 }}
+            style={reduce ? undefined : { y: yMain }}
+            className="relative rounded-2xl ring-1 ring-white/10 bg-ink-900 overflow-hidden shadow-[0_30px_120px_-20px_rgba(91,127,255,0.4)]"
+          >
             <div className="flex items-center gap-2 px-4 h-9 bg-ink-850 border-b border-white/5">
               <span className="w-2.5 h-2.5 rounded-full bg-[#FF5F57]" />
               <span className="w-2.5 h-2.5 rounded-full bg-[#FEBC2E]" />
@@ -121,24 +173,37 @@ export function Hero() {
               className="w-full block"
               loading="eager"
             />
-          </div>
+          </motion.div>
 
-          <div className="hidden lg:block absolute -right-4 -bottom-10 w-[280px] rounded-xl ring-1 ring-white/10 bg-ink-900 overflow-hidden shadow-2xl rotate-3">
+          <motion.div
+            initial={{ opacity: 0, x: reduce ? 0 : 30 }}
+            animate={{ opacity: 0.95, x: 0 }}
+            transition={{ duration: 0.7, ease: EASE, delay: 0.65 }}
+            style={reduce ? undefined : { y: yRight }}
+            className="hidden lg:block absolute -right-4 -bottom-10 w-[280px] rounded-xl ring-1 ring-white/10 bg-ink-900 overflow-hidden shadow-2xl rotate-3"
+          >
             <img
               src="/screenshots/resource-index.png"
               alt="Resource index"
-              className="w-full block opacity-95"
+              className="w-full block"
               loading="lazy"
             />
-          </div>
-          <div className="hidden lg:block absolute -left-6 -bottom-4 w-[220px] rounded-xl ring-1 ring-white/10 bg-ink-900 overflow-hidden shadow-2xl -rotate-3">
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, x: reduce ? 0 : -30 }}
+            animate={{ opacity: 0.95, x: 0 }}
+            transition={{ duration: 0.7, ease: EASE, delay: 0.8 }}
+            style={reduce ? undefined : { y: yLeft }}
+            className="hidden lg:block absolute -left-6 -bottom-4 w-[220px] rounded-xl ring-1 ring-white/10 bg-ink-900 overflow-hidden shadow-2xl -rotate-3"
+          >
             <img
               src="/screenshots/system-cache.png"
               alt="System cache"
-              className="w-full block opacity-95"
+              className="w-full block"
               loading="lazy"
             />
-          </div>
+          </motion.div>
         </div>
       </div>
     </section>

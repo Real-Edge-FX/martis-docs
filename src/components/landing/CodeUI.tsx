@@ -1,6 +1,8 @@
 import { useState } from 'react'
+import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
 import { CodeBlock } from '@/components/CodeBlock'
 import { Icons } from '@/components/icons'
+import { Reveal } from '@/components/landing/Reveal'
 import { CODE_SAMPLES, type CodeSampleKey } from '@/data/landing'
 
 const TABS: { id: CodeSampleKey; label: string; lines: number; preview: string; alt: string }[] = [
@@ -11,13 +13,23 @@ const TABS: { id: CodeSampleKey; label: string; lines: number; preview: string; 
 
 export function CodeUI() {
   const [tab, setTab] = useState<CodeSampleKey>('resource')
+  const reduce = useReducedMotion()
   const sample = CODE_SAMPLES[tab]
   const cur = TABS.find((t) => t.id === tab)!
+
+  const fade = reduce
+    ? {}
+    : {
+        initial: { opacity: 0, y: 8 },
+        animate: { opacity: 1, y: 0 },
+        exit: { opacity: 0, y: -8 },
+        transition: { duration: 0.25, ease: [0.22, 1, 0.36, 1] as const },
+      }
 
   return (
     <section className="py-24 relative">
       <div className="max-w-[1280px] mx-auto px-6">
-        <div className="max-w-3xl mb-12">
+        <Reveal className="max-w-3xl mb-12">
           <div className="text-[11px] font-mono uppercase tracking-[0.2em] text-cobalt-300 mb-3">
             Code → UI
           </div>
@@ -29,49 +41,60 @@ export function CodeUI() {
             the React, wires routes, builds forms, validates input, and persists
             view state — for free.
           </p>
-        </div>
+        </Reveal>
 
-        <div className="flex items-center gap-1 mb-5 p-1 rounded-lg bg-ink-850 ring-faint w-fit">
+        <div className="relative flex items-center gap-1 mb-5 p-1 rounded-lg bg-ink-850 ring-faint w-fit">
           {TABS.map((t) => (
             <button
               key={t.id}
               type="button"
               onClick={() => setTab(t.id)}
-              className={`px-3.5 h-8 rounded-md text-[12.5px] font-medium transition-colors ${
-                tab === t.id
-                  ? 'bg-cobalt-500/20 text-white'
-                  : 'text-ink-300 hover:text-white'
+              className={`relative px-3.5 h-8 rounded-md text-[12.5px] font-medium transition-colors ${
+                tab === t.id ? 'text-white' : 'text-ink-300 hover:text-white'
               }`}
             >
-              {t.label}
+              {tab === t.id && (
+                <motion.span
+                  layoutId="codeui-tab"
+                  className="absolute inset-0 rounded-md bg-cobalt-500/20"
+                  transition={{ duration: reduce ? 0 : 0.25, ease: [0.22, 1, 0.36, 1] }}
+                />
+              )}
+              <span className="relative z-[1]">{t.label}</span>
             </button>
           ))}
         </div>
 
-        {/* `min-w-0` on the grid items is required: without it CSS
-            Grid keeps `min-width: auto` (= content width) and the wide
-            `<pre>` inside CodeBlock blows past the viewport on mobile,
-            forcing horizontal scroll for the whole page. */}
+        {/* `min-w-0` on the grid items is required: without it CSS Grid keeps
+            `min-width: auto` and the wide `<pre>` blows past the viewport. */}
         <div className="grid lg:grid-cols-2 gap-6 items-start">
           <div className="lg:sticky lg:top-24 min-w-0">
-            <CodeBlock
-              lang={sample.lang}
-              filename={sample.file}
-              code={sample.code}
-              lineNumbers
-            />
+            <AnimatePresence mode="wait">
+              <motion.div key={tab} {...fade}>
+                <CodeBlock
+                  lang={sample.lang}
+                  filename={sample.file}
+                  code={sample.code}
+                  lineNumbers
+                />
+              </motion.div>
+            </AnimatePresence>
           </div>
           <div className="min-w-0">
             <div className="rounded-xl ring-1 ring-white/10 bg-ink-900 overflow-hidden">
               <div className="flex items-center gap-2 px-3 h-8 bg-ink-850 border-b border-white/5 text-[11px] font-mono text-ink-300">
                 <Icons.Eye size={11} /> rendered output
               </div>
-              <img
-                src={cur.preview}
-                alt={cur.alt}
-                className="w-full block"
-                loading="lazy"
-              />
+              <AnimatePresence mode="wait">
+                <motion.img
+                  key={tab}
+                  src={cur.preview}
+                  alt={cur.alt}
+                  className="w-full block"
+                  loading="lazy"
+                  {...fade}
+                />
+              </AnimatePresence>
             </div>
             <div className="mt-3 text-[12.5px] text-ink-300 font-mono">
               <span className="text-cobalt-300">→</span> auto-discovered, no
