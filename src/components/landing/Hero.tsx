@@ -164,7 +164,7 @@ export function Hero() {
               <span className="w-2.5 h-2.5 rounded-full bg-[#FEBC2E]" />
               <span className="w-2.5 h-2.5 rounded-full bg-[#28C840]" />
               <div className="ml-4 flex items-center gap-2 h-6 px-3 rounded-md bg-ink-900 ring-faint text-[11px] font-mono text-ink-300">
-                <Icons.Lock size={10} /> martis.realedgefx.com/martis
+                <Icons.Lock size={10} /> getmartis.com/martis
               </div>
             </div>
             <img
