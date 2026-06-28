@@ -2,7 +2,7 @@ import { useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { motion, useReducedMotion, useScroll, useTransform } from 'motion/react'
 import { Icons } from '@/components/icons'
-import { VERSION } from '@/data/landing'
+import { VERSION, RELEASE_HEADLINE } from '@/data/landing'
 import { AuroraBackdrop } from '@/components/landing/AuroraBackdrop'
 
 const EASE = [0.22, 1, 0.36, 1] as const
@@ -74,7 +74,7 @@ export function Hero() {
                 {VERSION}
               </span>
               <span className="hidden sm:inline text-[12.5px] text-ink-200 truncate">
-                toast double-close fix + auth copy publish path
+                {RELEASE_HEADLINE}
               </span>
               <span className="sm:hidden text-[12.5px] text-ink-200">What&apos;s new</span>
               <Icons.ArrowRight

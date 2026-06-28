@@ -155,3 +155,12 @@ class SendInvoice extends Action
 export type CodeSampleKey = keyof typeof CODE_SAMPLES
 
 export const VERSION = 'v1.15.1'
+
+/**
+ * One-line headline shown alongside VERSION in the landing-page
+ * release badge (see components/landing/Hero.tsx). Pair this with
+ * every VERSION bump so the badge never falls out of sync with what
+ * the tag actually ships. Keep under ~60 chars so the badge stays on
+ * one line on common desktop widths.
+ */
+export const RELEASE_HEADLINE = 'sidebar tooltips + Preferences Reset locale sync'
