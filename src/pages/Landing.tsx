@@ -6,6 +6,7 @@ import { FeatureGrid } from '@/components/landing/FeatureGrid'
 import { CodeUI } from '@/components/landing/CodeUI'
 import { Showcase } from '@/components/landing/Showcase'
 import { Stack } from '@/components/landing/Stack'
+import { CtaBanner } from '@/components/landing/CtaBanner'
 import { Footer } from '@/components/landing/Footer'
 
 /**
@@ -30,6 +31,7 @@ export default function Landing() {
         <CodeUI />
         <Showcase />
         <Stack />
+        <CtaBanner />
       </main>
       <Footer />
     </div>
