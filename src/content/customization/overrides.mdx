@@ -626,7 +626,7 @@ The command:
 1. Creates the React component file at `resources/js/martis-extensions/overrides/{ClassName}.tsx`.
 2. For shell pieces and auth pages, the file is published with the canonical fixed filename (`Shell.tsx`, `Sidebar.tsx`, `LoginPage.tsx`, etc.) so the bundle's `OVERRIDE_KEYS` map registers it automatically. The user-supplied `name` argument is ignored for these fixed slots — they exist exactly once each.
 3. For `--type=generic` and `--type=field` the user-supplied name becomes the filename; the bundle's auto-discovery loop derives `{kebab(name)}` (and `{kebab(name)}-input` for the field-shape pair) and registers each half automatically. v1.10.1+.
-4. For shell types, uses stubs that document the exact props the shell injects (collapsed state, mobile drawer callbacks, navigation payload from `/api/navigation`) so you can skip reading the source.
+4. Shell stubs document the exact props the shell injects (collapsed state, mobile drawer callbacks, navigation payload from `/api/navigation`) so you can skip reading the source.
 
 > **`martis:component --type=field` only scaffolds TSX.** To create a brand-new field type with matching PHP class + React display/input, use `php artisan martis:field <Name>` instead — that command writes both `app/Martis/Fields/<Name>Field.php` and `resources/js/martis/fields/<name>.tsx`. Use `martis:component --type=field` when you just want to override the *visual* of an existing field (Text, Badge, etc.) without introducing a new PHP field.
 
@@ -657,18 +657,13 @@ The command:
 
 The five auth-page types follow the same wiring as the shell pieces — generate the TSX, build, and the bundled login / register / password-reset / email-verify pages are automatically replaced. See [authentication.md](authentication.md) for the broader auth customisation surface (backend handlers, blade templates, OAuth providers).
 
-After creating a component, rebuild assets:
-```bash
-# v0.8+ — auto-discovery picks up `resources/martis-extensions/`
-# automatically when the package lives in `vendor/martis/martis/`:
-npm run build
+After creating a component, rebuild the consumer extension bundle:
 
-# Override the discovered directory (or set it explicitly when working
-# in dev mode where the package is symlinked outside vendor/):
+```bash
 npm run build:extensions
 ```
 
-v1.9.x retired the legacy `@user` build-time alias and the `MARTIS_USER_DIR` symlink mode. The consumer-side build (`npm run build:extensions` against `resources/js/martis-extensions/`) is the only path. Auto-discovery glob picks up every TSX under the four buckets at build time and registers them through `window.Martis.componentRegistry` at runtime.
+That runs `vite build --config vite.extensions.config.ts`, which is published into your app by `martis:install`. The bundle is emitted at `public/vendor/martis-user/extensions.js` and Martis loads it at runtime through the URL listed in `MARTIS_EXTENSIONS` (also set by `martis:install`). The auto-discovery entry walks the four buckets under `resources/js/martis-extensions/` and registers every `.tsx` against `window.Martis.componentRegistry` — no manual `boot.ts`, no `MARTIS_USER_DIR`, no symlink.
 
 ### Shell piece-by-piece overrides
 
@@ -802,7 +797,7 @@ The command lists what is **expected**, not what is **registered** — the actua
 window.componentRegistry.keys()
 ```
 
-Any key that appears in `martis:list-overrides` but not in `componentRegistry.keys()` is a missing registration in your extension bundle entry — the most common reason an override fails to resolve.
+Any key that appears in `martis:list-overrides` but not in `componentRegistry.keys()` is a missing TSX file under `resources/js/martis-extensions/` — the most common reason an override fails to resolve.
 
 ## ⭐ Component Inspector — `/dev/components`
 
