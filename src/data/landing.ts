@@ -46,7 +46,7 @@ export const NAV_LINKS: NavLink[] = [
 ]
 
 export const STACK_ROWS: { k: string; v: string }[] = [
-  { k: 'Backend',  v: 'PHP 8.2+ · Laravel 12/13' },
+  { k: 'Backend',  v: 'PHP 8.3+ · Laravel 12/13' },
   { k: 'Frontend', v: 'React 18 · TypeScript · PrimeReact · Tailwind' },
   { k: 'Data',     v: 'TanStack Query · React Router' },
   { k: 'Icons',    v: 'Phosphor Icons' },
