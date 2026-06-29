@@ -144,7 +144,7 @@ export function Hero() {
             <span className="hidden sm:inline">·</span>
             <span className="hidden sm:inline">MIT licensed</span>
             <span className="hidden sm:inline">·</span>
-            <span className="hidden sm:inline">PHP 8.2+ / Laravel 11+</span>
+            <span className="hidden sm:inline">PHP 8.2+ / Laravel 12+</span>
           </motion.div>
         </motion.div>
 

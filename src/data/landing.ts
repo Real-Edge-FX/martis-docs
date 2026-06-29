@@ -46,7 +46,7 @@ export const NAV_LINKS: NavLink[] = [
 ]
 
 export const STACK_ROWS: { k: string; v: string }[] = [
-  { k: 'Backend',  v: 'PHP 8.2+ · Laravel 11/12' },
+  { k: 'Backend',  v: 'PHP 8.2+ · Laravel 12/13' },
   { k: 'Frontend', v: 'React 18 · TypeScript · PrimeReact · Tailwind' },
   { k: 'Data',     v: 'TanStack Query · React Router' },
   { k: 'Icons',    v: 'Phosphor Icons' },
@@ -154,7 +154,7 @@ class SendInvoice extends Action
 
 export type CodeSampleKey = keyof typeof CODE_SAMPLES
 
-export const VERSION = 'v1.15.1'
+export const VERSION = 'v1.16.1'
 
 /**
  * One-line headline shown alongside VERSION in the landing-page
