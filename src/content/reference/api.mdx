@@ -1,11 +1,10 @@
 ---
 title: "Martis API — Overview"
-description: "REST API + OpenAPI 3.1 reference for Martis — auth, resources, relationships, dashboards, tools, preferences, sessions, impersonation, cache admin."
-sourcePath: "martis-package/docs/api/overview.md"
+description: "Martis exposes a REST API for every CRUD operation, resource metadata, navigation, search, preferences, sessions, impersonation, and admin surfaces. The schema is generated at runtime by [Scramble](https://scramble.dedoc.co/) and served as both interactive UI and raw OpenAPI 3.1."
+sourcePath: "martis-package/docs/overview.md"
 ---
 
 # Martis API — Overview
-
 Martis exposes a REST API for every CRUD operation, resource metadata, navigation, search, preferences, sessions, impersonation, and admin surfaces. The schema is generated at runtime by [Scramble](https://scramble.dedoc.co/) and served as both interactive UI and raw OpenAPI 3.1.
 
 > **The authoritative endpoint reference is the auto-generated OpenAPI 3.1 document at `/{martis-path}/api-docs.json`** (when `MARTIS_API_DOCS_ENABLED=true`). This page is a curated index of the most-used surfaces — when in doubt, fetch the JSON, it always reflects the live route table.
@@ -433,3 +432,4 @@ The `errors` array is intentionally empty so the SPA can route the same envelope
 ```
 
 Returned by surfaces gated behind a master switch (impersonation, optionally magic-link / forgot-password / email verification).
+

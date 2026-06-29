@@ -132,6 +132,7 @@ function escapeMdxHazards(md) {
       const re = new RegExp(`(\`[^\`]*\`)|<${tag}(\\s[^>]*)?>(?!\\s*</${tag}>)`, 'gi')
       safe = safe.replace(re, (whole, code) => {
         if (code) return code
+        if (/\/>$/.test(whole)) return whole // already self-closed (e.g. <br />)
         return whole.replace(/>$/, ' />')
       })
     }

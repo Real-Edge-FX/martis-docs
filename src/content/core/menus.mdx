@@ -5,7 +5,6 @@ sourcePath: "martis-package/docs/menus.md"
 ---
 
 # Menus
-
 Martis exposes a declarative, package-native navigation API.
 
 Use it in two layers:
@@ -512,3 +511,4 @@ does not poison the other (`php artisan martis:cache:clear navigation`
 still wipes both). Default poll cadence is **300 000 ms (5 minutes)**;
 override per environment with `MARTIS_NAV_BADGES_POLL_MS` or per
 boot via `config('martis.navigation.badges_poll_interval', ...)`.
+

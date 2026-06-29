@@ -5,7 +5,6 @@ sourcePath: "martis-package/docs/impersonation.md"
 ---
 
 # Impersonation
-
 > Lets a privileged operator log in as another user for the duration of a session, then return to their own account with one click.
 > Shipped in v0.10.
 
@@ -191,3 +190,4 @@ The two events live under `Martis\Impersonation\Events\*` and carry both `operat
 ## Tests
 
 Behaviour-level coverage lives in `tests/Feature/ImpersonationControllerTest.php` (14 cases — full error matrix, NotImpersonable rejection, max-duration auto-stop via the middleware, event dispatch on start + stop). The ParitySurface tripwire (`tests/Feature/ParitySurfaceTest.php`) asserts the public surface — `ImpersonationManager::start/stop/isActive/isExpired/originalUser/currentTarget/enabled/guard/snapshot` — keeps its contract.
+

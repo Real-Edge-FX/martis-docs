@@ -1,11 +1,10 @@
 ---
 title: "Configuration"
-description: "Every Martis config option grouped by subsystem, plus an auto-generated env-var index (130 vars)."
+description: "Martis is configured through `config/martis.php`. Publish it with the bundled wrapper (or the standard `vendor:publish` if you prefer):"
 sourcePath: "martis-package/docs/configuration.md"
 ---
 
 # Configuration
-
 Martis is configured through `config/martis.php`. Publish it with the bundled wrapper (or the standard `vendor:publish` if you prefer):
 
 ```bash
@@ -259,7 +258,7 @@ public function boot(): void
 
 Resource labels honour the authenticated user's locale preference, so the first paint is already in the right language.
 
-For **client-side navigation** inside the SPA (react-router), each page uses the [`usePageTitle`](overrides.md#page-title-hook) hook to keep `document.title` in sync without a full reload.
+For **client-side navigation** inside the SPA (react-router), each page uses the [`usePageTitle`](/docs/customization/overrides#page-title-hook) hook to keep `document.title` in sync without a full reload.
 
 Resolution precedence (highest first):
 
@@ -390,7 +389,7 @@ No code changes, no `vendor:publish`. The SPA picks all of this up at boot via `
 
 | Preset | What it renders | When to pick it |
 |--------|-----------------|-----------------|
-| `sidebar` (default) | Left nav column, topbar, content, in-flow footer. The collapsible shell described in [theming.md](theming.md) and [overrides.md](overrides.md). | Most admin apps. Handles mobile drawer, collapsed rail, accent pill, density tokens. |
+| `sidebar` (default) | Left nav column, topbar, content, in-flow footer. The collapsible shell described in [theming.md](/docs/customization/theming) and [overrides.md](/docs/customization/overrides). | Most admin apps. Handles mobile drawer, collapsed rail, accent pill, density tokens. |
 | `topnav` | Horizontal top navigation (no sidebar). Topbar renders the full menu inline. | Apps with ≤ 8 top-level resources or a focus-mode where the left column wastes space. |
 | `minimal` | No chrome — just the route outlet. No topbar, no sidebar, no footer. | Embedded dashboards, marketing screens, print-friendly surfaces. |
 | `custom` | Strict registry-only mode: requires a component registered under `layout:shell` (or referenced by `layout.components.shell`). If none is registered, Martis renders a red error panel instead of silently falling back to `sidebar` — so a missing registration fails loudly during development. | Apps shipping their own shell that want to guarantee the bundled fallback is never used. |
@@ -415,7 +414,7 @@ Pick the preset via `MARTIS_LAYOUT` env or `config('martis.layout.preset')`. The
 
 Resolution order per piece: `config.layout.components.<piece>` → `layout:<piece>` (default registry key) → bundled component.
 
-Full wiring examples, prop contracts, and the rationale for piece-by-piece vs full-shell overrides live in [overrides.md](overrides.md#shell-piece-by-piece-overrides).
+Full wiring examples, prop contracts, and the rationale for piece-by-piece vs full-shell overrides live in [overrides.md](/docs/customization/overrides#shell-piece-by-piece-overrides).
 
 ## Navigation
 
@@ -438,7 +437,7 @@ Full wiring examples, prop contracts, and the rationale for piece-by-piece vs fu
 
 > **Breaking change in v1.8.8.** The previous `MARTIS_NAV_POLL_MS` (which auto-polled `/api/navigation`) was removed. The full navigation tree is no longer auto-polled at all — only `/api/navigation/badges` is, on the new `badges_poll_interval`. Apps that still set `MARTIS_NAV_POLL_MS` will see the value silently ignored; rename to `MARTIS_NAV_BADGES_POLL_MS` (and pick a longer cadence — the default jumped from 60 s to 5 min because badges-only is cheap and menu structure rarely changes mid-session).
 
-See [menus.md](menus.md#count-badges) for the badge API (including `menuCount()` for custom values) and [menus.md](menus.md#sections) for the section heading API.
+See [menus.md](/docs/core/menus#count-badges) for the badge API (including `menuCount()` for custom values) and [menus.md](/docs/core/menus#sections) for the section heading API.
 
 ## Localization
 
@@ -486,7 +485,7 @@ Shipped locales: `en` (English), `pt_BR` (Brazilian Portuguese), `pt_PT` (Europe
 | `allowToggle` | `bool` | `true` | When `false`, the theme picker is hidden everywhere — the Theme section disappears from the preferences overlay and the theme cycle button is suppressed on every pre-login surface (login, register, 2FA, password reset). Use this to lock the entire shell to a single theme without removing the rest of the preferences. |
 | `name` | `?string` | `null` | Custom theme name for the `martis:theme` artisan command. |
 
-Custom themes are scaffolded via `php artisan martis:theme`. See [Theming](components.md#theming).
+Custom themes are scaffolded via `php artisan martis:theme`. See [Theming](/docs/customization/components#theming).
 
 ## Keyboard Shortcuts
 
@@ -502,7 +501,7 @@ Custom themes are scaffolded via `php artisan martis:theme`. See [Theming](compo
 | `enabled` | `bool` | `true` | Master switch for the entire keyboard-shortcuts registry. When `false`, every `addShortcut()` call returns a no-op disposer; no event listener is bound and the bundled `mod+k`, `/`, and `shift+?` combos do nothing. Use it when the host app ships a custom keyboard layer. |
 | `helpOverlay` | `bool` | `true` | When `false`, the bundled `Shift+?` help overlay is not registered. `addShortcut()` itself stays live for every other combo, so this is the right knob if the host app wants to expose its own help UI instead of the dialog. |
 
-Both flags are read live, so mid-session toggles via `window.MartisConfig` take effect on the next registration. See [Keyboard Shortcuts](keyboard-shortcuts.md) for the full API.
+Both flags are read live, so mid-session toggles via `window.MartisConfig` take effect on the next registration. See [Keyboard Shortcuts](/docs/reference/keyboard-shortcuts) for the full API.
 
 ## User Menu
 
@@ -602,7 +601,7 @@ Options: `'top-right'`, `'top-left'`, `'bottom-right'`, `'bottom-left'`, `'top-c
 | `default_row_actions.edit` | `bool` | `true` | Per-action global kill-switch for the Edit icon. `MARTIS_DEFAULT_ROW_ACTION_EDIT`. |
 | `default_row_actions.delete` | `bool` | `true` | Per-action global kill-switch for the Delete icon. `MARTIS_DEFAULT_ROW_ACTION_DELETE`. |
 | `row_click_opens_detail` | `bool` | `true` | When default row actions expose a "view" icon, clicking the row body becomes redundant. Set to `false` to disable row-click and keep the row informational. Override per resource with `rowClickOpensDetail(Request $request): ?bool`. |
-| `default_trashed_filter` | `string` | `'active'` | Initial state of the trashed-filter dropdown on soft-delete resources (main index **and** relationship panels). One of `'active'` (hide deleted), `'with'` (include deleted alongside live), `'only'` (only deleted). Visibility of the dropdown itself is gated by [`Resource::canViewTrashed()`](resources.md#restricting-trashed-visibility-by-role). |
+| `default_trashed_filter` | `string` | `'active'` | Initial state of the trashed-filter dropdown on soft-delete resources (main index **and** relationship panels). One of `'active'` (hide deleted), `'with'` (include deleted alongside live), `'only'` (only deleted). Visibility of the dropdown itself is gated by [`Resource::canViewTrashed()`](/docs/core/resources#restricting-trashed-visibility-by-role). |
 
 The three per-action sub-keys are global kill-switches. A resource-level `Resource::defaultRowActions(Request $request): bool|array` can subtract further but never force a globally-disabled action back on. It can return:
 
@@ -611,7 +610,7 @@ The three per-action sub-keys are global kill-switches. A resource-level `Resour
 - a subset array — e.g. `['view', 'edit']` to hide the destructive actions
 - a closure-aware decision per request
 
-See [Default Row Actions](default_row_actions.md) for the full guide.
+See [Default Row Actions](/docs/core/default-row-actions) for the full guide.
 
 ## Pagination
 
@@ -627,7 +626,7 @@ See [Default Row Actions](default_row_actions.md) for the full guide.
 | `default_per_page` | `int` | `25` | Fallback for `Resource::perPage()` and `Lens::perPage()` when the resource/lens does not override the method. |
 | `max_per_page` | `int` | `100` | Upper bound enforced by the ResourceController when the client passes `?perPage=N` on the URL. Protects against pathological page sizes. |
 
-Override per-resource via `perPage()` and `perPageOptions()` on the resource class. When the returned `perPage()` is not present in `perPageOptions()`, Martis silently clamps to `perPageOptions()[0]` — see [resources.md — Effective per-page](resources.md#effective-per-page).
+Override per-resource via `perPage()` and `perPageOptions()` on the resource class. When the returned `perPage()` is not present in `perPageOptions()`, Martis silently clamps to `perPageOptions()[0]` — see [resources.md — Effective per-page](/docs/core/resources#effective-per-page).
 
 ## Storage
 
@@ -824,7 +823,7 @@ Drop the entry from `MARTIS_CUSTOM_ACCENTS` and `php artisan config:cache`. User
 ],
 ```
 
-Per-subsystem cache layer with three control planes (config / env / runtime), bypass header, and admin page. See [Cache](cache.md) for the full reference.
+Per-subsystem cache layer with three control planes (config / env / runtime), bypass header, and admin page. See [Cache](/docs/reference/cache) for the full reference.
 
 ## Profile
 
@@ -849,7 +848,7 @@ Per-subsystem cache layer with three control planes (config / env / runtime), by
 ],
 ```
 
-See [Authentication](authentication.md#user-profile) for full profile documentation.
+See [Authentication](/docs/auth/authentication#user-profile) for full profile documentation.
 
 ## User Preferences
 
@@ -869,7 +868,7 @@ See [Authentication](authentication.md#user-profile) for full profile documentat
 | `allowBrandColor` | bool | `false` | When true, exposes a custom-hex brand colour picker in the preferences panel. |
 | `locale_labels` | array | `[]` | Override the human-readable labels surfaced in the locale dropdown. |
 
-See [User Preferences](preferences.md) for the D1/D2/D3 spec and [i18n](i18n.md) for the locale layer.
+See [User Preferences](/docs/reference/preferences) for the D1/D2/D3 spec and [i18n](/docs/customization/i18n) for the locale layer.
 
 ## Sticky Views
 
@@ -899,7 +898,7 @@ See [User Preferences](preferences.md) for the D1/D2/D3 spec and [i18n](i18n.md)
 | `persist.columns` | bool | `true` | Remember visible columns toggle. |
 | `persist.scroll` | bool | `false` | Remember scroll position on the index. |
 
-See [Sticky Views](sticky_views.md) for the full behaviour spec.
+See [Sticky Views](/docs/core/sticky-views) for the full behaviour spec.
 
 ## Loader
 
@@ -913,7 +912,7 @@ See [Sticky Views](sticky_views.md) for the full behaviour spec.
 |---|---|---|---|
 | `disabled` | bool | `false` | Globally suppress the page loader. Useful in tests or for apps that ship their own loading UI. |
 
-See [Loader](loader.md) for the surface-by-surface behaviour matrix.
+See [Loader](/docs/customization/loader) for the surface-by-surface behaviour matrix.
 
 ## Impersonation
 
@@ -931,7 +930,7 @@ See [Loader](loader.md) for the surface-by-surface behaviour matrix.
 | `guard` | string | `web` | Auth guard the impersonation operates on. |
 | `session_key` | string | `martis.impersonation` | Session bag where the operator's id is stashed. Change for cross-tenant isolation. |
 
-The package ships **no default Gate**. Define `martis-impersonate` in your `AuthServiceProvider` to gate which users can start an impersonation session. See [Impersonation](impersonation.md).
+The package ships **no default Gate**. Define `martis-impersonate` in your `AuthServiceProvider` to gate which users can start an impersonation session. See [Impersonation](/docs/auth/impersonation).
 
 ## Audit (v1.8.8)
 
@@ -1365,7 +1364,8 @@ php artisan martis:list-env-vars --json      # JSON array
 | `MARTIS_WELCOME_HEADING` | `(no default)` |
 ## Next Steps
 
-- [Installation Guide](installation-guide.md) — Initial setup
-- [Authentication](authentication.md) — Login, 2FA, profile
-- [Resources](resources.md) — Resource configuration
-- [Override System](overrides.md) — Customize the UI
+- [Installation Guide](/docs/getting-started/installation) — Initial setup
+- [Authentication](/docs/auth/authentication) — Login, 2FA, profile
+- [Resources](/docs/core/resources) — Resource configuration
+- [Override System](/docs/customization/overrides) — Customize the UI
+

@@ -5,7 +5,6 @@ sourcePath: "martis-package/docs/loader.md"
 ---
 
 # Loader
-
 The Martis Loader is a built-in loading indicator that appears automatically during data fetches, page transitions, and async operations. It is fully configurable and replaceable without forking the package.
 
 ## Where It Appears
@@ -335,3 +334,4 @@ public function indexQuery(Request $request): Builder
 ### Verify component override
 
 After registering a custom component via `componentRegistry.register('loader', MyLoader)`, reload any resource page and confirm your component renders instead of the default spinner.
+

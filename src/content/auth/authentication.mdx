@@ -1,14 +1,13 @@
 ---
 title: "Authentication"
-description: "Martis provides a complete authentication system with login, logout, two-factor authentication (2FA), and a user profile page — all configurable and overridable."
+description: "Martis provides a complete authentication system with login, logout, two-factor authentication (2FA), magic-link, browser-session management, and a user profile page — all configurable and overridable."
 sourcePath: "martis-package/docs/authentication.md"
 ---
 
 # Authentication
-
 Martis provides a complete authentication system with login, logout, two-factor authentication (2FA), magic-link, browser-session management, and a user profile page — all configurable and overridable.
 
-> See also: [SSO](sso.md) for OAuth/OIDC providers (Azure / Google / GitHub / custom), and [Impersonation](impersonation.md) for the login-as-another-user subsystem (admins surfacing a switch from the user menu and from the User Resource detail page).
+> See also: [SSO](/docs/auth/sso) for OAuth/OIDC providers (Azure / Google / GitHub / custom), and [Impersonation](/docs/auth/impersonation) for the login-as-another-user subsystem (admins surfacing a switch from the user menu and from the User Resource detail page).
 
 ## Login Flow
 
@@ -153,7 +152,7 @@ All flags default to `false`. A fresh `composer require martis/martis` install s
 
 | Block | Shape | Purpose |
 |---|---|---|
-| `sso` | `enabled` + `providers` map | Renders one button per enabled provider. Martis owns the OAuth dance end-to-end. See [`sso.md`](sso.md). |
+| `sso` | `enabled` + `providers` map | Renders one button per enabled provider. Martis owns the OAuth dance end-to-end. See [`sso.md`](/docs/auth/sso). |
 | `passwordReset` | `enabled` + `url` + `broker` | Renders the "Forgot?" link, hosts `/forgot-password` and `/reset-password/{token}` pages, and POST endpoints. `url` redirects off-platform. `broker` selects the Laravel password broker. |
 | `registration` | `enabled` + `url` + `default_role` | Renders the "Create an account" link, hosts `/register` page and POST endpoint. `default_role` is auto-assigned via `assignRole()` when set. |
 | `controls` | `theme` + `locale` | Top-right widget visibility on every auth surface. |
@@ -504,7 +503,7 @@ Three steps:
    ```php
    use Illuminate\Contracts\Auth\MustVerifyEmail;
 
-   class User extends Authenticatable implements MustVerifyEmail { /* … */ }
+   class User extends Authenticatable implements MustVerifyEmail \{ /* … */ }
    ```
 
 2. **Set the master flag**:
@@ -849,7 +848,6 @@ The user dropdown menu in the topbar is configurable:
 'user_menu' => [
     'showThemeToggle' => true,      // Dark/light mode toggle
     'showProfile' => true,          // Profile page link
-    'showNotifications' => true,    // Notifications (placeholder)
     // 'customItems' => [
     //     ['label' => 'Settings', 'icon' => 'pi pi-cog', 'url' => '/settings'],
     //     ['separator' => true],
@@ -877,6 +875,7 @@ These are applied automatically by the Martis route definitions. You do not need
 
 ## Next Steps
 
-- [Resources](resources.md) — Define admin resources
-- [Authorization](resources.md#authorization) — Control access with policies
-- [Configuration](configuration.md) — Full config reference
+- [Resources](/docs/core/resources) — Define admin resources
+- [Authorization](/docs/core/resources#authorization) — Control access with policies
+- [Configuration](/docs/reference/configuration) — Full config reference
+

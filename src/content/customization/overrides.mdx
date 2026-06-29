@@ -5,7 +5,6 @@ sourcePath: "martis-package/docs/overrides.md"
 ---
 
 # Override System
-
 The override system is a core Martis differential. **Everything can be customized without forking** — React components, layouts, and server-side behaviors.
 
 ## Overview
@@ -438,7 +437,7 @@ Event::listen(BeforeDelete::class, function (BeforeDelete $event) {
 
 ### Display Component
 
-Every display component receives `FieldDisplayProps`. Examples below use the [Tailwind preset](theming.md#-in-tsx-tailwind-preset) so the override stays in sync with the active theme (light/dark, accent override, density).
+Every display component receives `FieldDisplayProps`. Examples below use the [Tailwind preset](/docs/customization/theming#-in-tsx-tailwind-preset) so the override stays in sync with the active theme (light/dark, accent override, density).
 
 ```typescript
 import type { FieldDisplayProps } from '@/components/fields/types'
@@ -655,7 +654,7 @@ The command:
 | `email-verify-notice-page` | Custom email verification notice page | `auth:email-verify-notice-page` |
 | `generic` | Free-form component | `{kebab-name}` |
 
-The five auth-page types follow the same wiring as the shell pieces — generate the TSX, build, and the bundled login / register / password-reset / email-verify pages are automatically replaced. See [authentication.md](authentication.md) for the broader auth customisation surface (backend handlers, blade templates, OAuth providers).
+The five auth-page types follow the same wiring as the shell pieces — generate the TSX, build, and the bundled login / register / password-reset / email-verify pages are automatically replaced. See [authentication.md](/docs/auth/authentication) for the broader auth customisation surface (backend handlers, blade templates, OAuth providers).
 
 After creating a component, rebuild the consumer extension bundle:
 
@@ -848,4 +847,5 @@ export function MyCustomPage({ resource }) {
 }
 ```
 
-The hook restores the previous title on unmount so stacked modals/drawers don't leave stale segments in the tab bar. See [configuration.md](configuration.md#customising-the-page-title) for the server-side half (static config + closure API).
+The hook restores the previous title on unmount so stacked modals/drawers don't leave stale segments in the tab bar. See [configuration.md](/docs/reference/configuration#customising-the-page-title) for the server-side half (static config + closure API).
+

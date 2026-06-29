@@ -5,7 +5,6 @@ sourcePath: "martis-package/docs/installation-guide.md"
 ---
 
 # Installation Guide
-
 Add Martis to any existing Laravel application as a Composer package.
 
 ## Requirements
@@ -126,11 +125,10 @@ This creates `config/martis.php`. The most commonly customized keys:
 - `path` — Admin panel URL prefix (default: `martis`)
 - `guard` — Authentication guard (default: `null`, falls back to `config('auth.defaults.guard')`)
 - `resources_path` — Directory scanned for resource classes (default: `app_path('Martis')`)
-- `extensions_path` — Folder under `resources/` holding consumer React extensions (default: `martis-extensions`)
 - `theme.default` — Default theme: `dark`, `light`, or `system`
 - `theme.allowToggle` — Allow users to switch themes from the preferences panel
 - `locale` — Default locale (defaults to `config('app.locale')`)
-- `brand.name` / `brand.logo` / `brand.icon` / `brand.favicon` — Brand block (see [Configuration](configuration.md))
+- `brand.name` / `brand.logo` / `brand.icon` / `brand.favicon` — Brand block (see [Configuration](/docs/reference/configuration))
 - `layout.preset` — Layout preset (`sidebar`, `topnav`, `minimal`)
 - `footer` / `search` / `auth` / `preferences` / `cache` — Subsystem configuration
 
@@ -228,7 +226,7 @@ Copies language files to `lang/vendor/martis/` so you can override Martis-shippe
 php artisan vendor:publish --tag=martis-views
 ```
 
-Copies the Martis blade templates to `resources/views/vendor/martis/`. Rare — only required if you need to fork the SPA shell template itself. The component override system (see [Override System](overrides.md)) is the preferred extension path.
+Copies the Martis blade templates to `resources/views/vendor/martis/`. Rare — only required if you need to fork the SPA shell template itself. The component override system (see [Override System](/docs/customization/overrides)) is the preferred extension path.
 
 ### Step 8: Create Your First Resource
 
@@ -573,12 +571,13 @@ The package ships 28 commands. The full list:
 
 | Command | Description |
 |---|---|
-| `martis:component` | Scaffold a React override (TSX) under `resources/js/martis-extensions/overrides/`. Every `--type` auto-registers on the next `npm run build:extensions`. See [Overrides](/customization/overrides#6-creating-custom-components-artisan) for the filename → key table |
+| `martis:component` | Scaffold a React override (TSX) under `resources/js/martis-extensions/overrides/`. Every `--type` auto-registers on the next `npm run build:extensions`. See [Overrides](/docs/customization/overrides#6-creating-custom-components-artisan) for the filename → key table |
 | `martis:theme` | Scaffold a custom theme override |
 | `martis:sso` | Scaffold an SSO provider configuration block |
 
 ## Next Steps
 
-- [Resources](resources.md) — Learn how to define and configure resources
-- [Fields Reference](fields.md) — Explore the 50+ field types Martis ships
-- [Override System](overrides.md) — Customize the UI without forking
+- [Resources](/docs/core/resources) — Learn how to define and configure resources
+- [Fields Reference](/docs/core/fields) — Explore the 50+ field types Martis ships
+- [Override System](/docs/customization/overrides) — Customize the UI without forking
+

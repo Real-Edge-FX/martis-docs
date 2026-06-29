@@ -1,11 +1,10 @@
 ---
 title: "In-app Notifications"
-description: "Persistent bell-dropdown notifications backed by Laravel's standard notifications table."
+description: "Pre-v0.8 Martis only had toasts. v0.8 ships the proper notifications subsystem on top of Laravel's standard `notifications` table — so anything you already deliver via the `database` channel surfaces in the bell with zero glue."
 sourcePath: "martis-package/docs/notifications.md"
 ---
 
 # In-app Notifications
-
 > Persistent notifications surfaced in the topbar bell dropdown — distinct from toasts (transient feedback). Backed by Laravel's standard `notifications` table.
 
 ## What it is, what it isn't
@@ -230,3 +229,4 @@ The `martis:install --force` command publishes a migration that creates the stan
 ## Tests
 
 - 9 feature tests in `tests/Feature/NotificationControllerTest.php` covering the six endpoints, the data shape, ownership scoping, and the disabled-config case.
+

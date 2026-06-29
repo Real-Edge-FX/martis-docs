@@ -1,11 +1,10 @@
 ---
 title: "Highlights"
-description: "Tour of the surfaces Martis ships beyond the bare-essential admin-panel contract — overrides, drawer CRUD, lens framework, field extensions, SSO, theming."
+description: "A tour of the surfaces Martis ships beyond the bare-essential admin-panel contract — features that exist as first-class APIs in the package, with their own configuration, generators, or escape hatches. Each entry below links into the dedicated reference for the full surface."
 sourcePath: "martis-package/docs/differentials.md"
 ---
 
 # Highlights
-
 A tour of the surfaces Martis ships beyond the bare-essential admin-panel
 contract — features that exist as first-class APIs in the package, with
 their own configuration, generators, or escape hatches. Each entry below
@@ -44,7 +43,7 @@ import { RichBioDisplay } from './components/RichBioDisplay'
 componentRegistry.register('rich-bio-display', RichBioDisplay)
 ```
 
-Full guide: [Override System](overrides.md).
+Full guide: [Override System](/docs/customization/overrides).
 
 ### Drawer CRUD (slide-in panels)
 
@@ -374,7 +373,7 @@ are for `help()`.
 
 A `Tooltip` field class was deliberately rejected — a `Field`
 represents a value, not a decoration. See
-[Fields → Tooltips](fields.md#tooltips) for the full rationale and the
+[Fields → Tooltips](/docs/core/fields#tooltips) for the full rationale and the
 `tooltip()` vs `help()` decision matrix.
 
 ### Icon — Phosphor picker
@@ -388,7 +387,7 @@ The `Icon` field has three modes:
 Supports palette whitelisting (restrict to a configured subset),
 `colorFrom()` to pull the hex colour from another attribute,
 configurable sizes and tooltips. Full API in
-[Fields Reference](fields.md#icon).
+[Fields Reference](/docs/core/fields#icon).
 
 ### BooleanGroup — grouped sections + live counter
 
@@ -459,7 +458,7 @@ Stack::make('identity', __('fields.identity'), [
 Line variants — `asHeading()`, `asBase()`, `asSmall()`, `asMuted()`,
 `asCode()` — map to `.martis-line-*` classes so custom themes restyle
 every Line in the package through a handful of CSS tokens instead of
-per-field inline styles. See [Fields Reference](fields.md#stack--line).
+per-field inline styles. See [Fields Reference](/docs/core/fields#stack--line).
 
 ### Badge closures — schema-time and per-row
 
@@ -524,7 +523,7 @@ Supports responsive breakpoints: `colSpan()`, `colSpanMd()`,
 ## Repeater
 
 The Martis Repeater ships five surfaces beyond a basic repeater API.
-Full documentation in [repeater.md](repeater.md).
+Full documentation in [repeater.md](/docs/core/repeater).
 
 **`dependsOn([parent attributes])`**
 
@@ -692,7 +691,7 @@ class RecentDeploys extends ActivityFeedMetric
 ```
 
 Generator: `php artisan martis:activity-feed`. Full reference in
-[metrics.md](metrics.md#activity-feed-metric).
+[metrics.md](/docs/core/metrics#activity-feed-metric).
 
 ### `EndpointTableMetric`
 
@@ -713,7 +712,7 @@ class TopEndpoints extends EndpointTableMetric
 ```
 
 Generator: `php artisan martis:endpoint-table`. Full reference in
-[metrics.md](metrics.md#endpoint-table-metric).
+[metrics.md](/docs/core/metrics#endpoint-table-metric).
 
 ### Trend sparkline mode
 
@@ -887,7 +886,7 @@ override per env:
 `.env.qa` and `.env.production` carry different group identifiers. The
 mapper resolves through env, no code change to ship a new environment.
 
-Full reference: [sso.md](sso.md).
+Full reference: [sso.md](/docs/auth/sso).
 
 ---
 
@@ -939,7 +938,7 @@ across devices and sessions.
 - **Density per surface + reduced-motion enforced.** `[data-density="dense"]` tokens cut row/button/input heights (including dashboard cards — StatCard, MetricCard, resource shortcuts, welcome hero). `[data-reduced-motion="true"]` clamps every `--martis-dur-*` to `1ms` AND applies a universal `*, *::before, *::after { transition-duration: 1ms; animation-duration: 1ms }` override so inline styles, third-party widgets, and raw Tailwind utilities also honour the preference. The same rules apply under the OS-level `prefers-reduced-motion: reduce` media query.
 
 The preferences panel is a compact topbar overlay — theme / accent /
-density / language / accessibility. See [preferences.md](preferences.md)
+density / language / accessibility. See [preferences.md](/docs/reference/preferences)
 for the resolver, API, and SSR no-flash mechanics.
 
 ### 94-token theme system
@@ -969,7 +968,7 @@ The generated stub includes all 94 variables in both dark mode
 (`:root`) and light mode (`html:not(.dark)`), with comments and
 grouping. Edit any value, refresh the browser — no rebuild needed.
 
-See [Theming Guide](theming.md) for the complete variable reference.
+See [Theming Guide](/docs/customization/theming) for the complete variable reference.
 
 ### Component scaffolding
 
@@ -986,7 +985,7 @@ php artisan martis:card WelcomeCard
 php artisan martis:override StatusBadge --type=field
 ```
 
-`martis:card` writes both the PHP class (`app/Martis/Cards/`) and the React component (`resources/js/martis-extensions/cards/{Name}.tsx`); the bundle's filename → key auto-discovery (`{Name}.tsx` → `card:{kebab-name}`) registers it on the next `npm run build:extensions`. `martis:override` writes a TSX-only file under `resources/js/martis-extensions/overrides/` and the bundle auto-registers it on the next build. See [Override System: Auto-registration scope](/customization/overrides#6-creating-custom-components-artisan) for the full filename → key table.
+`martis:card` writes both the PHP class (`app/Martis/Cards/`) and the React component (`resources/js/martis-extensions/cards/{Name}.tsx`); the bundle's filename → key auto-discovery (`{Name}.tsx` → `card:{kebab-name}`) registers it on the next `npm run build:extensions`. `martis:override` writes a TSX-only file under `resources/js/martis-extensions/overrides/` and the bundle auto-registers it on the next build. See [Override System: Auto-registration scope](/docs/customization/overrides#6-creating-custom-components-artisan) for the full filename → key table.
 
 ---
 
@@ -1009,4 +1008,5 @@ php artisan martis:override StatusBadge --type=field
 | `martis:progress` | Generate a progress metric |
 | `martis:dashboard` | Generate a dashboard class |
 | `martis:user` | Create an admin user |
-| `martis:list-env-vars` | Markdown / JSON table of every `MARTIS_*` env var (used to refresh the env-var index in [configuration.md](configuration.md)) |
+| `martis:list-env-vars` | Markdown / JSON table of every `MARTIS_*` env var (used to refresh the env-var index in [configuration.md](/docs/reference/configuration)) |
+
