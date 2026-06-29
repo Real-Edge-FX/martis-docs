@@ -163,4 +163,4 @@ export const VERSION = 'v1.15.1'
  * the tag actually ships. Keep under ~60 chars so the badge stays on
  * one line on common desktop widths.
  */
-export const RELEASE_HEADLINE = 'sidebar tooltips + Preferences Reset locale sync'
+export const RELEASE_HEADLINE = 'ecosystem security audit — XSS, IDOR & authz hardening'
