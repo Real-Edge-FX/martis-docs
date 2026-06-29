@@ -8,7 +8,7 @@ export const STATS: { n: string; l: string }[] = [
   { n: '50',    l: 'Field types' },
   { n: '12',    l: 'Relationship kinds' },
   { n: '94',    l: 'Theme tokens' },
-  { n: '1,653', l: 'Tests passing' },
+  { n: '2,325', l: 'Tests passing' },
 ]
 
 export interface FeatureCard {
@@ -163,4 +163,4 @@ export const VERSION = 'v1.15.1'
  * the tag actually ships. Keep under ~60 chars so the badge stays on
  * one line on common desktop widths.
  */
-export const RELEASE_HEADLINE = 'sidebar tooltips + Preferences Reset locale sync'
+export const RELEASE_HEADLINE = 'ecosystem security audit — XSS, IDOR & authz hardening'

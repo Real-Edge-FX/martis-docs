@@ -58,7 +58,7 @@ Spatie itself is intentionally a soft dependency. If you do not run `martis:role
 | `--no-migrate` | Publish migrations but do not run them. Useful when other migrations are pending review. |
 | `--no-publish-spatie` | Skip publishing Spatie's config + migrations. Use after a manual publish. |
 | `--with-categories` | Adds a `category` column to `permissions` (via published migration) and surfaces it as a field + filter on the generated PermissionResource. Useful for apps with 50+ permissions. v1.8.8. |
-| `--promote=` | Email of the user to seed + promote to admin in the same call. Pass `first` to grab the lowest-id user. v1.8.15. |
+| `--promote=` | Email of the user to seed + promote to admin in the same call. Pass `first` to grab the lowest-id user. Skips the manual `assignRole('admin')` step. v1.8.15. |
 | `--no-seed` | Skip running `MartisRolesSeeder` after scaffolding. Default behaviour: seed runs automatically. v1.8.15. |
 | `--force` | Overwrite resource / policy files that already exist. |
 
