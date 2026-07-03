@@ -64,6 +64,7 @@ const MAP = {
   'customization/theming': 'theming.md',
   'customization/overrides': 'overrides.md',
   'customization/components': 'components.md',
+  'customization/agent-guidelines': 'agent-guidelines.md',
   'customization/tools': 'tools.md',
   'customization/tool-boot-patterns': 'tool-boot-patterns.md',
   'customization/loader': 'loader.md',
@@ -319,8 +320,56 @@ async function validateAll() {
 
 await validateAll()
 
-if (isCheckMode && stale > 0) {
-  console.error(`\n${stale} doc(s) stale — run \`pnpm sync-docs\` to update.`)
+// Guard against the "hand-authored page silently drifts" class of bug: any
+// page that declares a `sourcePath` (i.e. is meant to mirror a
+// martis-package/docs/*.md) MUST be in MAP, or `pnpm sync-docs` never touches
+// it and it falls behind the package doc without anyone noticing. This is the
+// exact gap that let agent-guidelines.mdx drift. Fail --check when a
+// sourcePath page is not mapped.
+// Pages that carry a `sourcePath` for reference but are DELIBERATELY
+// hand-authored on the site (a friendlier / intentionally divergent version),
+// so they are not auto-ported. Adding a slug here is a conscious decision; the
+// alternative is to put it in MAP so it auto-syncs. Either way a sourcePath
+// page must be accounted for — that is what stops silent drift.
+const HAND_AUTHORED_SOURCEPATH = new Set([
+  'getting-started/quick-start',
+  'getting-started/troubleshooting',
+  'auth/roles',
+])
+
+function checkPortedPagesMapped() {
+  const unmapped = []
+  ;(function walk(dir) {
+    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+      const full = path.join(dir, entry.name)
+      if (entry.isDirectory()) walk(full)
+      else if (entry.isFile() && full.endsWith('.mdx')) {
+        const head = fs.readFileSync(full, 'utf8').slice(0, 800)
+        const m = head.match(/^sourcePath:\s*["']?martis-package\/docs\/([^"'\n]+)["']?/m)
+        if (!m) continue
+        const slug = path.relative(CONTENT_DIR, full).replace(/\.mdx$/, '')
+        if (!(slug in MAP) && !HAND_AUTHORED_SOURCEPATH.has(slug)) {
+          unmapped.push({ slug, source: m[1], rel: path.relative(ROOT, full) })
+        }
+      }
+    }
+  })(CONTENT_DIR)
+
+  if (unmapped.length) {
+    console.error(`\n${unmapped.length} page(s) declare a sourcePath but are NOT in the porter MAP (they silently drift):`)
+    for (const u of unmapped) {
+      console.error(`  ✗ ${u.rel} — add '${u.slug}': '${u.source}' to MAP (auto-port) or to HAND_AUTHORED_SOURCEPATH (keep hand-authored) in scripts/sync-docs.mjs`)
+    }
+    return false
+  }
+  console.log('✓ every sourcePath page is in the porter MAP.')
+  return true
+}
+
+const portedMapOk = checkPortedPagesMapped()
+
+if (isCheckMode && (stale > 0 || !portedMapOk)) {
+  if (stale > 0) console.error(`\n${stale} doc(s) stale — run \`pnpm sync-docs\` to update.`)
   process.exit(1)
 }
 

@@ -1,11 +1,10 @@
 ---
-title: "Agent Guidelines and the Martis MCP Server"
-description: "Generate guidelines for AI coding agents (Claude Code, Codex, Cursor, Gemini, Copilot) and optionally wire the Martis MCP server so the agent can fetch deep dives on demand."
+title: "Agent guidelines and the Martis MCP server"
+description: "Martis ships a generator for AI coding agents (Claude Code, Codex, Cursor, Gemini, Copilot) plus an optional MCP server that exposes the package documentation over the Model Context Protocol."
 sourcePath: "martis-package/docs/agent-guidelines.md"
 ---
 
 # Agent guidelines and the Martis MCP server
-
 Martis ships a generator for AI coding agents (Claude Code, Codex, Cursor, Gemini, Copilot) plus an optional MCP server that exposes the package documentation over the Model Context Protocol.
 
 The goal is to make agent-assisted development on Martis productive out of the box: one command produces a dense, prescriptive primer your agent loads on session start, and an optional MCP server lets the agent fetch deep dives on demand without scanning your `vendor/` tree.
@@ -62,23 +61,30 @@ The primer covers Martis idioms: the 31 generators, field rules, resource conven
 When the MCP is wired, the generated `AGENTS.md` / `CLAUDE.md` route **every**
 documentation lookup through the MCP tools (`martis_doc_search`,
 `martis_doc_read`, `martis_doc_list`) and never point the agent at the raw
-`docs/*.md` files in `vendor/`. The MCP returns scoped, ranked, token-cheap
-results and is the single source of truth. If a tool call reports
-`enabled: false` (or errors), the guidance is to **stop and ask the operator to
-re-enable/restart the MCP**, not to fall back to the files. When no MCP is
-wired, the guidelines list the file paths, because then the files are the only
-source.
+`docs/*.md` files in `vendor/`. This is deliberate: the MCP returns scoped,
+ranked, token-cheap results and is the single source of truth. If a tool call
+reports `enabled: false` (or errors), the guidance is to **stop and ask the
+operator to re-enable/restart the MCP**, not to fall back to the files. When no
+MCP is wired, the guidelines list the file paths, because then the files are the
+only source.
 
 ### Optional: machine-enforced doc guard (`--with-doc-guard`)
 
-For a fool-proof guarantee on **Claude Code**, `--with-doc-guard` installs
-`.claude/martis-doc-guard.php` plus a `PreToolUse` hook (matcher
-`Bash|Read|Grep|Glob`) that blocks any tool call which *reads* a Martis doc from
-the filesystem and steers the agent to the MCP. It inspects the specific
+Prose relies on the model complying. For a fool-proof guarantee on **Claude
+Code**, `--with-doc-guard` installs:
+
+- `.claude/martis-doc-guard.php` — a small guard script, and
+- a `PreToolUse` hook in `.claude/settings.json` (matcher `Bash|Read|Grep|Glob`)
+  that runs it.
+
+The guard blocks any tool call that **reads** a Martis doc from the filesystem
+(`Read`/`Grep`/`Glob` on the docs dir, or a Bash command that opens a concrete
+`docs/<slug>.md` file) and steers the agent to the MCP. It inspects the specific
 tool-input fields, so a command that merely *mentions* the docs directory as a
-search string is **not** blocked. Idempotent, and it preserves any hooks you
-already have. Pair it with `--with-mcp` so the agent has the MCP to fall back
-to. It is Claude-Code specific; other agents use different hook mechanisms.
+search string (e.g. `grep 'vendor/martis/martis/docs' somefile`) is **not**
+blocked. Re-running the command is idempotent, and it preserves any hooks you
+already have. Pair it with `--with-mcp` so the agent has the MCP to fall back to.
+The guard is Claude-Code specific; other agents use different hook mechanisms.
 
 ## The MCP server
 
@@ -89,24 +95,6 @@ to. It is Claude-Code specific; other agents use different hook mechanisms.
 - `martis_doc_search` — top matches for a query, with snippets.
 
 The server reads `MARTIS_MCP_ENABLED` at boot. When `false`, the tools return a short notice instead of running. This lets you toggle the integration on and off via `.env` without editing your agent's MCP config.
-
-### Manual MCP wiring
-
-If you prefer to wire MCP yourself, add this to your agent's MCP config (`.mcp.json`, `.cursor/mcp.json`, etc.):
-
-```json
-{
-  "mcpServers": {
-    "martis": {
-      "command": "php",
-      "args": ["artisan", "martis:mcp-serve"],
-      "cwd": "/absolute/path/to/your/laravel/app"
-    }
-  }
-}
-```
-
-Codex uses a TOML format under `[mcp_servers.martis]` instead of `mcpServers.martis`. The `martis:agents --mcp-only` flow does this for you.
 
 ## Running the MCP over HTTP (default since v1.15.0)
 
@@ -244,7 +232,6 @@ If you prefer to wire MCP yourself, add this to your agent's MCP config (`.mcp.j
 
 Codex uses a TOML format under `[mcp_servers.martis]` instead of `mcpServers.martis`. The `martis:agents --mcp-only` flow does this for you.
 
-
 ## Detection table
 
 | Agent | Detection signals | Guideline file | MCP config file |
@@ -261,11 +248,11 @@ Codex uses a TOML format under `[mcp_servers.martis]` instead of `mcpServers.mar
 
 The primer is rendered from a stub at `stubs/agents/AGENTS.md.stub` inside the package. Three placeholders are substituted at write time:
 
-- `\{\{project_name\}\}` — pulled from your `composer.json` `name`, falls back to the directory basename.
-- `\{\{namespace\}\}` — resolved from the `App\\` PSR-4 mapping in `composer.json`.
-- `\{\{martis_version\}\}` — read from `vendor/composer/installed.json`.
+- `{{project_name}}` — pulled from your `composer.json` `name`, falls back to the directory basename.
+- `{{namespace}}` — resolved from the `App\` PSR-4 mapping in `composer.json`.
+- `{{martis_version}}` — read from `vendor/composer/installed.json`.
 
-The MCP section is wrapped in `\{\{MCP_SECTION\}\}...\{\{/MCP_SECTION\}\}` markers and rendered only when MCP is wired. To override the stub for your project, publish it through the existing `martis:stubs` mechanism and edit your local copy.
+The MCP section is wrapped in `{{MCP_SECTION}}...{{/MCP_SECTION}}` markers and rendered only when MCP is wired. To override the stub for your project, publish it through the existing `martis:stubs` mechanism and edit your local copy.
 
 ## Idempotency
 
@@ -274,3 +261,4 @@ Every write the command performs is idempotent. Re-running with the same flags p
 - Guideline files are byte-comparable across runs (same stub, same substitutions).
 - The MCP config patcher merges the `martis` entry without disturbing other servers you may have configured. A `.bak` of the config file is dropped beside it before any rewrite.
 - The `.env` patcher only adds `MARTIS_MCP_ENABLED` when missing — it never overwrites an operator-set value.
+
