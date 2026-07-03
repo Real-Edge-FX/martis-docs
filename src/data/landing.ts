@@ -154,7 +154,7 @@ class SendInvoice extends Action
 
 export type CodeSampleKey = keyof typeof CODE_SAMPLES
 
-export const VERSION = 'v1.17.1'
+export const VERSION = 'v1.18.0'
 
 /**
  * One-line headline shown alongside VERSION in the landing-page
@@ -163,4 +163,4 @@ export const VERSION = 'v1.17.1'
  * the tag actually ships. Keep under ~60 chars so the badge stays on
  * one line on common desktop widths.
  */
-export const RELEASE_HEADLINE = 'DrawerShell exposed on the @martis/runtime barrel'
+export const RELEASE_HEADLINE = 'martis:agents routes docs through the MCP'
