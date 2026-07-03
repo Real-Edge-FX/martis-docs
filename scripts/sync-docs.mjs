@@ -66,6 +66,7 @@ const MAP = {
   'customization/components': 'components.md',
   'customization/agent-guidelines': 'agent-guidelines.md',
   'customization/tools': 'tools.md',
+  'customization/tool-fields': 'tool-fields.md',
   'customization/tool-boot-patterns': 'tool-boot-patterns.md',
   'customization/loader': 'loader.md',
   'customization/generators': 'customizing-generators.md',

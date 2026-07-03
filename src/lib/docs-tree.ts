@@ -63,6 +63,7 @@ export const DOC_NAV: DocGroup[] = [
       { slug: 'customization/overrides',          label: 'Override system',        icon: 'Layers',    badge: '4',  tooltip: '4-tier component resolution (app → tool → package → built-in)' },
       { slug: 'customization/components',         label: 'Built-in components',    icon: 'Stack' },
       { slug: 'customization/tools',              label: 'Custom Tools',           icon: 'Plug' },
+      { slug: 'customization/tool-fields',        label: 'Fields in Tools',        icon: 'Plug' },
       { slug: 'customization/tool-boot-patterns', label: 'Tool boot patterns',     icon: 'Plug' },
       { slug: 'customization/loader',             label: 'Loader screen',          icon: 'Layers' },
       { slug: 'customization/generators',         label: 'Customising generators', icon: 'Bolt',      badge: '18', tooltip: '18 Artisan generators (martis:resource, martis:action, …)' },
