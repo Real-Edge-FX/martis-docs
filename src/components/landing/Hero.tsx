@@ -139,7 +139,7 @@ export function Hero() {
           >
             <span className="flex items-center gap-1.5">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 pulse-soft" />
-              2,363 tests passing
+              2,364 tests passing
             </span>
             <span className="hidden sm:inline">·</span>
             <span className="hidden sm:inline">MIT licensed</span>
