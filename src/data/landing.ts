@@ -154,7 +154,7 @@ class SendInvoice extends Action
 
 export type CodeSampleKey = keyof typeof CODE_SAMPLES
 
-export const VERSION = 'v1.24.0'
+export const VERSION = 'v1.25.0'
 
 /**
  * One-line headline shown alongside VERSION in the landing-page
@@ -163,4 +163,4 @@ export const VERSION = 'v1.24.0'
  * the tag actually ships. Keep under ~60 chars so the badge stays on
  * one line on common desktop widths.
  */
-export const RELEASE_HEADLINE = 'Headless resources: registered, not routable'
+export const RELEASE_HEADLINE = 'Headless resources, findable in global search'
