@@ -8,3 +8,4 @@ tsconfig.tsbuildinfo
 .astro/
 public/search-index.json
 .claude/
+.claude-flow/
