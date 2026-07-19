@@ -74,6 +74,7 @@ const MAP = {
   'auth/authentication': 'authentication.md',
   'auth/sso': 'sso.md',
   'auth/impersonation': 'impersonation.md',
+  'auth/invitations': 'invitations.md',
   'auth/authorization': 'authorization.md',
   'reference/configuration': 'configuration.md',
   'reference/cache': 'cache.md',
