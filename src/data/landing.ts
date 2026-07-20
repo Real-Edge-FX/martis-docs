@@ -8,7 +8,7 @@ export const STATS: { n: string; l: string }[] = [
   { n: '50',    l: 'Field types' },
   { n: '12',    l: 'Relationship kinds' },
   { n: '94',    l: 'Theme tokens' },
-  { n: '2,602', l: 'Tests passing' },
+  { n: '2,627', l: 'Tests passing' },
 ]
 
 export interface FeatureCard {
@@ -154,7 +154,7 @@ class SendInvoice extends Action
 
 export type CodeSampleKey = keyof typeof CODE_SAMPLES
 
-export const VERSION = 'v1.32.1'
+export const VERSION = 'v1.32.2'
 
 /**
  * One-line headline shown alongside VERSION in the landing-page
@@ -163,4 +163,4 @@ export const VERSION = 'v1.32.1'
  * the tag actually ships. Keep under ~60 chars so the badge stays on
  * one line on common desktop widths.
  */
-export const RELEASE_HEADLINE = 'martis:roles patches HasRoles reliably on Laravel 12'
+export const RELEASE_HEADLINE = 'Loading overlay while the UI language switches'
