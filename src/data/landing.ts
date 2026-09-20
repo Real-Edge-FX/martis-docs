@@ -8,7 +8,7 @@ export const STATS: { n: string; l: string }[] = [
   { n: '50',    l: 'Field types' },
   { n: '12',    l: 'Relationship kinds' },
   { n: '94',    l: 'Theme tokens' },
-  { n: '2,822', l: 'Tests passing' },
+  { n: '2,876', l: 'Tests passing' },
 ]
 
 export interface FeatureCard {
@@ -154,7 +154,7 @@ class SendInvoice extends Action
 
 export type CodeSampleKey = keyof typeof CODE_SAMPLES
 
-export const VERSION = 'v1.36.0'
+export const VERSION = 'v1.37.0'
 
 /**
  * One-line headline shown alongside VERSION in the landing-page
