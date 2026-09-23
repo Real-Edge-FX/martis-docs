@@ -143,7 +143,7 @@ AZURE_REDIRECT_URI=https://your-app.example.com/martis/sso/azure/callback
 AZURE_RESOURCE_ID=...
 ```
 
-See [SSO](sso.md) for the full provider matrix and the four canonical recipes.
+See [SSO](/docs/auth/sso) for the full provider matrix and the four canonical recipes.
 
 ### Forgot-password email returns 503 instead of sending
 
@@ -212,7 +212,7 @@ BelongsTo::make('Owner', 'owner', \App\Martis\UserResource::class)
     ->relationSearchable(),
 ```
 
-`relationSearchable()` is shipped on `BelongsTo`, `MorphTo`, `HasMany`, `MorphMany`, and `Tag`. It tells the global search to issue a `whereHas` against the related table's title attribute (or the columns you explicitly opt in via the resource's `searchableRelations()`). See [Fields](fields.md#searchable) for the full search behaviour.
+`relationSearchable()` is shipped on `BelongsTo`, `MorphTo`, `HasMany`, `MorphMany`, and `Tag`. It tells the global search to issue a `whereHas` against the related table's title attribute (or the columns you explicitly opt in via the resource's `searchableRelations()`). See [Fields](/docs/core/fields#sortable--searchable) for the full search behaviour.
 
 ## Theme and components
 
@@ -274,7 +274,7 @@ public function cacheFor(): ?DateTimeInterface
 }
 ```
 
-See [Metrics](metrics.md) for the cache key and ranges.
+See [Metrics](/docs/core/metrics) for the cache key and ranges.
 
 ### Cache subsystem disabled at runtime
 
@@ -302,10 +302,10 @@ app()->setLocale('pt_PT');
 
 There is no `Profile->locale` column and no `Martis::setLocale()` helper — both belong to old drafts of this page.
 
-See [Internationalisation](i18n.md) for the resolution order and the published lang files.
+See [Internationalisation](/docs/customization/i18n) for the resolution order and the published lang files.
 
 ## Still stuck?
 
 - [Open a GitHub issue](https://github.com/Real-Edge-FX/martis-package/issues/new) with PHP version, Laravel version, and the smallest reproducer you can produce.
 - Check the [release history](https://github.com/Real-Edge-FX/martis-package/releases) — your problem may already be fixed in a newer tag.
-- Read [Configuration](configuration.md) for the full list of `MARTIS_*` env flags.
+- Read [Configuration](/docs/reference/configuration) for the full list of `MARTIS_*` env flags.

@@ -13,7 +13,8 @@
 //
 // Transformations applied to each .md → .mdx:
 //   1. Frontmatter block prepended (title, description, sourcePath).
-//   2. Relative `[link](other.md)` rewritten to `/docs/<slug>`.
+//   2. Relative `[link](other.md)` (also `../other.md` from a page in a
+//      subfolder) rewritten to `/docs/<slug>`.
 //   3. `<` and `{` outside fenced blocks escaped so JSX does not eat
 //      them. (MDX is strict about `{` and tag-like sequences.)
 //
@@ -89,20 +90,36 @@ const MAP = {
   'reference/api': 'api/overview.md',
 }
 
+// Package docs whose page on the site is hand-authored rather than ported
+// (see HAND_AUTHORED_SOURCEPATH below, and core/gates, which carries no
+// sourcePath). They are not synced, but a ported page that links one must
+// still land on it.
+const LINK_ONLY = {
+  'getting-started/quick-start': 'quick-start.md',
+  'getting-started/troubleshooting': 'troubleshooting.md',
+  'auth/roles': 'roles.md',
+  'core/gates': 'gates.md',
+}
+
 // Inverse map of package filename → public slug. Used to rewrite
 // inter-doc relative links during the sync.
 const INVERSE = Object.fromEntries(
-  Object.entries(MAP).map(([slug, file]) => [file, slug]),
+  Object.entries({ ...LINK_ONLY, ...MAP }).map(([slug, file]) => [file, slug]),
 )
 
 const isCheckMode = process.argv.includes('--check')
 
-function rewriteLinks(md) {
-  // [text](file.md) or [text](file.md#anchor) → [text](/docs/<slug>#anchor)
+function rewriteLinks(md, sourceFile) {
+  // [text](file.md), [text](../file.md) or [text](dir/file.md#anchor)
+  // → [text](/docs/<slug>#anchor). The target resolves against the
+  // folder of the page that links it (`sourceFile` is relative to the
+  // package docs), so `api/overview.md` can link `../fields.md`.
+  const sourceDir = path.posix.dirname(sourceFile)
   return md.replace(
-    /\[([^\]]+)\]\(([a-z0-9_\-]+)\.md(#[a-z0-9_\-]+)?\)/gi,
-    (whole, text, file, anchor) => {
-      const slug = INVERSE[`${file}.md`]
+    /\[([^\]]+)\]\(((?:\.{1,2}\/)*(?:[a-z0-9_\-]+\/)*[a-z0-9_\-]+)\.md(#[a-z0-9_\-]+)?\)/gi,
+    (whole, text, target, anchor) => {
+      const file = path.posix.normalize(path.posix.join(sourceDir, `${target}.md`))
+      const slug = INVERSE[file]
       if (!slug) return whole // unmapped; leave the broken link visible
       return `[${text}](/docs/${slug}${anchor ?? ''})`
     },
@@ -158,6 +175,15 @@ function escapeMdxHazards(md) {
   return out.join('\n')
 }
 
+// The description is plain text (the search index shows it as an excerpt):
+// drop link targets, emphasis markers and backticks, keep their text.
+function plainText(md) {
+  return md
+    .replace(/\[([^\]]+)\]\([^)]*\)/g, '$1')
+    .replace(/(\*\*|__)(.+?)\1/g, '$2')
+    .replace(/`([^`]*)`/g, '$1')
+}
+
 function deriveTitleAndDescription(md) {
   // Title = first level-1 heading; description = first non-blockquote
   // non-empty paragraph after the title that isn't a heading or list.
@@ -175,7 +201,7 @@ function deriveTitleAndDescription(md) {
     if (/^[>#\-*]/.test(trimmed)) continue
     if (trimmed.startsWith('```')) continue
     if (trimmed.startsWith('<')) continue
-    description = trimmed.replace(/\n/g, ' ').slice(0, 280).trim()
+    description = plainText(trimmed.replace(/\n/g, ' ')).slice(0, 280).trim()
     break
   }
   return { title, description }
@@ -186,7 +212,8 @@ function transform(slug, sourceFile) {
   const { title, description } = deriveTitleAndDescription(md)
   // Strip the duplicated H1 (we render the title from frontmatter).
   const body = md.replace(/^#\s+.+?\s*$/m, '').trimStart()
-  const transformed = escapeMdxHazards(rewriteLinks(body))
+  const relativeSource = path.relative(PACKAGE_DOCS, sourceFile).split(path.sep).join('/')
+  const transformed = escapeMdxHazards(rewriteLinks(body, relativeSource))
   const safeTitle = title.replace(/"/g, '\\"')
   const safeDesc = description.replace(/"/g, '\\"')
   const frontmatter = [
@@ -370,7 +397,45 @@ function checkPortedPagesMapped() {
 
 const portedMapOk = checkPortedPagesMapped()
 
-if (isCheckMode && (stale > 0 || !portedMapOk)) {
+// A relative `.md` link on the site is a 404: the pages live under
+// /docs/<slug>. The porter rewrites every link to a mapped page, so one
+// that survives points at an unmapped file, or sits in a hand-authored page
+// that must use the /docs/<slug> form itself. Fenced code is ignored.
+function checkRelativeMdLinks() {
+  const offenders = []
+  ;(function walk(dir) {
+    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+      const full = path.join(dir, entry.name)
+      if (entry.isDirectory()) walk(full)
+      else if (entry.isFile() && full.endsWith('.mdx')) {
+        let inFence = false
+        fs.readFileSync(full, 'utf8').split('\n').forEach((line, index) => {
+          if (/^\s{0,3}```/.test(line)) {
+            inFence = !inFence
+            return
+          }
+          if (inFence) return
+          for (const m of line.matchAll(/\]\(([^)\s]+?\.md(?:#[^)\s]*)?)\)/g)) {
+            if (/^[a-z]+:\/\//i.test(m[1])) continue
+            offenders.push(`${path.relative(ROOT, full)}:${index + 1}: ${m[1]}`)
+          }
+        })
+      }
+    }
+  })(CONTENT_DIR)
+
+  if (offenders.length) {
+    console.error(`\n${offenders.length} relative .md link(s) that 404 on the site (use /docs/<slug>, or map the page):`)
+    for (const o of offenders) console.error(`  ✗ ${o}`)
+    return false
+  }
+  console.log('✓ no relative .md links in src/content/.')
+  return true
+}
+
+const linksOk = checkRelativeMdLinks()
+
+if (isCheckMode && (stale > 0 || !portedMapOk || !linksOk)) {
   if (stale > 0) console.error(`\n${stale} doc(s) stale — run \`pnpm sync-docs\` to update.`)
   process.exit(1)
 }

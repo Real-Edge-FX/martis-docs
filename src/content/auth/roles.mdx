@@ -257,7 +257,7 @@ public function update(User $actor, User $target): bool
 
 ## Interaction with SSO group sync
 
-When `martis:sso azure --with-spatie --with-migration` ran in the same project, Spatie roles gain a `provider_group_name` column (see [`docs/sso.md`](sso.md#7-spatie--laravel-permission-integration)). The generated `UserResource` filters out any role tied to an SSO provider from its picker, because:
+When `martis:sso azure --with-spatie --with-migration` ran in the same project, Spatie roles gain a `provider_group_name` column (see [`docs/sso.md`](/docs/auth/sso#7-spatie--laravel-permission-integration)). The generated `UserResource` filters out any role tied to an SSO provider from its picker, because:
 
 1. The IdP owns those roles. The next sign-in would overwrite any manual change.
 2. The operator should grant local-only roles via the admin UI; SSO-driven roles flow in automatically.
@@ -388,6 +388,6 @@ Remove the `Gate::policy(...)` block from `App\Providers\AuthServiceProvider::bo
 
 ## Next steps
 
-- [Authorization](authorization.md) — policy patterns and gate basics.
-- [SSO](sso.md) — wire Azure AD, Google, or a custom IdP and let it manage a subset of roles.
-- [Resources](resources.md) — extend the generated User / Role / Permission classes with fields, filters, lenses.
+- [Authorization](/docs/auth/authorization) — policy patterns and gate basics.
+- [SSO](/docs/auth/sso) — wire Azure AD, Google, or a custom IdP and let it manage a subset of roles.
+- [Resources](/docs/core/resources) — extend the generated User / Role / Permission classes with fields, filters, lenses.
