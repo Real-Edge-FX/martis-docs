@@ -1,6 +1,6 @@
 ---
 title: "Resources — Complete Reference"
-description: "The `Resource` class is the core building block of Martis. Each resource maps to an Eloquent model and defines its CRUD interface, fields, authorization, and behavior."
+description: "The Resource class is the core building block of Martis. Each resource maps to an Eloquent model and defines its CRUD interface, fields, authorization, and behavior."
 sourcePath: "martis-package/docs/resources.md"
 ---
 
@@ -589,6 +589,8 @@ Source: `src/Resource.php::resolvedPerPage()`.
 
 Sets the initial sort column and direction on the index page. Returns `null` (default) for no default sorting.
 
+The default sort follows the rule of every `?sort=` (v1.38.0): it orders the index only when it names a `sortable()` field the user can see (`canSee()`). For a user who cannot see that field the index keeps the order its query gives (`indexQuery()`), as for a default sort that names no sortable field. Before v1.38.0 a default sort by a field the user cannot see ordered the index by that field.
+
 ```php
 public static function defaultSort(): ?string
 {
@@ -717,6 +719,8 @@ See [Default Row Actions — Row-click redundancy](/docs/core/default-row-action
 
 Martis differential. Opts the create/update surfaces — both drawer overrides and full-page create/update routes — into the **UnsavedChangesDialog**. When the user tries to discard changes (close the drawer, navigate away, click Cancel), the dialog asks for confirmation.
 
+On the full-page routes the browser back button is held only while the form has unsaved changes (v1.38.0+); a clean form leaves Back and Forward working as on any other page. Before v1.38.0 opening a create or edit page erased the Forward history, and Back could skip the previous page. See [Overrides → Unsaved changes guard](/docs/customization/overrides#unsaved-changes-guard).
+
 ```php
 // Enable with package defaults (generic copy).
 public static function confirmUnsavedChanges(): bool
@@ -776,10 +780,10 @@ Both the create and update forms ship with three submit buttons each, covering t
 | Page | Button | Post-save destination |
 |---|---|---|
 | Create | `Create {Resource}` (primary) | Detail page of the new record |
-| Create | `Create & add another` | Same `/create` page with a freshly cleared form |
+| Create | `Create & add another` | Same `/create` page with a freshly cleared form, whose fields mount again so none keeps the previous record's state (v1.38.0+) |
 | Create | `Create & view list` | Resource index |
 | Update | `Save changes` (primary) | Detail page of the record |
-| Update | `Save & continue editing` | Same `/edit` page (baseline refreshed so the unsaved-changes guard does NOT re-trigger) |
+| Update | `Save & continue editing` | Same `/edit` page (baseline refreshed to the values saved, so the unsaved-changes guard does NOT re-trigger for them; anything typed while the save ran still counts as unsaved, v1.38.0+) |
 | Update | `Save & view list` | Resource index |
 
 The two extra buttons are **hidden when the form is launched from a nested relation** (i.e. `?viaResource=…&viaResourceId=…`). Nested flows already manage their own post-save redirect to the parent surface, and a "view list" jump from inside a relation panel would be confusing.
@@ -821,7 +825,7 @@ Return `null` (the default) to keep the standard behaviour. The two extra save v
 
 The string travels back to the SPA in the create/update response under `meta.redirectTo`.
 
-Since v1.38.0 a destination on another record's edit page opens that record's form from scratch; the page used to keep the form it had just saved, so the next save sent those values to the new record. A destination on the same record's edit page keeps the saved values, which no longer count as unsaved changes. A destination on another resource's create page, another parent's nested create or another record to replicate opens a fresh create form the same way.
+Since v1.38.0 a destination on another record's edit page opens that record's form from scratch; the page used to keep the form it had just saved, so the next save sent those values to the new record. A destination on the same record's edit page keeps the saved values, which no longer count as unsaved changes; what was typed while the save ran still does (before v1.38.0 it counted as saved too, and leaving the page dropped it without asking). A destination on another resource's create page, another parent's nested create or another record to replicate opens a fresh create form the same way.
 
 ## Index toolbar resets
 
@@ -928,7 +932,7 @@ Override the default notification messages and confirm dialogs shown after CRUD 
 | `deletedMessage()` | Toast after `DELETE /resources/:key/:id` succeeds. | `martis::messages.record_deleted` |
 | `restoredMessage()` | Toast after a soft-deleted record is restored. | `martis::messages.record_restored` |
 | `forceDeletedMessage()` | Toast after a soft-deleted record is permanently deleted. | `martis::messages.record_force_deleted` |
-| `replicatedMessage()` | Toast after a record is duplicated via the Replicate action. | `martis::messages.record_replicated` |
+| `replicatedMessage()` | Toast after a record is duplicated via the Replicate action (v1.38.0+; before, the create after a Replicate showed `createdMessage()`). | `martis::messages.record_replicated` |
 | `deleteConfirmMessage()` | Body of the destructive-delete confirm dialog. | `martis::messages.delete_confirm` |
 | `archiveConfirmMessage()` | Body of the soft-delete (archive) confirm dialog. | `martis::messages.archive_confirm` |
 | `forceDeleteConfirmMessage()` | Body of the force-delete confirm dialog (trashed records only). | `martis::messages.force_delete_confirm` |
@@ -1094,7 +1098,7 @@ Override these directly on a Resource to hardcode behaviour without writing a Po
 |---------|----------|-------------------|
 | `add{Model}` | Inline create related record | allowed |
 | `attach{Model}` | Attach specific related record | allowed |
-| `attachAny{Model}` | Show attach button | allowed |
+| `attachAny{Model}` | Attach at all: the list of records to attach, the attach and the attach modal's pivot pickers answer 403 when it denies (v1.38.0+) | allowed |
 | `detach{Model}` | Detach related record | allowed |
 
 ### Authorization Metadata

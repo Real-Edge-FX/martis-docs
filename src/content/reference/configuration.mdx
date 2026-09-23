@@ -1,6 +1,6 @@
 ---
 title: "Configuration"
-description: "Martis is configured through `config/martis.php`. Publish it with the bundled wrapper (or the standard `vendor:publish` if you prefer):"
+description: "Martis is configured through config/martis.php. Publish it with the bundled wrapper (or the standard vendor:publish if you prefer):"
 sourcePath: "martis-package/docs/configuration.md"
 ---
 
@@ -1125,7 +1125,7 @@ In addition to `MARTIS_IMPERSONATION_ENABLED` (covered above), the impersonation
 ],
 ```
 
-Off by default. When enabled, mounts the Scramble-generated OpenAPI 3.1 surface at `/{path}` (default `/api-docs`). See [API → Overview](api/overview.md) for the worker-restart caveat: PHP-FPM caches parsed env in process memory, so flipping the env requires restarting workers (or the PHP container) before the gate sees the new value.
+Off by default. When enabled, mounts the Scramble-generated OpenAPI 3.1 surface at `/{path}` (default `/api-docs`). See [API → Overview](/docs/reference/api) for the worker-restart caveat: PHP-FPM caches parsed env in process memory, so flipping the env requires restarting workers (or the PHP container) before the gate sees the new value.
 
 ## Notifications
 
