@@ -8,7 +8,7 @@ export const STATS: { n: string; l: string }[] = [
   { n: '50',    l: 'Field types' },
   { n: '12',    l: 'Relationship kinds' },
   { n: '94',    l: 'Theme tokens' },
-  { n: '3,343', l: 'Tests passing' },
+  { n: '3,370', l: 'Tests passing' },
 ]
 
 export interface FeatureCard {
