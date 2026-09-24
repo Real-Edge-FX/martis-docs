@@ -103,9 +103,17 @@ export function rootHasContent(html) {
   return stripped.length > 0 && !stripped.startsWith('</div>')
 }
 
-/** src of every `<script type="module">`, in document order. */
+/** src of every `<script type="module">`, in document order. Checks
+ *  `type="module"` and `src="..."` independently within each opening
+ *  tag, so it matches regardless of which attribute comes first. */
 export function extractModuleScriptSrcs(html) {
-  return [...html.matchAll(/<script\s+type="module"[^>]*\ssrc="([^"]+)"[^>]*>/g)].map((m) => m[1])
+  const srcs = []
+  for (const [tag] of html.matchAll(/<script\b[^>]*>/g)) {
+    if (!/\btype="module"/.test(tag)) continue
+    const src = /\bsrc="([^"]*)"/.exec(tag)?.[1]
+    if (src) srcs.push(src)
+  }
+  return srcs
 }
 
 /** Every /assets/ path referenced by an href or src attribute. */
@@ -134,28 +142,49 @@ export function extractHrefSrcValues(html) {
   return [...html.matchAll(/(?:href|src)="([^"]*)"/g)].map((m) => m[1])
 }
 
+/** Removes every href="..."/src="..." attribute value from `text`. Used
+ *  to keep the <head>-text forbidden-host scan from re-reporting a
+ *  value the href/src-attribute scan (over the whole document) already
+ *  covers more precisely — so a bad host inside a head href is reported
+ *  once, not twice. */
+export function stripHrefSrcAttributeValues(text) {
+  return text.replace(/(?:href|src)="[^"]*"/g, '')
+}
+
 /** All checks for one route's prerendered HTML file. `meta` is this
- *  route's `getRouteMeta(route)` result. Returns failure messages,
- *  empty when the page is clean. */
+ *  route's `getRouteMeta(route)` result. Returns failure messages
+ *  (exact duplicates removed), empty when the page is clean. */
 export function checkRoute(route, html, meta) {
   const failures = []
+  // description/canonical/Open Graph/robots must come from <head>: a
+  // copy of any of these tags sitting in the body (e.g. inside a docs
+  // page's example markup) must not count as the page's real metadata.
+  const head = extractHeadSection(html)
 
   const mainCount = countMainTags(html)
   if (mainCount !== 1) failures.push(`expected exactly one <main>, found ${mainCount}`)
 
   if (!extractTitle(html)) failures.push('missing or empty <title>')
 
-  if (!hasMetaDescription(html)) failures.push('missing <meta name="description">')
+  if (!hasMetaDescription(head)) failures.push('missing <meta name="description"> in <head>')
 
-  const canonicals = extractCanonicalLinks(html)
-  if (canonicals.length !== 1) {
-    failures.push(`expected exactly one canonical link, found ${canonicals.length}`)
-  } else if (canonicals[0] !== meta.canonical) {
-    failures.push(`canonical is "${canonicals[0]}", expected "${meta.canonical}"`)
+  // Duplicate detection stays whole-document: a stray second canonical
+  // anywhere, even outside <head>, is still wrong. But the one
+  // canonical that counts as "present" must actually be the one in
+  // <head> — an exact count of 1 that turns out to live in the body
+  // does not satisfy the check.
+  const allCanonicals = extractCanonicalLinks(html)
+  const headCanonicals = extractCanonicalLinks(head)
+  if (allCanonicals.length !== 1) {
+    failures.push(`expected exactly one canonical link, found ${allCanonicals.length}`)
+  } else if (headCanonicals.length !== 1) {
+    failures.push('canonical link is not in <head>')
+  } else if (headCanonicals[0] !== meta.canonical) {
+    failures.push(`canonical is "${headCanonicals[0]}", expected "${meta.canonical}"`)
   }
 
-  const missingOg = missingOpenGraphTags(html)
-  if (missingOg.length > 0) failures.push(`missing Open Graph tag(s): ${missingOg.join(', ')}`)
+  const missingOg = missingOpenGraphTags(head)
+  if (missingOg.length > 0) failures.push(`missing Open Graph tag(s) in <head>: ${missingOg.join(', ')}`)
 
   if (!rootHasContent(html)) failures.push('#root has no rendered content')
 
@@ -164,15 +193,23 @@ export function checkRoute(route, html, meta) {
 
   if (hasStaleMarkers(html)) failures.push(`leftover ${HEAD_MARKER} or ${HTML_MARKER} marker`)
 
-  const expectNoIndex = Boolean(meta.noIndex)
-  const actualNoIndex = hasRobotsNoindex(html)
+  // Independent of the metadata: /404 must be noindex no matter what
+  // the route registry says, so a registry mistake (meta.noIndex
+  // wrongly false/missing for /404) cannot silently pass alongside a
+  // page that is genuinely missing the tag.
+  const expectNoIndex = route === '/404' || Boolean(meta.noIndex)
+  const actualNoIndex = hasRobotsNoindex(head)
   if (expectNoIndex && !actualNoIndex) {
-    failures.push('missing <meta name="robots" content="noindex">')
+    failures.push('missing <meta name="robots" content="noindex"> in <head>')
   } else if (!expectNoIndex && actualNoIndex) {
     failures.push('unexpected <meta name="robots" content="noindex"> (only /404 should have it)')
   }
 
-  for (const name of findForbiddenStrings(extractHeadSection(html))) {
+  // Scan <head> text with its own href/src values stripped out first:
+  // those are already checked, more precisely, by the loop below (over
+  // the whole document), so a bad host inside a head href is reported
+  // once, not once per scan.
+  for (const name of findForbiddenStrings(stripHrefSrcAttributeValues(head))) {
     failures.push(`<head> contains ${name}`)
   }
   for (const value of extractHrefSrcValues(html)) {
@@ -181,7 +218,7 @@ export function checkRoute(route, html, meta) {
     }
   }
 
-  return failures
+  return [...new Set(failures)]
 }
 
 /** Parses dist/search-index.json and checks it is non-empty. */

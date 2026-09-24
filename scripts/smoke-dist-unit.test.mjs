@@ -30,6 +30,7 @@ import {
   missingOpenGraphTags,
   REQUIRED_ROUTES,
   rootHasContent,
+  stripHrefSrcAttributeValues,
 } from './smoke-dist.mjs'
 
 // A realistic clean page, close to what prerender.mjs actually
@@ -84,7 +85,14 @@ test('checkRoute fails on an empty or missing <title>', () => {
 
 test('checkRoute fails when the description meta tag is missing', () => {
   const html = okHtml().replace('<meta name="description" content="Model, operate and ship." />', '')
-  assert.ok(checkRoute('/product', html, OK_META).includes('missing <meta name="description">'))
+  assert.ok(checkRoute('/product', html, OK_META).includes('missing <meta name="description"> in <head>'))
+})
+
+test('checkRoute does not count a description tag that only exists in the body', () => {
+  const html = okHtml()
+    .replace('<meta name="description" content="Model, operate and ship." />', '')
+    .replace('<h1>Product</h1>', '<h1>Product</h1><meta name="description" content="stray, from the body" />')
+  assert.ok(checkRoute('/product', html, OK_META).includes('missing <meta name="description"> in <head>'))
 })
 
 test('checkRoute fails when the canonical link is missing', () => {
@@ -100,6 +108,23 @@ test('checkRoute fails when two canonical links are present', () => {
   assert.ok(checkRoute('/product', html, OK_META).some((f) => f.includes('exactly one canonical link, found 2')))
 })
 
+test('checkRoute fails when a second canonical link is in the body, not just in <head>', () => {
+  // The duplicate check is whole-document on purpose: a stray second
+  // canonical anywhere is still wrong, even outside <head>.
+  const html = okHtml().replace(
+    '<h1>Product</h1>',
+    '<h1>Product</h1><link rel="canonical" href="https://getmartis.com/dup-in-body" />',
+  )
+  assert.ok(checkRoute('/product', html, OK_META).some((f) => f.includes('exactly one canonical link, found 2')))
+})
+
+test('checkRoute does not count a canonical link that only exists in the body', () => {
+  const html = okHtml()
+    .replace('<link rel="canonical" href="https://getmartis.com/product" />', '')
+    .replace('<h1>Product</h1>', '<h1>Product</h1><link rel="canonical" href="https://getmartis.com/product" />')
+  assert.ok(checkRoute('/product', html, OK_META).includes('canonical link is not in <head>'))
+})
+
 test('checkRoute fails when the canonical does not match getRouteMeta', () => {
   const html = okHtml({ canonical: 'https://getmartis.com/wrong' })
   assert.ok(checkRoute('/product', html, OK_META).some((f) => f.includes('canonical is "https://getmartis.com/wrong"')))
@@ -107,7 +132,17 @@ test('checkRoute fails when the canonical does not match getRouteMeta', () => {
 
 test('checkRoute fails when an Open Graph tag is missing', () => {
   const html = okHtml().replace('<meta property="og:image" content="https://getmartis.com/social/product.png" />', '')
-  assert.ok(checkRoute('/product', html, OK_META).some((f) => f.includes('missing Open Graph tag(s): og:image')))
+  assert.ok(checkRoute('/product', html, OK_META).some((f) => f.includes('missing Open Graph tag(s) in <head>: og:image')))
+})
+
+test('checkRoute does not count an Open Graph tag that only exists in the body', () => {
+  const html = okHtml()
+    .replace('<meta property="og:image" content="https://getmartis.com/social/product.png" />', '')
+    .replace(
+      '<h1>Product</h1>',
+      '<h1>Product</h1><meta property="og:image" content="https://getmartis.com/social/product.png" />',
+    )
+  assert.ok(checkRoute('/product', html, OK_META).some((f) => f.includes('missing Open Graph tag(s) in <head>: og:image')))
 })
 
 test('checkRoute fails when #root has no rendered content', () => {
@@ -138,9 +173,29 @@ test('checkRoute fails when the 404 route is missing noindex', () => {
   assert.ok(failures.some((f) => f.includes('missing') && f.includes('noindex')))
 })
 
+test('checkRoute requires noindex on /404 even if the route metadata wrongly omits it', () => {
+  // The /404 requirement does not trust meta.noIndex alone: a registry
+  // mistake (noIndex missing/false for the 404 entry) must not let a
+  // 404 page that is genuinely missing the tag pass silently.
+  const failures = checkRoute('/404', okHtml(), { ...OK_META, noIndex: false })
+  assert.ok(failures.some((f) => f.includes('missing') && f.includes('noindex')))
+})
+
 test('checkRoute passes noindex on the 404 route when present', () => {
   const html = okHtml({ noIndex: true })
   assert.deepEqual(checkRoute('/404', html, { ...OK_META, noIndex: true }), [])
+})
+
+test('checkRoute ignores a noindex tag that only exists in the body', () => {
+  // A <meta name="robots"> outside <head> has no effect for a real
+  // browser or crawler either, so a body-only one must not count as
+  // "present" — and must not falsely trigger "unexpected" on a normal
+  // route, since the page's real (head) metadata has none.
+  const html = okHtml().replace(
+    '<h1>Product</h1>',
+    '<h1>Product</h1><meta name="robots" content="noindex" />',
+  )
+  assert.deepEqual(checkRoute('/product', html, OK_META), [])
 })
 
 test('checkRoute fails when the head contains a local hostname', () => {
@@ -149,6 +204,22 @@ test('checkRoute fails when the head contains a local hostname', () => {
     'http://localhost:5173/social/product.png',
   )
   assert.ok(checkRoute('/product', html, OK_META).some((f) => f.includes('<head> contains localhost')))
+})
+
+test('checkRoute reports a forbidden host inside a head href only once', () => {
+  // Before de-duplication, a bad href in <head> was reported twice:
+  // once by the <head>-text scan (which sees the raw href="...") and
+  // once by the href/src-attribute scan. Only the more precise
+  // href/src message should survive. Uses an extra, unrelated <link>
+  // (not the canonical/OG tags) so this is the only forbidden-host
+  // failure in play.
+  const html = okHtml().replace(
+    '</head>',
+    '    <link rel="alternate" href="http://localhost/product" />\n  </head>',
+  )
+  const localhostFailures = checkRoute('/product', html, OK_META).filter((f) => f.includes('localhost'))
+  assert.equal(localhostFailures.length, 1)
+  assert.ok(localhostFailures[0].includes('href/src attribute'))
 })
 
 test('checkRoute fails when an href attribute contains a machine path', () => {
@@ -208,6 +279,20 @@ test('extractModuleScriptSrcs only matches type="module" scripts', () => {
   assert.deepEqual(extractModuleScriptSrcs(html), ['/assets/b.js'])
 })
 
+test('extractModuleScriptSrcs matches regardless of attribute order', () => {
+  // Real build output puts type="module" before src, but nothing
+  // guarantees that order — the check must not depend on it.
+  const html = '<script src="/assets/reordered.js" type="module" crossorigin></script>'
+  assert.deepEqual(extractModuleScriptSrcs(html), ['/assets/reordered.js'])
+})
+
+test('stripHrefSrcAttributeValues removes href/src attribute values but leaves surrounding text intact', () => {
+  assert.equal(
+    stripHrefSrcAttributeValues('<link rel="canonical" href="http://localhost/x"><title>Hi</title>'),
+    '<link rel="canonical" ><title>Hi</title>',
+  )
+})
+
 test('extractAssetReferences collects both href and src under /assets/, nothing else', () => {
   const html = '<link href="/assets/a.css"><script src="/assets/b.js"></script><img src="/brand/x.png">'
   assert.deepEqual(extractAssetReferences(html), ['/assets/a.css', '/assets/b.js'])
@@ -243,8 +328,18 @@ test('findForbiddenStrings names every local host/path pattern it matches', () =
   assert.deepEqual(findForbiddenStrings('https://getmartis.com/product'), [])
 })
 
-test('findForbiddenStrings does not flag an unrelated 10.x version number', () => {
-  assert.deepEqual(findForbiddenStrings('Tailwind CSS v4.1.20 / Vite 6.4.2'), [])
+test('findForbiddenStrings does not flag a three-component version number starting with 10', () => {
+  // Must contain a real "10." prefix (unlike the old fixture, which had
+  // no "10." substring at all and so passed even with the pattern
+  // deleted) so this genuinely exercises the 4-component requirement.
+  assert.deepEqual(findForbiddenStrings('Laravel 10.48.2 on PHP 8.3.10'), [])
+})
+
+test('findForbiddenStrings does flag a real 10.x.x.x dotted quad', () => {
+  // The counterpart to the test above: every *four*-component 10.x
+  // address must still be flagged — this is not a blanket exemption
+  // for anything starting with "10.".
+  assert.deepEqual(findForbiddenStrings('proxied through 10.20.30.40 internally'), ['a private 10.x.x.x address'])
 })
 
 test('findMissingRequiredRoutes reports required routes absent from the given list', () => {

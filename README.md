@@ -48,8 +48,10 @@ Most docs are mirrored from `martis-package/docs/*.md` so the site cannot drift 
 
 ```bash
 pnpm sync-docs           # copies + transforms package docs into src/content/
-pnpm sync-docs --check   # exits non-zero if any synced page is stale (CI gate)
+pnpm sync-docs --check   # exits non-zero if any synced page is stale
 ```
+
+Run `--check` locally before opening a PR. It is not part of `.github/workflows/ci.yml` — that workflow only checks out this repo, and the check needs the sibling `martis-package` repo alongside it.
 
 Each `.md` is rewritten into `.mdx` with:
 
@@ -131,4 +133,4 @@ Not validated against a real Apache instance yet (none available while writing i
 
 ## Source of truth
 
-Documentation lives in `martis-package/docs/`. Always edit there and re-run `pnpm sync-docs` here. The CI gate (`pnpm sync-docs --check`) blocks merges that fall out of sync.
+Documentation lives in `martis-package/docs/`. Always edit there and re-run `pnpm sync-docs` here. Run `pnpm sync-docs --check` locally before opening a PR to confirm nothing has drifted — CI cannot run it (it needs the sibling `martis-package` checkout), so this is a manual gate, not an automated one.
