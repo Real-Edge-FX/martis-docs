@@ -2,7 +2,7 @@
 
 **Data:** 24 de setembro de 2026
 
-**Estado:** proposta para revisão
+**Estado:** aprovado
 
 **Repositório responsável:** `martis-docs`
 
