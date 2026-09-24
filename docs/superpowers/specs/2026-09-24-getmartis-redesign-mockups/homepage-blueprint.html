@@ -1,0 +1,110 @@
+<style>
+  .martis-home {
+    --mh-bg:#080a10; --mh-panel:#0f121b; --mh-panel2:#141824; --mh-line:#282e40;
+    --mh-text:#f4f5fa; --mh-muted:#9ba4b8; --mh-blue:#6d86ff; --mh-violet:#a371ff;
+    background:var(--mh-bg); color:var(--mh-text); border-radius:16px; overflow:hidden;
+    font-family:Inter,ui-sans-serif,system-ui,sans-serif; box-shadow:0 30px 90px rgba(0,0,0,.35);
+  }
+  .martis-home *{box-sizing:border-box}.martis-home .mh-wrap{max-width:1120px;margin:auto;padding:0 28px}
+  .martis-home .mh-nav{height:64px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid rgba(255,255,255,.055)}
+  .martis-home .mh-brand{display:flex;align-items:center;gap:9px;font-weight:650}.martis-home .mh-cube{width:22px;height:22px;border:3px solid var(--mh-blue);border-radius:5px;transform:rotate(30deg)}
+  .martis-home .mh-links{display:flex;gap:22px;color:var(--mh-muted);font-size:13px}.martis-home .mh-nav-actions{display:flex;align-items:center;gap:9px}
+  .martis-home .mh-ghost,.martis-home .mh-primary{padding:9px 13px;border-radius:8px;font-size:12px;font-weight:600}.martis-home .mh-ghost{border:1px solid var(--mh-line);color:var(--mh-text)}.martis-home .mh-primary{background:linear-gradient(135deg,var(--mh-blue),var(--mh-violet));color:#fff}
+  .martis-home .mh-hero{position:relative;padding:88px 0 48px;background:radial-gradient(circle at 70% 15%,rgba(154,88,255,.22),transparent 28%),radial-gradient(circle at 20% 70%,rgba(70,102,255,.18),transparent 34%)}
+  .martis-home .mh-hero:before{content:'';position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.025) 1px,transparent 1px);background-size:42px 42px;mask-image:linear-gradient(to bottom,#000,transparent)}
+  .martis-home .mh-hero-grid{position:relative;display:grid;grid-template-columns:.9fr 1.1fr;gap:54px;align-items:center}
+  .martis-home .mh-eyebrow{font:600 10px/1.2 ui-monospace,monospace;letter-spacing:.15em;text-transform:uppercase;color:#afbcff}.martis-home .mh-title{font-size:58px;line-height:.96;letter-spacing:-.055em;margin:18px 0;font-weight:560}.martis-home .mh-title em{font-family:Georgia,serif;font-weight:400;color:#bd97ff}.martis-home .mh-lede{font-size:16px;line-height:1.65;color:var(--mh-muted);max-width:50ch;margin:0}
+  .martis-home .mh-actions{display:flex;gap:10px;align-items:center;margin-top:25px}.martis-home .mh-actions .mh-primary{padding:12px 17px}.martis-home .mh-actions .mh-ghost{padding:12px 17px}.martis-home .mh-note{margin-top:13px;color:#788198;font:500 10px/1.4 ui-monospace,monospace}
+  .martis-home .mh-browser{position:relative;background:#0b0e15;border:1px solid #30384e;border-radius:12px;overflow:hidden;box-shadow:0 35px 90px rgba(50,65,190,.25);transform:perspective(1000px) rotateY(-2deg) rotateX(1deg)}
+  .martis-home .mh-browser-bar{height:28px;border-bottom:1px solid #252b3a;display:flex;align-items:center;gap:5px;padding:0 10px;color:#79839b}.martis-home .mh-browser-dot{width:6px;height:6px;border-radius:50%;background:currentColor}.martis-home .mh-browser-url{margin-left:10px;font:500 8px/1 ui-monospace,monospace;color:#778198}.martis-home .mh-browser img{display:block;width:100%;height:auto}
+  .martis-home .mh-proof{display:grid;grid-template-columns:repeat(5,1fr);border-top:1px solid var(--mh-line);border-bottom:1px solid var(--mh-line);background:rgba(12,15,23,.82)}.martis-home .mh-proof-item{padding:22px 12px;text-align:center}.martis-home .mh-proof-item+.mh-proof-item{border-left:1px solid var(--mh-line)}.martis-home .mh-proof-item b{display:block;font-size:22px;letter-spacing:-.03em}.martis-home .mh-proof-item span{display:block;margin-top:4px;color:var(--mh-muted);font:500 9px/1.25 ui-monospace,monospace;text-transform:uppercase;letter-spacing:.08em}
+  .martis-home .mh-section{padding:84px 0;border-bottom:1px solid rgba(255,255,255,.055)}.martis-home .mh-section-head{display:flex;align-items:end;justify-content:space-between;gap:24px;margin-bottom:34px}.martis-home .mh-kicker{font:600 10px/1.2 ui-monospace,monospace;text-transform:uppercase;letter-spacing:.16em;color:#aebaff}.martis-home .mh-h2{font-size:39px;line-height:1.02;letter-spacing:-.045em;margin:10px 0 0;max-width:17ch;font-weight:560}.martis-home .mh-section-copy{color:var(--mh-muted);font-size:14px;line-height:1.6;max-width:45ch}
+  .martis-home .mh-agency-grid{display:grid;grid-template-columns:1.25fr .75fr .75fr;gap:12px}.martis-home .mh-agency-card{position:relative;min-height:190px;padding:24px;background:linear-gradient(145deg,var(--mh-panel2),var(--mh-panel));border:1px solid var(--mh-line);border-radius:12px;overflow:hidden}.martis-home .mh-agency-card:first-child{background:radial-gradient(circle at 100% 0,rgba(111,128,255,.22),transparent 45%),linear-gradient(145deg,var(--mh-panel2),var(--mh-panel))}.martis-home .mh-agency-card .mh-card-no{font:500 10px/1 ui-monospace,monospace;color:#6f7890}.martis-home .mh-agency-card h3{font-size:20px;line-height:1.1;margin:34px 0 9px;font-weight:560}.martis-home .mh-agency-card p{font-size:12px;line-height:1.55;color:var(--mh-muted);margin:0}.martis-home .mh-agency-card strong{color:#bdc6ff}
+  .martis-home .mh-code-ui{display:grid;grid-template-columns:1fr 1fr;border:1px solid var(--mh-line);border-radius:13px;overflow:hidden;background:var(--mh-panel)}.martis-home .mh-code-pane{padding:20px;border-right:1px solid var(--mh-line)}.martis-home .mh-code-label{display:flex;justify-content:space-between;color:#828ca4;font:500 9px/1 ui-monospace,monospace;margin-bottom:16px}.martis-home pre{margin:0;color:#d5d9e6;font:500 10px/1.65 ui-monospace,monospace;white-space:pre-wrap}.martis-home .mh-purple{color:#bd91ff}.martis-home .mh-blue{color:#8da6ff}.martis-home .mh-green{color:#88dbad}.martis-home .mh-ui-pane{padding:20px;background:#0b0e14}.martis-home .mh-ui-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:13px}.martis-home .mh-ui-title{font-size:18px;font-weight:600}.martis-home .mh-ui-button{padding:7px 10px;background:var(--mh-blue);border-radius:6px;font-size:9px}.martis-home .mh-table{border:1px solid #2a3040;border-radius:7px;overflow:hidden}.martis-home .mh-row{display:grid;grid-template-columns:1.3fr .8fr .8fr;padding:10px;border-bottom:1px solid #252b39;font-size:9px}.martis-home .mh-row:last-child{border-bottom:0}.martis-home .mh-row.head{color:#7f899e;text-transform:uppercase}.martis-home .mh-pill{color:#83dca7}
+  .martis-home .mh-compare{display:grid;grid-template-columns:.72fr 1.28fr;gap:40px;align-items:start}.martis-home .mh-compare-copy .mh-h2{max-width:12ch}.martis-home .mh-compare-table{border-top:1px solid var(--mh-line)}.martis-home .mh-compare-row{display:grid;grid-template-columns:1.3fr repeat(3,.8fr);align-items:center;padding:14px 10px;border-bottom:1px solid var(--mh-line);font-size:11px}.martis-home .mh-compare-row.head{color:#7f899d;font:600 9px/1.2 ui-monospace,monospace;text-transform:uppercase}.martis-home .mh-compare-row .ours{color:#c1caff;font-weight:600}.martis-home .mh-check{color:#80dda8}.martis-home .mh-source{margin-top:10px;color:#717a90;font:500 9px/1.4 ui-monospace,monospace}
+  .martis-home .mh-scenes{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.martis-home .mh-scene{overflow:hidden;border-radius:10px;border:1px solid var(--mh-line);background:var(--mh-panel)}.martis-home .mh-scene img{display:block;width:100%;aspect-ratio:16/10;object-fit:cover}.martis-home .mh-scene-copy{padding:13px}.martis-home .mh-scene-copy b{display:block;font-size:12px}.martis-home .mh-scene-copy span{display:block;color:var(--mh-muted);font-size:10px;margin-top:3px}
+  .martis-home .mh-final{padding:86px 28px;text-align:center;background:radial-gradient(circle at 50% 55%,rgba(107,90,255,.24),transparent 38%)}.martis-home .mh-final .mh-h2{max-width:18ch;margin:10px auto 0}.martis-home .mh-command{display:inline-flex;gap:8px;align-items:center;margin:25px auto 0;padding:12px 15px;border:1px solid var(--mh-line);border-radius:9px;background:rgba(11,14,21,.7);font:500 11px/1 ui-monospace,monospace;color:#d8dce8}.martis-home .mh-command span{color:#9fb0ff}.martis-home .mh-footer{padding:25px 0;display:flex;justify-content:space-between;color:#747d91;font-size:10px}
+  @media(max-width:900px){.martis-home .mh-links{display:none}.martis-home .mh-hero-grid,.martis-home .mh-code-ui,.martis-home .mh-compare{grid-template-columns:1fr}.martis-home .mh-title{font-size:46px}.martis-home .mh-agency-grid{grid-template-columns:1fr 1fr}.martis-home .mh-agency-card:first-child{grid-column:1/-1}.martis-home .mh-code-pane{border-right:0;border-bottom:1px solid var(--mh-line)}.martis-home .mh-proof{grid-template-columns:repeat(3,1fr)}.martis-home .mh-proof-item+.mh-proof-item{border-left:0}.martis-home .mh-scenes{grid-template-columns:1fr}}
+  @media(max-width:560px){.martis-home .mh-wrap{padding:0 18px}.martis-home .mh-nav-actions .mh-ghost{display:none}.martis-home .mh-hero{padding-top:56px}.martis-home .mh-title{font-size:38px}.martis-home .mh-actions{align-items:stretch;flex-direction:column}.martis-home .mh-proof{grid-template-columns:1fr 1fr}.martis-home .mh-agency-grid{grid-template-columns:1fr}.martis-home .mh-agency-card:first-child{grid-column:auto}.martis-home .mh-section-head{align-items:start;flex-direction:column}.martis-home .mh-compare-row{grid-template-columns:1.2fr repeat(3,.7fr);font-size:9px;padding-inline:4px}.martis-home .mh-footer{gap:16px;flex-direction:column}}
+</style>
+
+<div id="martis-homepage-blueprint" class="martis-home">
+  <div class="mh-wrap mh-nav">
+    <div class="mh-brand"><span class="mh-cube"></span> Martis</div>
+    <nav class="mh-links"><span>Product</span><span>For Agencies</span><span>Compare</span><span>Docs</span><span>Changelog</span></nav>
+    <div class="mh-nav-actions"><span class="mh-ghost">GitHub ↗</span><span class="mh-primary">Install free</span></div>
+  </div>
+
+  <section class="mh-hero">
+    <div class="mh-wrap mh-hero-grid">
+      <div>
+        <div class="mh-eyebrow">Open-source Laravel admin engine</div>
+        <h1 class="mh-title">The admin foundation your agency can <em>ship again.</em></h1>
+        <p class="mh-lede">Build polished client backoffices with a React-first Laravel engine. Reuse the foundation, own every override, and never pay per project.</p>
+        <div class="mh-actions"><span class="mh-primary">Install Martis — free</span><span class="mh-ghost">Explore the product</span></div>
+        <div class="mh-note">MIT LICENSED · NO PAID TIER · LARAVEL 12/13 · PHP 8.3+</div>
+      </div>
+      <div class="mh-browser">
+        <div class="mh-browser-bar"><span class="mh-browser-dot"></span><span class="mh-browser-dot"></span><span class="mh-browser-dot"></span><span class="mh-browser-url">your-client.test/martis</span></div>
+        <img src="https://getmartis.com/screenshots/dashboard.png" alt="Martis dashboard product screen">
+      </div>
+    </div>
+  </section>
+
+  <section class="mh-proof">
+    <div class="mh-proof-item"><b>MIT</b><span>No paid tier</span></div>
+    <div class="mh-proof-item"><b>3,990</b><span>Tests passing</span></div>
+    <div class="mh-proof-item"><b>50</b><span>Field types</span></div>
+    <div class="mh-proof-item"><b>12</b><span>Relationships</span></div>
+    <div class="mh-proof-item"><b>190</b><span>Packagist downloads · live</span></div>
+  </section>
+
+  <section class="mh-section">
+    <div class="mh-wrap">
+      <div class="mh-section-head"><div><div class="mh-kicker">Built for agency delivery</div><h2 class="mh-h2">One foundation. Every client’s product.</h2></div><p class="mh-section-copy">Standardise the work clients should never pay you to rebuild. Keep the details that make each product theirs.</p></div>
+      <div class="mh-agency-grid">
+        <article class="mh-agency-card"><span class="mh-card-no">01 / ECONOMICS</span><h3>Free for every project.</h3><p><strong>MIT licensed, with no paid tier.</strong> Use Martis across client work without per-project licences changing the margin.</p></article>
+        <article class="mh-agency-card"><span class="mh-card-no">02 / BRAND</span><h3>Make it theirs.</h3><p>94 design tokens, themes, layouts and branded authentication.</p></article>
+        <article class="mh-agency-card"><span class="mh-card-no">03 / CONTROL</span><h3>Override, don’t fork.</h3><p>Replace fields, pages and layouts through a four-tier resolution system.</p></article>
+      </div>
+    </div>
+  </section>
+
+  <section class="mh-section">
+    <div class="mh-wrap">
+      <div class="mh-section-head"><div><div class="mh-kicker">Code → production interface</div><h2 class="mh-h2">Declare the resource. Ship the workflow.</h2></div><p class="mh-section-copy">Martis turns plain PHP classes into a React workspace with routes, validation, relationships and persistent view state.</p></div>
+      <div class="mh-code-ui">
+        <div class="mh-code-pane"><div class="mh-code-label"><span>ClientResource.php</span><span>PHP</span></div><pre><span class="mh-purple">class</span> <span class="mh-blue">ClientResource</span> extends Resource
+{
+  public function <span class="mh-blue">fields</span>(): array
+  {
+    return [
+      Text::make(<span class="mh-green">'name'</span>)->searchable(),
+      Select::make(<span class="mh-green">'plan'</span>)->options(...),
+      Currency::make(<span class="mh-green">'revenue'</span>),
+      Badge::make(<span class="mh-green">'status'</span>),
+    ];
+  }
+}</pre></div>
+        <div class="mh-ui-pane"><div class="mh-ui-top"><span class="mh-ui-title">Clients</span><span class="mh-ui-button">+ Create client</span></div><div class="mh-table"><div class="mh-row head"><span>Name</span><span>Plan</span><span>Status</span></div><div class="mh-row"><span>Northstar Studio</span><span>Enterprise</span><span class="mh-pill">● Active</span></div><div class="mh-row"><span>Fieldwork Co.</span><span>Pro</span><span class="mh-pill">● Active</span></div><div class="mh-row"><span>Signal Labs</span><span>Pro</span><span class="mh-pill">● Active</span></div></div></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="mh-section">
+    <div class="mh-wrap mh-compare">
+      <div class="mh-compare-copy"><div class="mh-kicker">Compare clearly</div><h2 class="mh-h2">Choose the right foundation, not the loudest one.</h2><p class="mh-section-copy">A sourced, date-stamped comparison of the decisions that matter to an agency.</p><div class="mh-actions"><span class="mh-ghost">See full comparison →</span></div></div>
+      <div><div class="mh-compare-table"><div class="mh-compare-row head"><span></span><span class="ours">Martis</span><span>Nova</span><span>Filament</span></div><div class="mh-compare-row"><span>Core licence</span><span class="ours">MIT</span><span>Commercial</span><span>MIT</span></div><div class="mh-compare-row"><span>Paid core tier</span><span class="ours mh-check">None</span><span>Required</span><span>None</span></div><div class="mh-compare-row"><span>Frontend model</span><span class="ours">React SPA</span><span>Vue SPA</span><span>Livewire</span></div><div class="mh-compare-row"><span>UI override model</span><span class="ours">4-tier</span><span>Tools / fields</span><span>Components</span></div></div><div class="mh-source">SOURCES SHOWN PER ROW · REVIEWED QUARTERLY · “REPORT A CORRECTION”</div></div>
+    </div>
+  </section>
+
+  <section class="mh-section">
+    <div class="mh-wrap">
+      <div class="mh-section-head"><div><div class="mh-kicker">Real product, real delivery</div><h2 class="mh-h2">The screens your clients expect.</h2></div><p class="mh-section-copy">Captured from the Martis Playground, never drawn as marketing fiction.</p></div>
+      <div class="mh-scenes"><article class="mh-scene"><img src="https://getmartis.com/screenshots/resource-index.png" alt="Resource index"><div class="mh-scene-copy"><b>Operate</b><span>Tables, filters, actions and sticky views</span></div></article><article class="mh-scene"><img src="https://getmartis.com/screenshots/resource-create.png" alt="Resource form"><div class="mh-scene-copy"><b>Model</b><span>Reactive fields and responsive layouts</span></div></article><article class="mh-scene"><img src="https://getmartis.com/screenshots/profile.png" alt="Profile and security"><div class="mh-scene-copy"><b>Secure</b><span>Authentication, SSO, profile and 2FA</span></div></article></div>
+    </div>
+  </section>
+
+  <section class="mh-final"><div class="mh-kicker">Start with the foundation</div><h2 class="mh-h2">Your next client backoffice starts with two commands.</h2><div class="mh-command">$ <span>composer require martis/martis</span></div><div class="mh-actions" style="justify-content:center"><span class="mh-primary">Read the installation guide →</span></div></section>
+  <footer class="mh-wrap mh-footer"><span>Martis · Open source under MIT</span><span>Product · Agencies · Compare · Docs · GitHub</span></footer>
+</div>

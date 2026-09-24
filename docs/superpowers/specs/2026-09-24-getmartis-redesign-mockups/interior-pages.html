@@ -1,0 +1,66 @@
+<style>
+  .martis-interiors{--mi-bg:#080a10;--mi-panel:#11141d;--mi-panel2:#171b27;--mi-line:#2b3142;--mi-text:#f3f5fb;--mi-muted:#99a3b7;--mi-blue:#7187ff;--mi-violet:#a674ff}
+  .martis-interiors .templates{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;margin-top:22px}
+  .martis-interiors .template{background:var(--mi-bg);color:var(--mi-text);border-radius:12px;overflow:hidden;box-shadow:0 16px 50px rgba(0,0,0,.2)}
+  .martis-interiors .template-bar{height:38px;padding:0 13px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--mi-line);font:500 8px/1 ui-monospace,monospace;color:var(--mi-muted)}
+  .martis-interiors .template-brand{color:var(--mi-text);font-size:10px}.martis-interiors .template-nav{display:flex;gap:10px}
+  .martis-interiors .template-body{min-height:420px}.martis-interiors .template-hero{padding:34px 24px 28px;background:radial-gradient(circle at 80% 15%,rgba(157,99,255,.22),transparent 35%)}
+  .martis-interiors .label{font:600 8px/1.2 ui-monospace,monospace;letter-spacing:.14em;text-transform:uppercase;color:#aebaff}.martis-interiors .big{font-size:29px;line-height:1;letter-spacing:-.045em;margin:10px 0}.martis-interiors .serif{font-family:Georgia,serif;font-style:italic;font-weight:400;color:#be9aff}.martis-interiors .lede{color:var(--mi-muted);font-size:10px;line-height:1.55;max-width:45ch}.martis-interiors .tiny-cta{display:inline-block;margin-top:13px;padding:8px 10px;border-radius:6px;background:linear-gradient(135deg,var(--mi-blue),var(--mi-violet));font-size:8px;font-weight:600}
+  .martis-interiors .agency-model{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;padding:16px}.martis-interiors .agency-step{min-height:98px;padding:12px;background:var(--mi-panel);border:1px solid var(--mi-line);border-radius:7px}.martis-interiors .agency-step b{display:block;font-size:10px;margin:17px 0 5px}.martis-interiors .agency-step span{display:block;color:var(--mi-muted);font-size:8px;line-height:1.4}.martis-interiors .case-strip{margin:0 16px 16px;padding:13px;border-left:2px solid var(--mi-violet);background:var(--mi-panel);font-size:9px;color:var(--mi-muted)}
+  .martis-interiors .compare-intro{padding:26px 24px 18px}.martis-interiors .method{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}.martis-interiors .method span{padding:5px 7px;border:1px solid var(--mi-line);border-radius:20px;color:var(--mi-muted);font:500 7px/1 ui-monospace,monospace}.martis-interiors .matrix{margin:0 18px;border-top:1px solid var(--mi-line)}.martis-interiors .matrix-row{display:grid;grid-template-columns:1.4fr repeat(3,.8fr);gap:6px;padding:9px 5px;border-bottom:1px solid var(--mi-line);font-size:8px}.martis-interiors .matrix-row.head{color:var(--mi-muted);font:600 7px/1.2 ui-monospace,monospace;text-transform:uppercase}.martis-interiors .matrix-row .ours{color:#bdc7ff;font-weight:600}.martis-interiors .verdict{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;padding:14px 18px}.martis-interiors .verdict div{padding:9px;background:var(--mi-panel);border-radius:6px;font-size:8px;line-height:1.4;color:var(--mi-muted)}.martis-interiors .verdict b{display:block;color:var(--mi-text);margin-bottom:3px}
+  .martis-interiors .docs-shell{display:grid;grid-template-columns:26% 1fr 21%;min-height:420px}.martis-interiors .docs-side,.martis-interiors .docs-toc{padding:15px 12px;background:#0b0d13}.martis-interiors .docs-side{border-right:1px solid var(--mi-line)}.martis-interiors .docs-toc{border-left:1px solid var(--mi-line)}.martis-interiors .docs-main{padding:24px}.martis-interiors .docs-group{margin-bottom:16px}.martis-interiors .docs-group b,.martis-interiors .docs-toc b{display:block;color:#707a90;font:600 7px/1.2 ui-monospace,monospace;text-transform:uppercase;letter-spacing:.1em;margin-bottom:7px}.martis-interiors .doc-link{padding:5px 6px;margin-bottom:2px;border-radius:4px;color:var(--mi-muted);font-size:8px}.martis-interiors .doc-link.active{background:#1c2546;color:#cbd3ff}.martis-interiors .docs-main h3{font-size:24px;letter-spacing:-.035em;margin:0 0 7px}.martis-interiors .docs-main p{color:var(--mi-muted);font-size:9px;line-height:1.65}.martis-interiors .quick-path{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin:15px 0}.martis-interiors .quick-path div{padding:10px;border:1px solid var(--mi-line);border-radius:6px;font-size:8px}.martis-interiors .code{padding:12px;background:#080a10;border:1px solid var(--mi-line);border-radius:7px;color:#cbd1e1;font:500 8px/1.55 ui-monospace,monospace}.martis-interiors .toc-link{padding:4px 0;color:var(--mi-muted);font-size:7px}.martis-interiors .toc-link.active{color:#b6c0ff;border-left:2px solid var(--mi-blue);padding-left:6px}
+  .martis-interiors .change-body{padding:28px 24px}.martis-interiors .release{display:grid;grid-template-columns:72px 1fr;gap:16px;padding:18px 0;border-bottom:1px solid var(--mi-line)}.martis-interiors .release-version{font:600 10px/1.4 ui-monospace,monospace;color:#bac4ff}.martis-interiors .release-version span{display:block;color:#6f7890;font-size:7px;margin-top:4px}.martis-interiors .release h3{margin:0 0 7px;font-size:14px}.martis-interiors .release p{margin:0;color:var(--mi-muted);font-size:8px;line-height:1.5}.martis-interiors .tags{display:flex;gap:5px;margin-top:9px}.martis-interiors .tags span{font:600 7px/1 ui-monospace,monospace;padding:4px 5px;border-radius:4px;background:#182039;color:#aebaff}
+  .martis-interiors .principles{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:18px}.martis-interiors .principle{padding:12px;border-top:2px solid var(--mi-blue);background:color-mix(in srgb,var(--muted) 45%,transparent)}.martis-interiors .principle b{display:block;margin-bottom:5px}.martis-interiors .principle span{color:var(--muted-foreground);font-size:12px;line-height:1.35}
+  @media(max-width:900px){.martis-interiors .templates{grid-template-columns:1fr}.martis-interiors .principles{grid-template-columns:repeat(2,1fr)}}
+  @media(max-width:520px){.martis-interiors .agency-model,.martis-interiors .verdict,.martis-interiors .quick-path{grid-template-columns:1fr}.martis-interiors .docs-shell{grid-template-columns:1fr}.martis-interiors .docs-side,.martis-interiors .docs-toc{display:none}.martis-interiors .principles{grid-template-columns:1fr}}
+</style>
+
+<div id="martis-interior-pages" class="martis-interiors">
+  <h2>Quatro páginas, quatro funções distintas</h2>
+  <p class="subtitle">Cada template mantém a linguagem Product Cinema, mas adapta a densidade e a hierarquia à intenção do visitante.</p>
+
+  <div class="templates">
+    <article class="template">
+      <div class="template-bar"><span class="template-brand">◇ Martis</span><span class="template-nav">Product · Agencies · Compare · Docs</span><span>Install free</span></div>
+      <div class="template-body">
+        <div class="template-hero"><div class="label">For Laravel agencies</div><div class="big">Ship the craft.<br><span class="serif">Reuse the foundation.</span></div><p class="lede">Turn recurring backoffice work into a maintained capability your team carries from client to client.</p><span class="tiny-cta">Standardise with Martis →</span></div>
+        <div class="agency-model"><div class="agency-step"><span>01</span><b>Baseline</b><span>Auth, resources, actions and operations already wired.</span></div><div class="agency-step"><span>02</span><b>Adapt</b><span>Brand, fields, layouts and workflows per client.</span></div><div class="agency-step"><span>03</span><b>Compound</b><span>Carry patterns and extensions into the next delivery.</span></div></div>
+        <div class="case-strip"><strong>Agency economics:</strong> MIT licence · no per-project fee · no paid core tier · no maintained fork</div>
+      </div>
+    </article>
+
+    <article class="template">
+      <div class="template-bar"><span class="template-brand">◇ Martis</span><span class="template-nav">Compare / Overview</span><span>Reviewed quarterly</span></div>
+      <div class="template-body">
+        <div class="compare-intro"><div class="label">A decision aid, not a scorecard</div><div class="big">Martis, Nova or Filament?</div><p class="lede">Compare architecture, licensing and extensibility against the way your agency actually delivers.</p><div class="method"><span>Official sources</span><span>Date-stamped</span><span>Criteria explained</span><span>Corrections welcome</span></div></div>
+        <div class="matrix"><div class="matrix-row head"><span>Decision</span><span class="ours">Martis</span><span>Nova</span><span>Filament</span></div><div class="matrix-row"><span>Core licence</span><span class="ours">MIT</span><span>Commercial</span><span>MIT</span></div><div class="matrix-row"><span>Frontend model</span><span class="ours">React SPA</span><span>Vue SPA</span><span>Livewire</span></div><div class="matrix-row"><span>Project economics</span><span class="ours">No fee</span><span>Per licence</span><span>No fee</span></div><div class="matrix-row"><span>Custom UI path</span><span class="ours">Override tiers</span><span>Custom tools</span><span>Components</span></div></div>
+        <div class="verdict"><div><b>Choose Martis when…</b>React, repeatability and override control lead.</div><div><b>Choose Nova when…</b>First-party Laravel support and Vue fit.</div><div><b>Choose Filament when…</b>Livewire and ecosystem breadth lead.</div></div>
+      </div>
+    </article>
+
+    <article class="template">
+      <div class="template-bar"><span class="template-brand">◇ Martis Docs</span><span class="template-nav">⌘ K Search</span><span>v1.39</span></div>
+      <div class="template-body docs-shell">
+        <aside class="docs-side"><div class="docs-group"><b>Start building</b><div class="doc-link active">Installation</div><div class="doc-link">First resource</div><div class="doc-link">Agency baseline</div></div><div class="docs-group"><b>Build the product</b><div class="doc-link">Resources</div><div class="doc-link">Fields</div><div class="doc-link">Relationships</div><div class="doc-link">Actions</div></div><div class="docs-group"><b>Own the interface</b><div class="doc-link">Theming</div><div class="doc-link">Overrides</div><div class="doc-link">Custom tools</div></div></aside>
+        <main class="docs-main"><div class="label">Getting started</div><h3>Installation</h3><p>Add Martis to an existing Laravel application and reach your first working resource.</p><div class="quick-path"><div><b>1 · Require</b><br>Install the package</div><div><b>2 · Install</b><br>Publish and migrate</div><div><b>3 · Model</b><br>Create a resource</div></div><div class="code">composer require martis/martis<br>php artisan martis:install</div><p>End-user applications consume precompiled assets. No Node toolchain is required.</p></main>
+        <aside class="docs-toc"><b>On this page</b><div class="toc-link active">Quick install</div><div class="toc-link">Requirements</div><div class="toc-link">First resource</div><div class="toc-link">Install options</div><div class="toc-link">Upgrading</div></aside>
+      </div>
+    </article>
+
+    <article class="template">
+      <div class="template-bar"><span class="template-brand">◇ Martis</span><span class="template-nav">Changelog</span><span>RSS · GitHub</span></div>
+      <div class="template-body change-body">
+        <div class="label">Product progress</div><div class="big">Built in public.<br><span class="serif">Shipped with proof.</span></div><p class="lede">Every release tells the user-facing story, links the implementation and calls out upgrade work.</p>
+        <div class="release"><div class="release-version">v1.39.0<span>SEP 2026</span></div><div><h3>Theme every PrimeReact surface</h3><p>The PrimeReact theme now compiles from Martis tokens, closing the remaining gaps between product surfaces and consumer themes.</p><div class="tags"><span>CHANGED</span><span>SECURITY</span><span>3,990 TESTS</span></div></div></div>
+        <div class="release"><div class="release-version">v1.38.2<span>SEP 2026</span></div><div><h3>Extension runtime compatibility</h3><p>The React DOM shim now exposes flushSync for extension libraries that rely on virtualised rendering.</p><div class="tags"><span>FIXED</span><span>COMPATIBILITY</span></div></div></div>
+      </div>
+    </article>
+  </div>
+
+  <div class="principles">
+    <div class="principle"><b>Agencies persuades</b><span>Economics, repeatability, control and a reusable delivery model.</span></div>
+    <div class="principle"><b>Compare informs</b><span>No winner badges; it explains the right fit and cites every claim.</span></div>
+    <div class="principle"><b>Docs unblock</b><span>Task-based navigation and a short first-success path before deep reference.</span></div>
+    <div class="principle"><b>Changelog reassures</b><span>Visible maintenance, upgrade impact and engineering evidence.</span></div>
+  </div>
+</div>
