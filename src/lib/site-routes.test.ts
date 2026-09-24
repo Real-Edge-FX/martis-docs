@@ -69,21 +69,43 @@ it('marks only the 404 route as noindex', () => {
   }
 })
 
-it('never repeats the "Martis" brand name within a single static route title', () => {
+it('avoids repeating the brand for a docs page whose own label already names Martis', () => {
+  // src/lib/docs-tree.ts's 'reference/differentials' entry is labeled
+  // "Martis differentials": the generic '<label> · Martis docs' / 'Learn
+  // about <label> in Martis.' pattern would read "Martis differentials ·
+  // Martis docs" / "Learn about Martis differentials in Martis." — the
+  // same brand-suffix duplication the static titles are fixed for below,
+  // just reached through the docs-derived path instead of a hand-written
+  // one.
+  expect(getRouteMeta('/docs/reference/differentials')).toEqual<RouteMeta>({
+    path: '/docs/reference/differentials',
+    title: 'Martis differentials · Docs',
+    description: 'Learn about Martis differentials.',
+    canonical: 'https://getmartis.com/docs/reference/differentials',
+    image: 'https://getmartis.com/social/docs.png',
+  })
+})
+
+it('never repeats the "Martis" brand name within a single route title or description', () => {
   // e.g. '/compare/nova' must read "Martis vs Laravel Nova", not
-  // "Martis vs Laravel Nova · Martis" (the brand suffix duplicating a
-  // "Martis" that is already in the page-specific part of the title).
-  // Scoped to the hand-written static titles: a derived docs title
-  // (`${doc.label} · Martis docs`) can legitimately contain "Martis"
-  // twice when the doc's own label does, e.g. "Martis differentials ·
-  // Martis docs" — that is real content, not a duplicated brand suffix.
+  // "Martis vs Laravel Nova · Martis" (the static-title brand suffix
+  // duplicating a "Martis" already in the page-specific title). Checked
+  // for every docs slug too, not just the nine static routes — that gap
+  // (a docs label that already names Martis, e.g. "Martis
+  // differentials", still getting the generic "· Martis docs" / "in
+  // Martis." suffix) is exactly what the test above pins down for one
+  // route; this is the general rule none of them may violate.
   const staticPaths = [
     '/', '/product', '/for-agencies', '/compare',
     '/compare/nova', '/compare/filament', '/docs', '/changelog', '/404',
   ]
-  for (const path of staticPaths) {
-    const { title } = getRouteMeta(path)
-    const occurrences = title.split('Martis').length - 1
-    expect(occurrences, `title "${title}" for ${path}`).toBeLessThanOrEqual(1)
+  const docsPaths = DOC_FLAT.map((doc) => `/docs/${doc.slug}`)
+  for (const path of [...staticPaths, ...docsPaths]) {
+    const { title, description } = getRouteMeta(path)
+    expect(title.split('Martis').length - 1, `title "${title}" for ${path}`).toBeLessThanOrEqual(1)
+    expect(
+      description.split('Martis').length - 1,
+      `description "${description}" for ${path}`,
+    ).toBeLessThanOrEqual(1)
   }
 })

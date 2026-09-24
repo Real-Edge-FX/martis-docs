@@ -91,7 +91,7 @@ const ROUTE_META: RouteMeta[] = [
     path: '/docs',
     title: 'Documentation · Martis',
     description:
-      'Install Martis, build your first resource and go deeper: task-based navigation through the Martis documentation.',
+      'Install Martis, build your first resource and go deeper: task-based navigation through the documentation.',
     canonical: `${SITE_URL}/docs`,
     image: `${SITE_URL}/social/docs.png`,
   },
@@ -112,6 +112,29 @@ export const PUBLIC_ROUTES: string[] = [
   ...DOC_FLAT.map(({ slug }) => `/docs/${slug}`),
 ]
 
+/** Whether `text` already names the Martis brand, so a title/description
+ *  built from it must not also append a second, redundant mention (see
+ *  `docsTitle`/`docsDescription` below, and the static `/compare/nova`
+ *  and `/compare/filament` titles above, which drop their own brand
+ *  suffix for the same reason). */
+function mentionsMartis(text: string): boolean {
+  return text.includes('Martis')
+}
+
+/** `'Filters'` -> `'Filters · Martis docs'`. A label that already names
+ *  Martis (`docs-tree.ts`'s 'reference/differentials' entry is "Martis
+ *  differentials") drops the brand from the suffix instead of repeating
+ *  it, keeping only the "docs" qualifier: `'Martis differentials · Docs'`. */
+function docsTitle(label: string): string {
+  return mentionsMartis(label) ? `${label} · Docs` : `${label} · Martis docs`
+}
+
+/** `'Filters'` -> `'Learn about Filters in Martis.'`, with the same
+ *  brand-repetition guard as `docsTitle`. */
+function docsDescription(label: string): string {
+  return mentionsMartis(label) ? `Learn about ${label}.` : `Learn about ${label} in Martis.`
+}
+
 /**
  * Resolves the metadata for a pathname: an exact static route, a
  * derived docs route, or the noindex 404 entry as a fallback. A
@@ -128,8 +151,8 @@ export function getRouteMeta(pathname: string): RouteMeta {
   if (doc) {
     return {
       path: normalized,
-      title: `${doc.label} · Martis docs`,
-      description: `Learn about ${doc.label} in Martis.`,
+      title: docsTitle(doc.label),
+      description: docsDescription(doc.label),
       canonical: `${SITE_URL}${normalized}`,
       image: `${SITE_URL}/social/docs.png`,
     }

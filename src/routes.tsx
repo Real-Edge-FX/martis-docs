@@ -38,10 +38,34 @@ export const DOCS_ROUTE_PATTERN = '/docs/*'
  * Opts every Router instance (BrowserRouter, StaticRouter, and the
  * MemoryRouters used in tests) into the two v6 behaviors React Router
  * warns about by default: wrapping navigations in `React.startTransition`,
- * and the v7 relative-splat-path resolution. Silences the warnings, and
- * — more importantly for `v7_relativeSplatPath` — keeps every Router
- * resolving relative links under `/docs/*` the same way, so server and
- * client can never disagree about where one points.
+ * and the v7 relative-splat-path resolution. Silences the warnings.
+ *
+ * What keeps server, client and every test Router agreeing on how a
+ * relative link under `/docs/*` resolves is not the *value* of
+ * `v7_relativeSplatPath` below — it's that every Router imports this one
+ * constant instead of setting its own `future` prop, so changing the
+ * value here moves every consumer together. (Today it changes nothing
+ * observable either way: every `Link`/`navigate()` target in this
+ * codebase is already an absolute `/docs/...` path, so no relative
+ * resolution is ever in play. See the Phase 1 Task 7 fix-round-1 report.)
+ *
+ * `v7_startTransition` does have one real, currently-accepted UX
+ * consequence, worth knowing about before it's mistaken for a bug: `App`
+ * (src/App.tsx) wraps every route in one shared `<Suspense>`, and
+ * `DocumentMeta` sits outside that boundary, reading the same location
+ * state as a sibling. Wrapping the navigation's state update in
+ * `React.startTransition` means that when a navigation's destination page
+ * has not finished loading its chunk, React does not commit that
+ * `<Suspense>`'s fallback the way a non-transition update would — the
+ * whole pending render (the new page *and* DocumentMeta's new head/title,
+ * since they update together) stays uncommitted, so the *previous* page
+ * and its title remain on screen, together, until the new chunk resolves
+ * and both swap in at once. The URL itself still changes immediately
+ * (the history API updates independently of React's commit). Net effect:
+ * on a slow chunk load, the address bar can disagree with the visible
+ * page and title for a moment, with no loading indicator. Deliberately
+ * left as-is here — no pending indicator built — so a future phase does
+ * not mistake it for a hydration bug when it's noticed.
  */
 export const ROUTER_FUTURE = { v7_startTransition: true, v7_relativeSplatPath: true } as const
 

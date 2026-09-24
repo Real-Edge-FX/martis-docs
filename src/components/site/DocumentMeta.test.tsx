@@ -113,9 +113,12 @@ describe('DocumentMeta matches the server-rendered head', () => {
     return tags.sort()
   }
 
-  // Each case starts from a clean head: DocumentMeta only ever *adds* a
-  // robots tag (see the "noindex" test above), so a route left over from
-  // an earlier case could otherwise leak a tag into this one.
+  // Establishes a clean baseline so a tag left over from an earlier test
+  // in this file (or file run order) cannot leak into this describe
+  // block's own assertions. This is test isolation, not what proves
+  // removal: the removal proof is the single test below, which mounts
+  // one DocumentMeta and navigates it through three routes without ever
+  // wiping document.head in between.
   beforeEach(() => {
     document.head.querySelectorAll('meta[name], meta[property], link[rel]').forEach((el) => el.remove())
     document.title = ''
@@ -132,4 +135,60 @@ describe('DocumentMeta matches the server-rendered head', () => {
       expect(readHeadTags()).toEqual(parseSerializedTags(serializeMeta(getRouteMeta(route))))
     },
   )
+
+  /** Buttons that drive client-side navigation to two fixed destinations,
+   *  standing in for real in-app links. */
+  function NavigationHarness() {
+    const navigate = useNavigate()
+    return (
+      <>
+        <DocumentMeta />
+        <button type="button" onClick={() => navigate('/product')}>
+          To /product
+        </button>
+        <button type="button" onClick={() => navigate('/docs/core/fields')}>
+          To /docs/core/fields
+        </button>
+      </>
+    )
+  }
+
+  it('removes a stale tag after navigating away, not just adds new ones (e.g. /404\'s robots=noindex must not survive a navigation to /product)', () => {
+    render(
+      <MemoryRouter initialEntries={['/404']} future={ROUTER_FUTURE}>
+        <NavigationHarness />
+      </MemoryRouter>,
+    )
+    expect(readHeadTags()).toEqual(parseSerializedTags(serializeMeta(getRouteMeta('/404'))))
+
+    fireEvent.click(screen.getByRole('button', { name: 'To /product' }))
+    expect(readHeadTags()).toEqual(parseSerializedTags(serializeMeta(getRouteMeta('/product'))))
+
+    fireEvent.click(screen.getByRole('button', { name: 'To /docs/core/fields' }))
+    expect(readHeadTags()).toEqual(parseSerializedTags(serializeMeta(getRouteMeta('/docs/core/fields'))))
+  })
+
+  it('removes a stale tag left over from real server-rendered markup, not just one it created itself', () => {
+    // Unlike the test above (which lets DocumentMeta create every tag
+    // itself against an empty head, from its very first mount), this
+    // simulates real hydration: <head> already holds the exact SSR
+    // output (serializeMeta, src/lib/seo.ts) for the *starting* route
+    // before DocumentMeta ever runs — because that is what actually
+    // happens on every real page load, prerendered or dev-server-served.
+    // A tag DocumentMeta only *adopts* on mount (finds by selector,
+    // matching an existing element it did not create) must still be
+    // tracked for removal exactly like one it created — the two paths to
+    // the same element must not diverge.
+    document.head.innerHTML = serializeMeta(getRouteMeta('/404'))
+
+    render(
+      <MemoryRouter initialEntries={['/404']} future={ROUTER_FUTURE}>
+        <NavigationHarness />
+      </MemoryRouter>,
+    )
+    expect(readHeadTags()).toEqual(parseSerializedTags(serializeMeta(getRouteMeta('/404'))))
+
+    fireEvent.click(screen.getByRole('button', { name: 'To /product' }))
+    expect(readHeadTags()).toEqual(parseSerializedTags(serializeMeta(getRouteMeta('/product'))))
+  })
 })
