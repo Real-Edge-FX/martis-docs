@@ -210,12 +210,10 @@ test('checkRoute fails when the head contains a local hostname', () => {
 })
 
 test('checkRoute reports a forbidden host inside a head href only once', () => {
-  // Before de-duplication, a bad href in <head> was reported twice:
-  // once by the <head>-text scan (which sees the raw href="...") and
-  // once by the href/src-attribute scan. Only the more precise
-  // href/src message should survive. Uses an extra, unrelated <link>
-  // (not the canonical/OG tags) so this is the only forbidden-host
-  // failure in play.
+  // Both the <head>-text scan and the href/src-attribute scan see this
+  // href; only the more precise href/src message is reported. An extra,
+  // unrelated <link> (not the canonical/OG tags) keeps it the only
+  // forbidden-host failure in play.
   const html = okHtml().replace(
     '</head>',
     '    <link rel="alternate" href="http://localhost/product" />\n  </head>',
@@ -362,9 +360,8 @@ test('findForbiddenStrings does not flag a URL path that merely contains a machi
 })
 
 test('findForbiddenStrings does not flag a three-component version number starting with 10', () => {
-  // Must contain a real "10." prefix (unlike the old fixture, which had
-  // no "10." substring at all and so passed even with the pattern
-  // deleted) so this genuinely exercises the 4-component requirement.
+  // Contains real "10." prefixes, so it exercises the four-component
+  // requirement rather than passing for lack of a "10." at all.
   assert.deepEqual(findForbiddenStrings('Laravel 10.48.2 on PHP 8.3.10'), [])
 })
 

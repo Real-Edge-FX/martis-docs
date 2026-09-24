@@ -1,9 +1,7 @@
-// Shared between src/test/ssr-global-setup.ts (produces the fixture) and
-// src/lib/client-app.test.tsx (consumes it via `inject('hydrationFixture')`
-// — see that file's `ProvidedContext` augmentation in ssr-global-setup.ts):
-// the URLs the hydration regression test needs server HTML for, kept in
-// one place so producer and consumer can never drift apart on which URLs
-// are covered.
+// The URLs the hydration tests need server HTML for, shared between the
+// producer (src/test/ssr-global-setup.ts) and the consumers
+// (src/lib/client-app*.test.tsx, through `inject('hydrationFixture')`) so
+// they cannot drift apart.
 
 export const HYDRATION_URLS = [
   '/',

@@ -150,11 +150,10 @@ describe('DocumentMeta matches the server-rendered head', () => {
   // the real file rather than a hand-copied string, so a future static
   // tag added there can't silently drift out of this test.
   const STATIC_HEAD_HTML = (() => {
-    // path.join(import.meta.dirname, ...), not `new URL(..., import.meta.url)`:
-    // in this jsdom-environment file, the global `URL` constructor is
-    // jsdom's own (not Node's), which resolves a relative URL against
-    // `window.location` instead of a `file:` base — readFileSync then
-    // rejects the result ("The URL must be of scheme file").
+    // path.join(import.meta.dirname, ...), not `new URL(literal,
+    // import.meta.url)`: Vite's client-only transform rewrites that
+    // pattern into a served asset URL, which is not a `file:` URL, so
+    // readFileSync rejects it ("The URL must be of scheme file").
     const indexHtmlPath = path.join(import.meta.dirname, '../../../index.html')
     const indexHtml = readFileSync(indexHtmlPath, 'utf8')
     const head = /<head[^>]*>([\s\S]*?)<\/head>/.exec(indexHtml)?.[1]
@@ -258,6 +257,10 @@ describe('DocumentMeta matches the server-rendered head', () => {
     // correct one does, and pass just the same. In production, that
     // over-broad version would strip index.html's favicon, preconnect
     // and font stylesheet links on the very first client-side navigation.
+    // Start from an empty head, like a real page load: without this, the
+    // <title> the beforeEach's `document.title = ''` created would sit
+    // next to the server-rendered one.
+    document.head.replaceChildren()
     const staticTags = seedStaticHeadTags()
     document.head.insertAdjacentHTML(
       'beforeend',
@@ -280,6 +283,7 @@ describe('DocumentMeta matches the server-rendered head', () => {
      *  duplicate. */
     function expectHeadMatchesServerRender(route: string) {
       const expected = parseSerializedTags(serializeMeta(getRouteMeta(route)))
+      expect(document.head.querySelectorAll('title'), 'the head must hold exactly one <title>').toHaveLength(1)
       expect(readHeadTags(staticTags), 'head minus the static tags must match serializeMeta').toEqual(expected)
       expect(readManagedHeadTags(), 'the tags DocumentMeta marked must match serializeMeta').toEqual(expected)
       for (const el of staticTags) {

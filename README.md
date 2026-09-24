@@ -2,7 +2,7 @@
 
 Official documentation site for the [Martis](https://github.com/Real-Edge-FX/martis-package) Laravel admin engine.
 
-Live at **https://martis-docs.realedgefx.com**.
+Live at **https://getmartis.com**.
 
 ## Stack
 
@@ -38,7 +38,7 @@ Outputs to `dist/`. The build chains four steps:
 
 Type-checking is a separate gate, not part of `build`: run `pnpm typecheck` (`tsc -b`) yourself, or let CI run it.
 
-`pnpm test:prerender` (`node scripts/prerender.test.mjs`) is a fast smoke test over the files a `pnpm build` just produced: every expected file exists, and a sample page carries real content and its canonical tag.
+`pnpm test:prerender` runs the Node test scripts under `scripts/`: the unit tests for `prerender.mjs`, `smoke-dist.mjs`, `sync-docs.mjs` and `build-search-index.mjs`, the static checks over `deploy.sh` (`deploy-script.test.mjs`), and `prerender.test.mjs`, which checks the files a `pnpm build` just produced (every expected file exists, a sample page carries real content and its canonical tag, and `dist-ssr/` holds no `public/` files). Run it after `pnpm build`.
 
 `pnpm preview` serves the built site at <http://localhost:4173>, but it falls back to the root `index.html` for any unmatched path (Vite's SPA default) — visiting a deep route without a trailing slash (`/docs`, not `/docs/`) serves the wrong prerendered page there and can show hydration warnings that do not reflect a real bug. Apache does not have this quirk (it resolves a directory request to its `index.html`, per `public/.htaccess`). To verify a specific route's own prerendered HTML locally, request it with a trailing slash, or serve `dist/` with a plain static file server instead.
 
@@ -70,7 +70,7 @@ Each `.md` is rewritten into `.mdx` with:
 - self-closing void HTML (`<br>`, `<hr>`, `<img>`, ...) so MDX is happy,
 - escaped `{` outside fenced code blocks (avoid spurious JSX expressions).
 
-`--check` also guards against a relative link/image target or a relative `href`/`src` in inline HTML anywhere under `src/content/` — synced pages and hand-authored ones alike, since a hand-authored `.mdx` is never fed through the rewriting above and can carry a raw relative link of its own. Any survivor is reported as `file:line` and fails the check.
+`--check` also guards against a relative link/image target or a relative `href`/`src` in inline HTML anywhere under `src/content/` — synced pages and hand-authored ones alike, since a hand-authored `.mdx` is never fed through the rewriting above and can carry a raw relative link of its own. It also rejects any URL scheme other than `http:`, `https:` and `mailto:` (`javascript:`, `data:`, `file:`, ...). Any survivor is reported as `file:line` and fails the check.
 
 A few pages (`getting-started/quick-start.mdx`, `getting-started/troubleshooting.mdx`, `auth/roles.mdx`, `core/gates.mdx`) are hand-authored: they live only in this repo because the package source has no equivalent, or because the site intentionally diverges from it.
 

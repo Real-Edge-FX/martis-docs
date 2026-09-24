@@ -149,8 +149,8 @@ describe('parsePackagistStats', () => {
     expect(() => parsePackagistStats([])).toThrow('packagist stats must be an object')
   })
 
-  it('rejects negative download values', () => {
-    expect(() => parsePackagistStats({ package: 'martis/martis', total: -1 })).toThrow()
+  it('rejects a negative total', () => {
+    expect(() => parsePackagistStats({ ...VALID_PACKAGIST, total: -1 })).toThrow(/total/)
   })
 
   it('rejects a package other than martis/martis', () => {

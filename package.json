@@ -3,7 +3,7 @@
   "private": true,
   "type": "module",
   "version": "1.0.0",
-  "description": "Documentation site for the Martis admin engine — martis-docs.realedgefx.com",
+  "description": "Documentation site for the Martis admin engine — getmartis.com",
   "scripts": {
     "dev": "node scripts/build-search-index.mjs && vite",
     "build:client": "vite build",

@@ -8,12 +8,10 @@ describe('assertConsoleSilent', () => {
     spy('boom') // an unexpected call: what assertConsoleSilent exists to catch
 
     expect(() => assertConsoleSilent([spy])).toThrow()
-    // The throw above must not have skipped the restore: console.error is
-    // back to what it was before spyOn, not still the mocked spy
-    // implementation. A bare "assert, then restore" with no try/finally
-    // (the historical bug this replaces) gets this wrong — the assertion
-    // throwing exits the function immediately, so mockRestore() for every
-    // spy, not only the one that failed, never runs at all.
+    // The throw above must not skip the restore: console.error is back to
+    // its original, not the mocked spy. An "assert, then restore" without
+    // try/finally fails this, because the throwing assertion exits before
+    // any mockRestore() runs.
     expect(console.error).toBe(originalError)
   })
 

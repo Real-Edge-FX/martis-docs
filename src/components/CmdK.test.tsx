@@ -86,7 +86,7 @@ describe('CmdK full-text debounce', () => {
     expect(screen.getByText('Alpha result')).toBeInTheDocument()
   })
 
-  // The route the reviewer named: clear, then type a new query.
+  // Clearing the input and typing a new query must not keep the old query's hits.
   it('drops a previous query full-text hit after the query is cleared and a new one is typed', async () => {
     const input = renderPalette()
 
