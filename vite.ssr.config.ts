@@ -17,6 +17,8 @@ export default mergeConfig(
       ssr: 'src/entry-server.tsx',
       outDir: 'dist-ssr',
       emptyOutDir: true,
+      // public/ ships with the client build only (dist/).
+      copyPublicDir: false,
       rollupOptions: {
         output: {
           entryFileNames: 'entry-server.js',
