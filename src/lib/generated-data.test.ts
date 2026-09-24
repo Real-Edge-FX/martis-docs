@@ -9,6 +9,7 @@ import {
   formatPhpRequirement,
   formatLaravelRequirement,
 } from './generated-data'
+import releaseSnapshot from '@/data/generated/release.json'
 
 const VALID_RELEASE = {
   version: '1.39.0',
@@ -188,7 +189,9 @@ describe('parsePackagistStats', () => {
 describe('loadReleaseManifest / loadPackagistStats', () => {
   it('parses the committed release snapshot', () => {
     expect(() => loadReleaseManifest()).not.toThrow()
-    expect(loadReleaseManifest().version).toBe('1.39.0')
+    // Compare with the raw snapshot instead of pinning a version: the
+    // snapshot changes with every release, the loader contract does not.
+    expect(loadReleaseManifest()).toEqual(releaseSnapshot)
   })
 
   it('parses the committed packagist snapshot', () => {
