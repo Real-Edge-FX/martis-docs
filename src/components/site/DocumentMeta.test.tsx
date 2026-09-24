@@ -113,6 +113,48 @@ describe('DocumentMeta matches the server-rendered head', () => {
     return tags.sort()
   }
 
+  /** Same normalized shape as `readHeadTags`, but scoped to only the
+   *  elements DocumentMeta actually manages (`[data-document-meta]`):
+   *  needed once `document.head` also holds tags DocumentMeta must never
+   *  touch, which `readHeadTags`'s "every meta/link" sweep would wrongly
+   *  fold in. */
+  function readManagedHeadTags(): string[] {
+    const tags: string[] = [`title:::${document.title}`]
+    for (const el of document.head.querySelectorAll('[data-document-meta]')) {
+      if (el.hasAttribute('name') || el.hasAttribute('property')) {
+        const attr = el.hasAttribute('name') ? 'name' : 'property'
+        tags.push(`meta:${attr}:${el.getAttribute(attr)}:${el.getAttribute('content') ?? ''}`)
+      } else if (el.hasAttribute('rel')) {
+        tags.push(`link::${el.getAttribute('rel')}:${el.getAttribute('href') ?? ''}`)
+      }
+    }
+    return tags.sort()
+  }
+
+  // The static <head> tags index.html ships outside the <!--app-head-->
+  // marker (see index.html at the repo root): DocumentMeta must never
+  // create, adopt or remove any of these, regardless of route, because
+  // upsertMeta/upsertLink only ever look up tags by the name/property/rel
+  // headTags() itself asks for — none of which match these.
+  const STATIC_HEAD_HTML = `
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" type="image/png" href="/brand/martis-icon.png" />
+    <link rel="apple-touch-icon" href="/brand/martis-icon.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500;600&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet" />
+  `
+  const STATIC_HEAD_SELECTORS = [
+    'meta[charset="UTF-8"]',
+    'meta[name="viewport"]',
+    'link[rel="icon"]',
+    'link[rel="apple-touch-icon"]',
+    'link[rel="preconnect"][href="https://fonts.googleapis.com"]',
+    'link[rel="preconnect"][href="https://fonts.gstatic.com"]',
+    'link[rel="stylesheet"]',
+  ]
+
   // Establishes a clean baseline so a tag left over from an earlier test
   // in this file (or file run order) cannot leak into this describe
   // block's own assertions. This is test isolation, not what proves
@@ -168,7 +210,7 @@ describe('DocumentMeta matches the server-rendered head', () => {
     expect(readHeadTags()).toEqual(parseSerializedTags(serializeMeta(getRouteMeta('/docs/core/fields'))))
   })
 
-  it('removes a stale tag left over from real server-rendered markup, not just one it created itself', () => {
+  it('removes a stale tag left over from real server-rendered markup, not just one it created itself, without touching tags outside its control', () => {
     // Unlike the test above (which lets DocumentMeta create every tag
     // itself against an empty head, from its very first mount), this
     // simulates real hydration: <head> already holds the exact SSR
@@ -179,16 +221,35 @@ describe('DocumentMeta matches the server-rendered head', () => {
     // matching an existing element it did not create) must still be
     // tracked for removal exactly like one it created — the two paths to
     // the same element must not diverge.
-    document.head.innerHTML = serializeMeta(getRouteMeta('/404'))
+    //
+    // Also surrounds that with the real static tags index.html ships
+    // (STATIC_HEAD_HTML) and plants one extra *marked* stale tag, as if
+    // a previous render had created it for a route whose tags no longer
+    // include it. Without both of these, this test (and the one above)
+    // cannot tell a sweep correctly scoped to `[data-document-meta]`
+    // apart from an over-broad one like `querySelectorAll('meta, link')`:
+    // with nothing unmanaged present, an over-broad sweep would remove
+    // exactly the same elements a correct one does, and pass just the
+    // same. In production, that over-broad version would strip
+    // index.html's favicon, preconnect and font stylesheet links on the
+    // very first client-side navigation.
+    document.head.innerHTML =
+      STATIC_HEAD_HTML +
+      serializeMeta(getRouteMeta('/404')) +
+      '<meta name="x-stale" content="1" data-document-meta="" />'
 
     render(
       <MemoryRouter initialEntries={['/404']} future={ROUTER_FUTURE}>
         <NavigationHarness />
       </MemoryRouter>,
     )
-    expect(readHeadTags()).toEqual(parseSerializedTags(serializeMeta(getRouteMeta('/404'))))
 
     fireEvent.click(screen.getByRole('button', { name: 'To /product' }))
-    expect(readHeadTags()).toEqual(parseSerializedTags(serializeMeta(getRouteMeta('/product'))))
+
+    expect(document.head.querySelector('meta[name="x-stale"]'), 'stale marked tag must be removed').toBeNull()
+    for (const selector of STATIC_HEAD_SELECTORS) {
+      expect(document.head.querySelector(selector), `static tag "${selector}" must survive`).not.toBeNull()
+    }
+    expect(readManagedHeadTags()).toEqual(parseSerializedTags(serializeMeta(getRouteMeta('/product'))))
   })
 })

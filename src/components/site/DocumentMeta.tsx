@@ -3,12 +3,14 @@ import { useLocation } from 'react-router-dom'
 import { headTags } from '@/lib/seo'
 import { getRouteMeta } from '@/lib/site-routes'
 
-/** Marks every `<meta>`/`<link>` element `DocumentMeta` creates, so a
- *  later render can tell "a tag this component owns but the current
- *  route no longer lists" (must be removed) apart from unrelated head
- *  elements it must never touch (favicon, preconnect, stylesheet links
- *  from index.html — see the static markup DocumentMeta is never meant
- *  to manage). Presence-only; the value carries no information. */
+/** Marks every `<meta>`/`<link>` element `DocumentMeta` manages — one it
+ *  created, or an existing server-rendered one it adopted by selector on
+ *  first mount (see `upsertMeta`/`upsertLink` below) — so a later render
+ *  can tell "a tag this component owns but the current route no longer
+ *  lists" (must be removed) apart from unrelated head elements it must
+ *  never touch (favicon, preconnect, stylesheet links from index.html —
+ *  see the static markup DocumentMeta is never meant to manage).
+ *  Presence-only; the value carries no information. */
 const MANAGED_ATTR = 'data-document-meta'
 
 /** Finds a `<meta>` by its `name`/`property` attribute, creating and

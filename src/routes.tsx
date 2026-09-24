@@ -46,8 +46,8 @@ export const DOCS_ROUTE_PATTERN = '/docs/*'
  * constant instead of setting its own `future` prop, so changing the
  * value here moves every consumer together. (Today it changes nothing
  * observable either way: every `Link`/`navigate()` target in this
- * codebase is already an absolute `/docs/...` path, so no relative
- * resolution is ever in play. See the Phase 1 Task 7 fix-round-1 report.)
+ * codebase is already an absolute path — `/`, `/product`, `/docs/...`,
+ * etc. — so no relative resolution is ever in play.)
  *
  * `v7_startTransition` does have one real, currently-accepted UX
  * consequence, worth knowing about before it's mistaken for a bug: `App`

@@ -81,9 +81,12 @@ async function renderFixture(): Promise<HydrationFixture> {
 
   try {
     const { render } = await server.ssrLoadModule('/src/entry-server.tsx')
-    // Sequential, not Promise.all: see the Fizz/Fiber process-shared-state
-    // note above — the same caution that keeps this out of the test
-    // worker applies to running renders concurrently within one process.
+    // Sequential, not Promise.all: not a correctness requirement — the
+    // Fizz/Fiber note above is about a *server* render leaking into a
+    // *later client* render in the same process, which concurrent calls
+    // to this server-only render() never trigger. Kept simple instead,
+    // since three renders make the wall-time difference negligible
+    // either way.
     const results: RenderResult[] = []
     for (const url of HYDRATION_URLS) {
       results.push(await render(url))
