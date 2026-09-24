@@ -40,6 +40,10 @@ export const REQUIRED_ROUTES = [
   '/404',
 ]
 
+/** A path that starts at the filesystem root `/<dir>/`, not a URL path
+ *  that merely contains that segment (`https://x.com/home/`). */
+const machinePath = (dir) => new RegExp(`(?<![\\w.-])/${dir}/`)
+
 /** [name, pattern] for every local hostname or machine path a generated
  *  URL must never contain. IPv4 patterns require the full dotted-quad
  *  shape so they do not fire on an unrelated version number like "10.5". */
@@ -49,7 +53,11 @@ const FORBIDDEN_PATTERNS = [
   ['0.0.0.0', /0\.0\.0\.0/],
   ['a private 192.168.x.x address', /\b192\.168\.\d{1,3}\.\d{1,3}\b/],
   ['a private 10.x.x.x address', /\b10\.\d{1,3}\.\d{1,3}\.\d{1,3}\b/],
-  ['a /Users/ machine path', /\/Users\//],
+  ['a /Users/ machine path', machinePath('Users')],
+  ['a /home/ machine path', machinePath('home')],
+  ['a /private/ machine path', machinePath('private')],
+  ['a /tmp/ machine path', machinePath('tmp')],
+  ['a file:// URL', /file:\/\//i],
 ]
 
 /** Names every forbidden pattern found in `text`, empty when clean. */
@@ -188,6 +196,11 @@ export function checkRoute(route, html, meta) {
   if (missingOg.length > 0) failures.push(`missing Open Graph tag(s) in <head>: ${missingOg.join(', ')}`)
 
   if (!rootHasContent(html)) failures.push('#root has no rendered content')
+  // The Suspense fallback: a page whose lazy chunk or MDX module did not
+  // resolve during the prerender.
+  if (html.includes('Loading…')) failures.push('shows the "Loading…" screen instead of its content')
+  // Never valid in HTML, so it can only be stream corruption.
+  if (html.includes('\u0000')) failures.push('contains a U+0000 character')
 
   const moduleAssets = extractModuleScriptSrcs(html).filter((src) => src.startsWith('/assets/'))
   if (moduleAssets.length === 0) failures.push('no <script type="module"> served from /assets/')

@@ -154,8 +154,12 @@ it('renders the docs index as a list of every docs page', async () => {
   }
 })
 
+// Every route, because the registries it guards (site-routes.ts and
+// routes.tsx) can drift for any one of them. The "Loading…" and U+0000
+// checks over the same HTML run in `pnpm smoke:dist` (checkRoute in
+// scripts/smoke-dist.mjs), against the files that actually ship.
 it(
-  'renders every public route to complete, well-formed HTML',
+  'renders every public route with its own page and status',
   async () => {
     const notFound = await render('/404')
     for (const route of PUBLIC_ROUTES) {
@@ -165,18 +169,12 @@ it(
       // A route the router does not know renders the 404 page with a 200
       // head: the registries in site-routes.ts and routes.tsx disagree.
       if (route !== '/404') expect(html === notFound.html, `${route} renders the 404 page`).toBe(false)
-      expect(html, route).not.toContain('Loading…')
-      // U+0000 is never valid in HTML, so it can only be stream corruption.
-      expect(html, route).not.toContain('\u0000')
     }
   },
-  // Vitest's 5000ms default is tight for a real, un-mocked SSR render of
-  // every public route in one test; under concurrent load (every other
-  // test file's real work competing for the same CPU) this was timing
-  // out with nothing actually stuck. 20s matches the order of magnitude
-  // of RENDER_TIMEOUT_MS above, the deadline already accepted there as
-  // "generous but still catches a real hang" — given to this one test
-  // rather than the whole suite, so a hang anywhere else still fails fast.
+  // Vitest's 5000ms default is tight for a real SSR render of every
+  // public route under the load of the rest of the suite. 20s matches
+  // RENDER_TIMEOUT_MS in src/entry-server.tsx, and applies to this test
+  // only, so a hang anywhere else still fails fast.
   20_000,
 )
 

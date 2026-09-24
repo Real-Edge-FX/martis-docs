@@ -230,6 +230,28 @@ test('checkRoute fails when an href attribute contains a machine path', () => {
   assert.ok(checkRoute('/product', html, OK_META).some((f) => f.includes('/Users/')))
 })
 
+test('checkRoute fails when a page still shows the loading screen', () => {
+  const html = okHtml().replace('<h1>Product</h1>', '<p>Loading…</p>')
+  assert.ok(checkRoute('/product', html, OK_META).includes('shows the "Loading…" screen instead of its content'))
+})
+
+test('checkRoute fails on a U+0000 character (stream corruption)', () => {
+  const html = okHtml().replace('<h1>Product</h1>', '<h1>Prod\u0000uct</h1>')
+  assert.ok(checkRoute('/product', html, OK_META).includes('contains a U+0000 character'))
+})
+
+test('checkRoute flags every machine path and file:// URL in an href/src attribute', () => {
+  for (const value of ['/home/ci/x.png', '/private/tmp/x.png', '/tmp/x.png', 'file:///srv/site/x.png']) {
+    const html = okHtml().replace('<div id="root">', `<div id="root"><img src="${value}">`)
+    assert.ok(checkRoute('/product', html, OK_META).some((f) => f.includes(`"${value}"`)), value)
+  }
+})
+
+test('checkRoute does not flag a machine path mentioned in body text (not an attribute)', () => {
+  const html = okHtml().replace('<h1>Product</h1>', '<h1>Product</h1><pre>cd /home/forge/app &amp;&amp; ls /tmp/</pre>')
+  assert.deepEqual(checkRoute('/product', html, OK_META), [])
+})
+
 test('checkRoute does not flag localhost mentioned in body text (not an attribute)', () => {
   const html = okHtml().replace('<h1>Product</h1>', '<h1>Product</h1><p>Run curl http://localhost:8000</p>')
   assert.deepEqual(checkRoute('/product', html, OK_META), [])
@@ -328,7 +350,15 @@ test('findForbiddenStrings names every local host/path pattern it matches', () =
   assert.deepEqual(findForbiddenStrings('http://192.168.1.20/'), ['a private 192.168.x.x address'])
   assert.deepEqual(findForbiddenStrings('http://10.0.0.5/'), ['a private 10.x.x.x address'])
   assert.deepEqual(findForbiddenStrings('/Users/me/project'), ['a /Users/ machine path'])
+  assert.deepEqual(findForbiddenStrings('/home/runner/work/site'), ['a /home/ machine path'])
+  assert.deepEqual(findForbiddenStrings('/private/var/folders/x'), ['a /private/ machine path'])
+  assert.deepEqual(findForbiddenStrings('/tmp/build/x.png'), ['a /tmp/ machine path'])
+  assert.deepEqual(findForbiddenStrings('file:///srv/x.png'), ['a file:// URL'])
   assert.deepEqual(findForbiddenStrings('https://getmartis.com/product'), [])
+})
+
+test('findForbiddenStrings does not flag a URL path that merely contains a machine-path segment', () => {
+  assert.deepEqual(findForbiddenStrings('https://example.com/home/tmp/private/Users/'), [])
 })
 
 test('findForbiddenStrings does not flag a three-component version number starting with 10', () => {
