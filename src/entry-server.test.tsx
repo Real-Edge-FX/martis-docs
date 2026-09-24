@@ -23,12 +23,31 @@ function mdxHeading(slug: string): string | undefined {
 let consoleSpies: MockInstance[] = []
 beforeEach(() => {
   consoleSpies = [vi.spyOn(console, 'error'), vi.spyOn(console, 'warn')]
+  // Node 21+ defines a minimal `navigator` global (e.g. `navigator.userAgent`
+  // reads "Node.js/24"). Stub it away for every SSR test: without this, a
+  // render-time `navigator` read would pass this "no browser globals"
+  // guarantee here and only mismatch later, on hydration, where a real
+  // browser's navigator has different values.
+  vi.stubGlobal('navigator', undefined)
 })
 afterEach(() => {
-  for (const spy of consoleSpies) {
-    expect(spy).not.toHaveBeenCalled()
-    spy.mockRestore()
+  // Restore first, then assert: if an unexpected console call throws below,
+  // the spies (and the navigator stub) must still be torn down, or they
+  // stay installed and cascade into every later test in this file.
+  vi.unstubAllGlobals()
+  try {
+    for (const spy of consoleSpies) {
+      expect(spy).not.toHaveBeenCalled()
+    }
+  } finally {
+    for (const spy of consoleSpies) {
+      spy.mockRestore()
+    }
   }
+})
+
+it('does not see a Node-provided navigator global (SSR must not read browser globals)', () => {
+  expect(globalThis.navigator).toBeUndefined()
 })
 
 it('renders meaningful HTML and metadata without a browser', async () => {

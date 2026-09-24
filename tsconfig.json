@@ -5,6 +5,14 @@
     "module": "ESNext",
     "moduleResolution": "Bundler",
     "allowImportingTsExtensions": false,
+    // Two test-infrastructure files (src/test/hydration-fixture.mjs,
+    // src/test/ssr-global-setup.mjs) are plain Node ESM, not TS: they run
+    // under Node directly (Vitest's globalSetup, see vitest.config.ts)
+    // rather than through Vite's transform. allowJs lets tsc infer their
+    // exported types for src/lib/client-app.test.tsx's import instead of
+    // failing with "could not find a declaration file". checkJs stays off
+    // (the default), so the .mjs files themselves are still not type-checked.
+    "allowJs": true,
     "jsx": "react-jsx",
     "strict": true,
     "esModuleInterop": true,
