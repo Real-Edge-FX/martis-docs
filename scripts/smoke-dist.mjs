@@ -2,9 +2,9 @@
 // deployed or gated in CI: every public route has its own prerendered
 // HTML with real content, title, description, canonical and Open
 // Graph tags; every /assets/ file and every og:image/twitter:image under
-// the site URL a page references actually exists;
-// search-index.json, sitemap.xml, robots.txt and .htaccess agree with
-// the route registry; and nothing in the output leaks a local
+// the site URL a page references actually exists; search-index.json,
+// sitemap.xml, robots.txt and both .htaccess files agree with the route
+// registry and the cache policy; and nothing in the output leaks a local
 // hostname or a machine-specific path.
 //
 // Run after `pnpm build` (or just `pnpm build && pnpm smoke:dist`).
@@ -292,19 +292,54 @@ export function checkRobots(text, siteUrl) {
   return failures
 }
 
-/** Checks dist/.htaccess declares the 404 handler and has no leftover
- *  catch-all rewrite to /index.html (the old SPA fallback). */
+/** `text` without comment lines, so a directive quoted in a comment
+ *  neither satisfies nor trips a check. */
+function htaccessDirectives(text) {
+  return text
+    .split('\n')
+    .filter((line) => !/^\s*#/.test(line))
+    .join('\n')
+}
+
+const YEAR_IMMUTABLE = /Header\s+set\s+Cache-Control\s+"[^"]*max-age=31536000[^"]*immutable[^"]*"/
+
+/** Checks dist/.htaccess: the 404 handler, the slash-less route rewrite
+ *  and DirectorySlash Off are there; no SPA fallback survives (a
+ *  FallbackResource, or a RewriteRule of any pattern whose target is the
+ *  /index.html shell); and nothing gets the year-long immutable cache,
+ *  which only fingerprinted /assets/ files may have (checkAssetsHtaccess). */
 export function checkHtaccess(text) {
+  const directives = htaccessDirectives(text)
   const failures = []
 
-  if (!/ErrorDocument\s+404\s+\/404\.html/.test(text)) {
+  if (!/^\s*ErrorDocument\s+404\s+\/404\.html\s*$/m.test(directives)) {
     failures.push('.htaccess is missing "ErrorDocument 404 /404.html"')
   }
-  if (/RewriteRule\s+(?:\.|\^)\s*\/index\.html/.test(text)) {
+  if (!/^\s*DirectorySlash\s+Off\s*$/im.test(directives)) {
+    failures.push('.htaccess is missing "DirectorySlash Off"')
+  }
+  if (!/^\s*RewriteRule\s+\^\(\.\*\[\^\/\]\)\$\s+\$1\/index\.html\s/m.test(directives)) {
+    failures.push('.htaccess is missing the slash-less route rewrite "RewriteRule ^(.*[^/])$ $1/index.html"')
+  }
+  if (/^\s*FallbackResource\b/im.test(directives)) {
+    failures.push('.htaccess has a FallbackResource (stale SPA fallback)')
+  }
+  if (/^\s*RewriteRule\s+\S+\s+"?\/?index\.html"?(?:\s|$)/m.test(directives)) {
     failures.push('.htaccess has a catch-all rewrite to /index.html (stale SPA fallback)')
+  }
+  if (YEAR_IMMUTABLE.test(directives)) {
+    failures.push('.htaccess caches files outside /assets/ as immutable for a year')
   }
 
   return failures
+}
+
+/** Checks dist/assets/.htaccess gives Vite's fingerprinted files the
+ *  year-long immutable cache. */
+export function checkAssetsHtaccess(text) {
+  return YEAR_IMMUTABLE.test(htaccessDirectives(text))
+    ? []
+    : ['assets/.htaccess does not cache fingerprinted files as immutable for a year']
 }
 
 async function main() {
@@ -382,6 +417,13 @@ async function main() {
     addFailures('.htaccess', ['dist/.htaccess is missing'])
   } else {
     addFailures('.htaccess', checkHtaccess(await readFile(htaccessPath, 'utf8')))
+  }
+
+  const assetsHtaccessPath = path.join(DIST, 'assets', '.htaccess')
+  if (!existsSync(assetsHtaccessPath)) {
+    addFailures('assets/.htaccess', ['dist/assets/.htaccess is missing'])
+  } else {
+    addFailures('assets/.htaccess', checkAssetsHtaccess(await readFile(assetsHtaccessPath, 'utf8')))
   }
 
   console.log(`Checked ${PUBLIC_ROUTES.length} routes.`)

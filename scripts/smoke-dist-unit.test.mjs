@@ -8,8 +8,10 @@
 // Run via `pnpm test:prerender` (never picked up by Vitest: see
 // scripts/prerender-unit.test.mjs for why scripts/** is excluded).
 import assert from 'node:assert/strict'
+import { readFileSync } from 'node:fs'
 import test from 'node:test'
 import {
+  checkAssetsHtaccess,
   checkHtaccess,
   checkRobots,
   checkRoute,
@@ -410,20 +412,67 @@ test('checkHtaccess requires the ErrorDocument 404 directive', () => {
   assert.ok(checkHtaccess('RewriteEngine On\n').some((f) => f.includes('ErrorDocument 404')))
 })
 
-test('checkHtaccess rejects a catch-all rewrite back to /index.html', () => {
-  const failures = checkHtaccess('ErrorDocument 404 /404.html\nRewriteRule . /index.html [L]\n')
-  assert.ok(failures.some((f) => f.includes('catch-all')))
-})
+const CLEAN_HTACCESS = [
+  'DirectorySlash Off',
+  'ErrorDocument 404 /404.html',
+  'RewriteCond %{REQUEST_FILENAME} !-f',
+  'RewriteCond %{REQUEST_FILENAME}/index.html -f',
+  'RewriteRule ^(.*[^/])$ $1/index.html [L]',
+  'Header set Cache-Control "public, max-age=3600"',
+].join('\n')
 
 test('checkHtaccess passes a clean, prerendered-site config', () => {
-  const text = [
-    'ErrorDocument 404 /404.html',
-    'RewriteRule ^index\\.html$ - [L]',
-    'RewriteCond %{REQUEST_FILENAME} !-f',
-    'RewriteCond %{REQUEST_FILENAME}/index.html -f',
-    'RewriteRule ^(.*[^/])$ $1/index.html [L]',
-  ].join('\n')
+  assert.deepEqual(checkHtaccess(CLEAN_HTACCESS), [])
+})
+
+test('checkHtaccess rejects every catch-all rewrite back to /index.html', () => {
+  for (const rule of [
+    'RewriteRule . /index.html [L]',
+    'RewriteRule .* /index.html [L]',
+    'RewriteRule ^(.*)$ /index.html [L]',
+    'RewriteRule ^ index.html [L]',
+    '  RewriteRule "^.*$" "/index.html" [QSA,L]',
+  ]) {
+    const failures = checkHtaccess(`${CLEAN_HTACCESS}\n${rule}\n`)
+    assert.ok(failures.some((f) => f.includes('catch-all')), rule)
+  }
+})
+
+test('checkHtaccess rejects a FallbackResource (the other way to spell an SPA fallback)', () => {
+  const failures = checkHtaccess(`${CLEAN_HTACCESS}\nFallbackResource /index.html\n`)
+  assert.ok(failures.some((f) => f.includes('FallbackResource')))
+})
+
+test('checkHtaccess ignores directives that only appear in comments', () => {
+  const text = `${CLEAN_HTACCESS}\n# RewriteRule . /index.html [L]\n  # FallbackResource /index.html\n`
   assert.deepEqual(checkHtaccess(text), [])
+})
+
+test('checkHtaccess requires DirectorySlash Off', () => {
+  const failures = checkHtaccess(CLEAN_HTACCESS.replace('DirectorySlash Off', ''))
+  assert.ok(failures.some((f) => f.includes('DirectorySlash Off')))
+})
+
+test('checkHtaccess requires the rewrite that serves a slash-less route from its index.html', () => {
+  const failures = checkHtaccess(CLEAN_HTACCESS.replace('RewriteRule ^(.*[^/])$ $1/index.html [L]', ''))
+  assert.ok(failures.some((f) => f.includes('slash-less')))
+})
+
+test('checkHtaccess rejects a year-long immutable cache outside /assets/', () => {
+  const text = `${CLEAN_HTACCESS}\nHeader set Cache-Control "public, max-age=31536000, immutable"\n`
+  assert.ok(checkHtaccess(text).some((f) => f.includes('immutable')))
+})
+
+test('checkAssetsHtaccess requires the year-long immutable cache for fingerprinted files', () => {
+  assert.deepEqual(checkAssetsHtaccess('Header set Cache-Control "public, max-age=31536000, immutable"\n'), [])
+  assert.ok(checkAssetsHtaccess('Header set Cache-Control "public, max-age=3600"\n').length > 0)
+  assert.ok(checkAssetsHtaccess('# Header set Cache-Control "public, max-age=31536000, immutable"\n').length > 0)
+})
+
+test('the real public/.htaccess and public/assets/.htaccess pass their checks', () => {
+  const read = (file) => readFileSync(new URL(`../public/${file}`, import.meta.url), 'utf8')
+  assert.deepEqual(checkHtaccess(read('.htaccess')), [])
+  assert.deepEqual(checkAssetsHtaccess(read('assets/.htaccess')), [])
 })
 
 // --- og:image / twitter:image files ---

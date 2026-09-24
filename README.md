@@ -131,11 +131,16 @@ Hostinger allows SSH **password** auth only (no keys, no SFTP batch). The script
 
 - `Options -Indexes -MultiViews` and `DirectoryIndex index.html`: serve each route directory's `index.html`; no directory listings, no content-negotiation guessing.
 - `DirectorySlash Off`: a request for `/product` (no trailing slash — the canonical form) is served directly instead of Apache 301-redirecting it to add the slash first. Safe here because every asset and internal link in this build is an absolute path (`/assets/…`, `/docs/…`), never relative — the one documented caveat of turning this off.
+- `/index.html` and `/<route>/index.html` 301 to the clean URL (`/`, `/<route>`), matched on `%{THE_REQUEST}` so the internal rewrite below never triggers it.
+- A directory with no `index.html` of its own (`/docs/core`, `/assets`) answers the branded 404 instead of a 403.
 - A `mod_rewrite` rule 301s a trailing-slash request for a real route (`/product/`) down to its slash-less canonical form (`/product`); `/` itself is excluded (it has no slash-less form).
 - Another `mod_rewrite` rule internally rewrites a route's clean URL (`/product`) to its prerendered file (`product/index.html`) when that file exists, without changing what the browser shows.
 - `ErrorDocument 404 /404.html` returns a real HTTP 404 with the prerendered not-found page's own markup for anything that does not match a route, including the literal `/404` URL (there is no `dist/404/` directory to match).
+- Caching: HTML and `search-index.json` are `no-cache`; other static files keep their name across releases (`/brand`, `/screenshots`) and get `max-age=3600`. Only Vite's fingerprinted files get `max-age=31536000, immutable`, from `public/assets/.htaccess` (copied to `dist/assets/.htaccess`).
 
-Not validated against a real Apache instance yet (none available while writing it) — validate on the real Hostinger/LiteSpeed host before relying on it in production.
+`pnpm smoke:dist` checks both files: the 404 handler, `DirectorySlash Off` and the slash-less rewrite are present, no SPA fallback survives (`FallbackResource`, or a `RewriteRule` of any pattern targeting `/index.html`), and the year-long immutable cache applies only under `/assets/`.
+
+Validated against a local Apache 2.4 with `mod_rewrite`, `mod_dir` and `mod_headers`, not against LiteSpeed: check it on the real Hostinger host too (`scripts/deploy.sh` probes a few of these URLs after every deploy).
 
 ### CI gate
 

@@ -14,15 +14,14 @@
 # Vite copies this file from public/ to the build root, so every
 # `pnpm build` ships it as dist/.htaccess.
 #
-# Not validated against a real Apache instance yet — none is available
-# in the environment this was written in. Validate on the real
-# Hostinger/LiteSpeed host before relying on it in production (see
-# scripts/deploy.sh, which asserts this file lands in dist/ and smoke
-# tests a handful of routes after every deploy).
+# Validated against a local Apache 2.4 (mod_rewrite, mod_dir,
+# mod_headers), not against LiteSpeed: check it on the real Hostinger
+# host too (scripts/deploy.sh probes a handful of these URLs after every
+# deploy, and pnpm smoke:dist checks this file's key rules).
 
 # No directory listings for a folder without its own index.html
-# (shouldn't happen — every route directory has one — but fail closed
-# rather than leak a listing). No content-negotiation guessing either:
+# (/docs/core, /assets: the rewrite below answers those with the 404
+# page instead). No content-negotiation guessing either:
 # every path below is resolved explicitly by this file, never by
 # Apache trying alternate extensions on its own.
 Options -Indexes -MultiViews
@@ -47,13 +46,28 @@ Options -Indexes -MultiViews
   RewriteEngine On
   RewriteBase /
 
+  # /index.html and /<route>/index.html name the same page as the clean
+  # URL (/, /<route>): 301 them there so each page has one address.
+  # Matched on %{THE_REQUEST}, the request line the client actually sent,
+  # so the internal rewrite to <route>/index.html further down (which
+  # re-runs these rules with the rewritten path) never matches it.
+  RewriteCond %{THE_REQUEST} ^\S+\s/index\.html[?\s]
+  RewriteRule ^index\.html$ / [R=301,L]
+  RewriteCond %{THE_REQUEST} ^\S+\s/.+/index\.html[?\s]
+  RewriteRule ^(.+)/index\.html$ /$1 [R=301,L]
+
+  # A directory with no index.html of its own (/docs/core, /assets) is
+  # not a page: answer the branded 404 (ErrorDocument below) instead of
+  # the 403 that "Options -Indexes" would give.
+  RewriteCond %{REQUEST_FILENAME} -d
+  RewriteCond %{REQUEST_FILENAME}/index.html !-f
+  RewriteRule ^ - [R=404,L]
+
   # A trailing-slash request for a real prerendered route (…/product/)
   # is not the canonical URL: 301 it down to the slash-less form.
-  # Excludes "/" itself, which has no slash-less form (belt and
-  # suspenders: %{REQUEST_URI} is never "/" past the first condition,
-  # and the pattern below also can't match an empty string).
+  # Excludes "/" itself, which has no slash-less form.
   RewriteCond %{REQUEST_URI} !^/$
-  RewriteCond %{DOCUMENT_ROOT}%{REQUEST_URI} -d
+  RewriteCond %{REQUEST_FILENAME} -d
   RewriteRule ^(.+)/$ /$1 [R=301,L]
 
   # The canonical, slash-less request for a route (…/product) is not a
@@ -69,7 +83,7 @@ Options -Indexes -MultiViews
   # dist/404/ directory exists to match) is a genuine miss: fall
   # through to Apache's normal "file not found" handling, which
   # ErrorDocument below turns into a real static 404 response. No
-  # catch-all rewrite to /index.html here — that was the old SPA
+  # catch-all rewrite to the HTML shell here — that was the old SPA
   # fallback; every route now has its own real prerendered file.
 </IfModule>
 
@@ -81,11 +95,15 @@ Options -Indexes -MultiViews
 # "/404" URL itself.
 ErrorDocument 404 /404.html
 
-# Long-cache fingerprinted assets; never cache the HTML shell or the
-# search index so new releases show up immediately.
+# Files outside /assets/ keep their name across releases (/brand,
+# /screenshots, generated social cards), so they get a short cache, and
+# the HTML and the search index are revalidated on every request so a new
+# release shows up immediately. Only Vite's fingerprinted files under
+# /assets/ are cached for a year, by public/assets/.htaccess (copied to
+# dist/assets/.htaccess), which overrides the rule below there.
 <IfModule mod_headers.c>
   <FilesMatch "\.(js|css|woff2?|png|jpg|jpeg|svg|webp|avif|ico)$">
-    Header set Cache-Control "public, max-age=31536000, immutable"
+    Header set Cache-Control "public, max-age=3600"
   </FilesMatch>
   <FilesMatch "\.(html|json)$">
     Header set Cache-Control "no-cache"
