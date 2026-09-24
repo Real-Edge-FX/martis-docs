@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { serializeMeta } from './seo'
+import { DEFAULT_IMAGE_ALT, serializeMeta } from './seo'
 import type { RouteMeta } from './site-routes'
 
 const BASE_META: RouteMeta = {
@@ -65,5 +65,17 @@ describe('serializeMeta', () => {
     expect(html).toContain(`<meta name="twitter:title" content="${BASE_META.title}" />`)
     expect(html).toContain(`<meta name="twitter:description" content="${BASE_META.description}" />`)
     expect(html).toContain(`<meta name="twitter:image" content="${BASE_META.image}" />`)
+  })
+
+  it('defaults the Open Graph and Twitter image alt when the route sets none', () => {
+    const html = serializeMeta(BASE_META)
+    expect(html).toContain(`<meta property="og:image:alt" content="${DEFAULT_IMAGE_ALT}" />`)
+    expect(html).toContain(`<meta name="twitter:image:alt" content="${DEFAULT_IMAGE_ALT}" />`)
+  })
+
+  it('uses a route-supplied imageAlt over the default', () => {
+    const html = serializeMeta({ ...BASE_META, imageAlt: 'A custom description of the image' })
+    expect(html).toContain('<meta property="og:image:alt" content="A custom description of the image" />')
+    expect(html).toContain('<meta name="twitter:image:alt" content="A custom description of the image" />')
   })
 })

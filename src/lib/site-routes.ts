@@ -14,6 +14,10 @@ export interface RouteMeta {
   description: string
   canonical: string
   image: string
+  /** Alt text for `image` (rendered as `og:image:alt` / `twitter:image:alt`
+   *  by `headTags` in `src/lib/seo.ts`). Defaults to `DEFAULT_IMAGE_ALT`
+   *  when a route does not need a more specific description. */
+  imageAlt?: string
   noIndex?: boolean
 }
 
@@ -69,7 +73,7 @@ const ROUTE_META: RouteMeta[] = [
   },
   {
     path: '/compare/nova',
-    title: 'Martis vs Laravel Nova · Martis',
+    title: 'Martis vs Laravel Nova',
     description:
       'How Martis compares with Laravel Nova on licensing, frontend stack, customization and agency economics.',
     canonical: `${SITE_URL}/compare/nova`,
@@ -77,7 +81,7 @@ const ROUTE_META: RouteMeta[] = [
   },
   {
     path: '/compare/filament',
-    title: 'Martis vs Filament · Martis',
+    title: 'Martis vs Filament',
     description:
       'How Martis compares with Filament on licensing, frontend stack, customization and agency economics.',
     canonical: `${SITE_URL}/compare/filament`,

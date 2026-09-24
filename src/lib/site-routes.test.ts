@@ -68,3 +68,22 @@ it('marks only the 404 route as noindex', () => {
     expect(getRouteMeta(path).noIndex).toBeUndefined()
   }
 })
+
+it('never repeats the "Martis" brand name within a single static route title', () => {
+  // e.g. '/compare/nova' must read "Martis vs Laravel Nova", not
+  // "Martis vs Laravel Nova · Martis" (the brand suffix duplicating a
+  // "Martis" that is already in the page-specific part of the title).
+  // Scoped to the hand-written static titles: a derived docs title
+  // (`${doc.label} · Martis docs`) can legitimately contain "Martis"
+  // twice when the doc's own label does, e.g. "Martis differentials ·
+  // Martis docs" — that is real content, not a duplicated brand suffix.
+  const staticPaths = [
+    '/', '/product', '/for-agencies', '/compare',
+    '/compare/nova', '/compare/filament', '/docs', '/changelog', '/404',
+  ]
+  for (const path of staticPaths) {
+    const { title } = getRouteMeta(path)
+    const occurrences = title.split('Martis').length - 1
+    expect(occurrences, `title "${title}" for ${path}`).toBeLessThanOrEqual(1)
+  }
+})
