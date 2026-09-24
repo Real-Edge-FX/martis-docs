@@ -101,7 +101,9 @@ for (const file of walk(CONTENT_DIR).sort()) {
   entries.push({ slug, title, description, body: text })
 }
 
-const payload = { version: 1, builtAt: new Date().toISOString(), entries }
+// No build timestamp: it is never read (see src/lib/search.ts) and would
+// make two builds of the same commit produce different bytes.
+const payload = { version: 1, entries }
 fs.mkdirSync(path.dirname(OUTPUT), { recursive: true })
 fs.writeFileSync(OUTPUT, JSON.stringify(payload))
 const sizeKb = (fs.statSync(OUTPUT).size / 1024).toFixed(1)

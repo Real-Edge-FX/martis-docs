@@ -118,7 +118,6 @@ interface IndexEntry {
 
 interface IndexPayload {
   version: number
-  builtAt: string
   entries: IndexEntry[]
 }
 

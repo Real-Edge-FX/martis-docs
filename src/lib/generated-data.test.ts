@@ -44,6 +44,7 @@ describe('parseReleaseManifest', () => {
   it('rejects a non-object input', () => {
     expect(() => parseReleaseManifest(null)).toThrow('release manifest must be an object')
     expect(() => parseReleaseManifest('1.39.0')).toThrow('release manifest must be an object')
+    expect(() => parseReleaseManifest([])).toThrow('release manifest must be an object')
   })
 
   it('rejects a version with a "v" prefix', () => {
@@ -144,6 +145,7 @@ describe('parsePackagistStats', () => {
 
   it('rejects a non-object input', () => {
     expect(() => parsePackagistStats(undefined)).toThrow('packagist stats must be an object')
+    expect(() => parsePackagistStats([])).toThrow('packagist stats must be an object')
   })
 
   it('rejects negative download values', () => {
@@ -167,6 +169,12 @@ describe('parsePackagistStats', () => {
   it('rejects a fetchedAt that is not ISO-8601 UTC', () => {
     expect(() =>
       parsePackagistStats({ ...VALID_PACKAGIST, fetchedAt: '24-09-2026' }),
+    ).toThrow(/fetchedAt/)
+  })
+
+  it('rejects a fetchedAt that is not a real date', () => {
+    expect(() =>
+      parsePackagistStats({ ...VALID_PACKAGIST, fetchedAt: '2026-02-30T00:00:00.000Z' }),
     ).toThrow(/fetchedAt/)
   })
 
@@ -240,7 +248,15 @@ describe('formatLaravelRequirement', () => {
     expect(formatLaravelRequirement('^12.0|^12.1')).toBe('Laravel 12')
   })
 
+  it('formats a three-alternative requirement into a major-version range', () => {
+    expect(formatLaravelRequirement('^12.0|^13.0|^14.0')).toBe('Laravel 12/13/14')
+  })
+
   it('throws on a requirement it cannot read', () => {
     expect(() => formatLaravelRequirement('^12.0 || dev-main')).toThrow()
+  })
+
+  it('throws on a non-caret alternative', () => {
+    expect(() => formatLaravelRequirement('~12.0')).toThrow()
   })
 })
