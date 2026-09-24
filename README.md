@@ -96,7 +96,7 @@ martis-docs/
 
 ## Deployment
 
-The official production host is **getmartis.com**, on Hostinger shared hosting (Apache/LiteSpeed). The site is static, so deploy = build locally and `rsync` `dist/` into the domain docroot over SSH.
+The official production host is **getmartis.com**, on Hostinger shared hosting (Apache/LiteSpeed). The site is fully prerendered (see Build above): there is no server-side render step and no SPA fallback, so deploy = build locally and `rsync` `dist/` into the domain docroot over SSH.
 
 ```bash
 bash scripts/deploy.sh
@@ -104,12 +104,28 @@ bash scripts/deploy.sh
 
 `scripts/deploy.sh`:
 
-1. `pnpm build` (regenerates `dist/`, including `.htaccess` shipped from `public/`).
-2. `cp dist/index.html dist/404.html` as a SPA fallback safety net.
+1. `pnpm build` (regenerates `dist/`: prerendered HTML per route, `sitemap.xml`, `robots.txt`, and `.htaccess` copied from `public/`).
+2. Asserts `dist/.htaccess` and `dist/404.html` both exist. `dist/404.html` is written by `scripts/prerender.mjs`, not copied here anymore — copying `index.html` over it (the old SPA-fallback safety net) would ship the wrong `<title>`, canonical and `noindex` for every 404.
 3. `rsync -a --delete dist/` over SSH (host `147.79.113.74`, port `65002`, user `u498269178`) into `domains/getmartis.com/public_html/`.
-4. Smoke `curl` against `/`, `/docs`, and `/search-index.json` on `https://getmartis.com`.
+4. Smoke `curl` against `https://getmartis.com`: `/`, `/docs`, `/docs/getting-started/installation`, `/product` and `/search-index.json` (expect HTTP 200), plus a made-up path (expects HTTP 404).
 
-Hostinger allows SSH **password** auth only (no keys, no SFTP batch). The script reads the password at the prompt, or from `MARTIS_DOCS_SSH_PASS` for non-interactive runs; it is never written to disk. SPA deep links work via `public/.htaccess`, which rewrites unknown paths to `/index.html`.
+Hostinger allows SSH **password** auth only (no keys, no SFTP batch). The script reads the password at the prompt, or from `MARTIS_DOCS_SSH_PASS` for non-interactive runs; it is never written to disk.
+
+### `.htaccess`
+
+`public/.htaccess` (copied into `dist/` by Vite) maps every canonical, slash-less route straight to its prerendered file — no SPA fallback:
+
+- `Options -Indexes -MultiViews` and `DirectoryIndex index.html`: serve each route directory's `index.html`; no directory listings, no content-negotiation guessing.
+- `DirectorySlash Off`: a request for `/product` (no trailing slash — the canonical form) is served directly instead of Apache 301-redirecting it to add the slash first. Safe here because every asset and internal link in this build is an absolute path (`/assets/…`, `/docs/…`), never relative — the one documented caveat of turning this off.
+- A `mod_rewrite` rule 301s a trailing-slash request for a real route (`/product/`) down to its slash-less canonical form (`/product`); `/` itself is excluded (it has no slash-less form).
+- Another `mod_rewrite` rule internally rewrites a route's clean URL (`/product`) to its prerendered file (`product/index.html`) when that file exists, without changing what the browser shows.
+- `ErrorDocument 404 /404.html` returns a real HTTP 404 with the prerendered not-found page's own markup for anything that does not match a route, including the literal `/404` URL (there is no `dist/404/` directory to match).
+
+Not validated against a real Apache instance yet (none available while writing it) — validate on the real Hostinger/LiteSpeed host before relying on it in production.
+
+### CI gate
+
+`.github/workflows/ci.yml` runs on every pull request and on pushes to `main`/`release/**` (Node 22): `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm build`, `pnpm test:prerender`, then `pnpm smoke:dist` — `scripts/smoke-dist.mjs`, which checks that `dist/` is complete and correct (every route has its own title/description/canonical/Open Graph tags and real content, referenced `/assets/` files exist, `search-index.json`/`sitemap.xml`/`robots.txt`/`.htaccess` are consistent with the route registry, and nothing leaks a local hostname or a machine path) before anything can merge. Runnable locally the same way: `pnpm smoke:dist`.
 
 > The previous LAN setup (`192.168.50.21` + Caddy + Nginx Proxy Manager + `martis-docs.realedgefx.com`, driven by `.github/workflows/deploy.yml`) is retired. That workflow targets a self-hosted runner that no longer applies.
 

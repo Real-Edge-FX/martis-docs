@@ -1,0 +1,59 @@
+name: CI
+
+# Gates every pull request and every push to a release-relevant branch
+# on the full local verification chain: lint, typecheck, unit tests,
+# the prerender build, and the distribution smoke check over its
+# output. See README "CI gate".
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+      - 'release/**'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-and-test:
+    name: Lint, typecheck, test, build, smoke
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Test
+        run: pnpm test
+
+      - name: Build (client + SSR + prerender)
+        run: pnpm build
+
+      - name: Prerender unit and artifact tests
+        run: pnpm test:prerender
+
+      - name: Distribution smoke check
+        run: pnpm smoke:dist

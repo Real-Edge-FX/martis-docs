@@ -10,15 +10,18 @@
 //
 // The pure pieces below (injectPage, assertOk, outputPathFor,
 // buildSitemap, buildRobots, escapeXml) are exported for
-// scripts/prerender-unit.test.mjs. Importing this module never runs the
-// build as a side effect — only running it directly does (see the
-// is-entry-point guard at the bottom) — so that test can import them
-// without triggering a real render() of every route.
+// scripts/prerender-unit.test.mjs and scripts/smoke-dist.mjs (which
+// reuses outputPathFor to find each route's prerendered file).
+// Importing this module never touches dist-ssr/entry-server.js or the
+// filesystem as a side effect: render/PUBLIC_ROUTES/getRouteMeta/
+// SITE_URL are imported lazily inside main(), not at module scope, and
+// main().catch(...) only runs behind the is-entry-point guard at the
+// bottom — so both test files can import the pure pieces before
+// dist-ssr/entry-server.js exists (i.e. before a `pnpm build`).
 
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { getRouteMeta, PUBLIC_ROUTES, render, SITE_URL } from '../dist-ssr/entry-server.js'
 
 export const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 export const DIST = path.join(ROOT, 'dist')
@@ -79,7 +82,7 @@ export function buildRobots(siteUrl) {
   return `User-agent: *\nAllow: /\n\nSitemap: ${siteUrl}/sitemap.xml\n`
 }
 
-async function writePage(route, template) {
+async function writePage(route, template, render) {
   const { html, head, status } = await render(route).catch((error) => {
     // Reject with the route attached: 51 routes render in sequence, and
     // "render did not complete within 20000ms" alone does not say which
@@ -95,6 +98,10 @@ async function writePage(route, template) {
 }
 
 async function main() {
+  // See the file-header comment: imported here (not at module scope) so
+  // this module's pure exports stay importable before a `pnpm build`.
+  const { getRouteMeta, PUBLIC_ROUTES, render, SITE_URL } = await import('../dist-ssr/entry-server.js')
+
   // Read the client build's HTML shell once, before writing anything: the
   // '/' route's own output overwrites dist/index.html, so reading it again
   // mid-loop would hand later routes an already-rendered page as their
@@ -103,7 +110,7 @@ async function main() {
   const template = await readFile(path.join(DIST, 'index.html'), 'utf8')
 
   for (const route of PUBLIC_ROUTES) {
-    await writePage(route, template)
+    await writePage(route, template, render)
   }
 
   await writeFile(path.join(DIST, 'sitemap.xml'), buildSitemap(PUBLIC_ROUTES, getRouteMeta), 'utf8')

@@ -17,7 +17,8 @@
     "typecheck": "tsc -b",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:prerender": "node scripts/prerender-unit.test.mjs && node scripts/prerender.test.mjs"
+    "test:prerender": "node scripts/prerender-unit.test.mjs && node scripts/smoke-dist-unit.test.mjs && node scripts/prerender.test.mjs",
+    "smoke:dist": "node scripts/smoke-dist.mjs"
   },
   "dependencies": {
     "@mdx-js/react": "^3.1.0",

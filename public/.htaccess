@@ -1,19 +1,85 @@
 # Martis Docs — Apache/LiteSpeed config for shared hosting (getmartis.com).
 #
-# The docs site is a client-rendered Vite/React SPA. Every deep link
-# (e.g. /docs/getting-started/installation) must boot from /index.html
-# so react-router can take over. Vite copies this file from public/ to
-# the build root, so every `pnpm build` ships it in dist/.
+# The site is prerendered: `pnpm build` writes real static HTML for
+# every public route (dist/<route>/index.html, dist/index.html for
+# "/", dist/404.html for the not-found page) — this file's job is just
+# to map each canonical, slash-less URL to its file and hand back a
+# real 404 for anything else. It is NOT an SPA fallback: there is no
+# rewrite to /index.html for unmatched paths.
+#
+# Every canonical URL in the route registry (src/lib/site-routes.ts)
+# has no trailing slash except "/" itself, so a request that does
+# carry one is redirected down to the canonical form.
+#
+# Vite copies this file from public/ to the build root, so every
+# `pnpm build` ships it as dist/.htaccess.
+#
+# Not validated against a real Apache instance yet — none is available
+# in the environment this was written in. Validate on the real
+# Hostinger/LiteSpeed host before relying on it in production (see
+# scripts/deploy.sh, which asserts this file lands in dist/ and smoke
+# tests a handful of routes after every deploy).
+
+# No directory listings for a folder without its own index.html
+# (shouldn't happen — every route directory has one — but fail closed
+# rather than leak a listing). No content-negotiation guessing either:
+# every path below is resolved explicitly by this file, never by
+# Apache trying alternate extensions on its own.
+Options -Indexes -MultiViews
+
+<IfModule mod_dir.c>
+  # Serve index.html for a directory request, not *.php or another
+  # host default.
+  DirectoryIndex index.html
+  # Off, deliberately. With this on (the default), Apache 301-redirects
+  # a directory request without a trailing slash (…/product) to add one
+  # (…/product/) before serving its index — the opposite of what we
+  # want, since every canonical URL is slash-less. The mod_rewrite rule
+  # below serves each route's index.html directly at the clean,
+  # slash-less URL instead. Safe here specifically because every asset
+  # and internal link in this build is an absolute path (/assets/…,
+  # /docs/…), never a relative one — the one documented caveat of
+  # turning this off.
+  DirectorySlash Off
+</IfModule>
 
 <IfModule mod_rewrite.c>
   RewriteEngine On
   RewriteBase /
-  RewriteRule ^index\.html$ - [L]
-  RewriteCond %{REQUEST_FILENAME} -f [OR]
-  RewriteCond %{REQUEST_FILENAME} -d
-  RewriteRule ^ - [L]
-  RewriteRule . /index.html [L]
+
+  # A trailing-slash request for a real prerendered route (…/product/)
+  # is not the canonical URL: 301 it down to the slash-less form.
+  # Excludes "/" itself, which has no slash-less form (belt and
+  # suspenders: %{REQUEST_URI} is never "/" past the first condition,
+  # and the pattern below also can't match an empty string).
+  RewriteCond %{REQUEST_URI} !^/$
+  RewriteCond %{DOCUMENT_ROOT}%{REQUEST_URI} -d
+  RewriteRule ^(.+)/$ /$1 [R=301,L]
+
+  # The canonical, slash-less request for a route (…/product) is not a
+  # file on disk — it's a directory (product/). Internally rewrite it
+  # to that directory's prerendered index.html, without changing the
+  # URL the browser shows. Real files (assets, brand images, …) already
+  # exist and skip this rule via the first condition below.
+  RewriteCond %{REQUEST_FILENAME} !-f
+  RewriteCond %{REQUEST_FILENAME}/index.html -f
+  RewriteRule ^(.*[^/])$ $1/index.html [L]
+
+  # Anything else (a typo, a removed page, the literal "/404" URL — no
+  # dist/404/ directory exists to match) is a genuine miss: fall
+  # through to Apache's normal "file not found" handling, which
+  # ErrorDocument below turns into a real static 404 response. No
+  # catch-all rewrite to /index.html here — that was the old SPA
+  # fallback; every route now has its own real prerendered file.
 </IfModule>
+
+# A real HTTP 404 for anything that does not match a prerendered
+# route, with the prerendered 404 page's own markup as the body
+# (dist/404.html — noindex, but otherwise a normal page: title,
+# description, canonical, Open Graph). Apache serves this whenever it
+# cannot resolve a request to a file, so it also covers the literal
+# "/404" URL itself.
+ErrorDocument 404 /404.html
 
 # Long-cache fingerprinted assets; never cache the HTML shell or the
 # search index so new releases show up immediately.
