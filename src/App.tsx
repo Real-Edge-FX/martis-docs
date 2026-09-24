@@ -1,6 +1,7 @@
 import { lazy, Suspense } from 'react'
 import { Routes, Route } from 'react-router-dom'
 import { LoadingScreen } from '@/components/LoadingScreen'
+import { DocumentMeta } from '@/components/site/DocumentMeta'
 import { CmdKProvider } from '@/lib/cmdk-context'
 
 // Lazy-load the two top-level surfaces so the landing's CSS / JS
@@ -13,6 +14,7 @@ const NotFound = lazy(() => import('@/pages/NotFound'))
 export function App() {
   return (
     <CmdKProvider>
+      <DocumentMeta />
       <Suspense fallback={<LoadingScreen />}>
         <Routes>
           <Route path="/" element={<Landing />} />

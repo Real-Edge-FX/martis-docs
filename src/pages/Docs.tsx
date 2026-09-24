@@ -9,7 +9,7 @@ import { DocsBreadcrumbs } from '@/components/docs/Breadcrumbs'
 import { DocsPagination } from '@/components/docs/Pagination'
 import { LoadingScreen } from '@/components/LoadingScreen'
 import { mdxComponents } from '@/components/docs/MdxComponents'
-import { DOC_DEFAULT_SLUG, findBySlug } from '@/lib/docs-tree'
+import { DOC_DEFAULT_SLUG } from '@/lib/docs-tree'
 import { hasMdx, loadMdx } from '@/lib/mdx-loader'
 
 /**
@@ -38,7 +38,6 @@ function DocPage() {
   const { hash } = useLocation()
   const slug = (params['*'] ?? '').replace(/^\/+|\/+$/g, '')
   const [Component, setComponent] = useState<ComponentType | null>(null)
-  const meta = findBySlug(slug)
   const notFound = slug !== '' && !hasMdx(slug)
 
   // A fresh slug means a fresh MDX module: drop the previous one during
@@ -58,16 +57,11 @@ function DocPage() {
     loader.then((mod) => {
       if (cancelled) return
       setComponent(() => mod.default)
-      if (mod.frontmatter?.title) {
-        document.title = `${mod.frontmatter.title} · Martis docs`
-      } else if (meta) {
-        document.title = `${meta.label} · Martis docs`
-      }
     })
     return () => {
       cancelled = true
     }
-  }, [slug, meta])
+  }, [slug])
 
   // After the MDX module mounts, honour the URL hash by scrolling to
   // the matching heading. Without this, hitting `/docs/foo#bar` directly
