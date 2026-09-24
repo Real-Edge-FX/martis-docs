@@ -10,21 +10,19 @@ export default mergeConfig(
     test: {
       environment: 'jsdom',
       globals: true,
-      // Vitest's 5000ms default is tight for this suite: several files do
-      // real work (SSR through renderToPipeableStream, dynamic page-chunk
-      // imports) rather than mocking it, and entry-server.test.tsx renders
-      // every public route in one test. Comfortably under is fine locally,
-      // but under concurrent load (every test file's real work competing
-      // for the same CPU) individual tests were timing out at the default
-      // even though nothing was actually stuck. 20s matches the order of
-      // magnitude of RENDER_TIMEOUT_MS (src/entry-server.tsx), the deadline
-      // already accepted there as "generous but still catches a real hang".
-      testTimeout: 20_000,
+      // No global testTimeout override: Vitest's 5000ms default is right
+      // for nearly everything here. The few tests that do real work under
+      // concurrent load (SSR through renderToPipeableStream, dynamic
+      // page-chunk imports) instead take their own explicit timeout at
+      // the `it(...)` call — see entry-server.test.tsx's route sweep,
+      // Docs.test.tsx and smoke.test.tsx — so a blanket 4x increase can't
+      // hide a real hang appearing anywhere else in the suite.
       setupFiles: ['./src/test/setup.ts'],
       // Renders the hydration test's fixture HTML once, in its own
-      // process, before the concurrent test phase starts (see the
-      // comment in the file itself for why this cannot run inline).
-      globalSetup: ['./src/test/ssr-global-setup.mjs'],
+      // process, before the concurrent test phase starts, and again on
+      // every watch-mode rerun (see the comment in the file itself for
+      // both why this cannot run inline and why it re-renders on rerun).
+      globalSetup: ['./src/test/ssr-global-setup.ts'],
       css: false,
       // scripts/ holds plain Node scripts (build-search-index.mjs,
       // prerender.mjs) and prerender.test.mjs, a `node:assert` smoke

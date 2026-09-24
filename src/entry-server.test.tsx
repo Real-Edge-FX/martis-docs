@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi, type MockInstance } fr
 import { DOC_NAV } from '@/lib/docs-tree'
 import { serializeMeta } from '@/lib/seo'
 import { getRouteMeta, PUBLIC_ROUTES } from '@/lib/site-routes'
+import { assertConsoleSilent } from '@/test/assert-console-silent'
 import { render } from './entry-server'
 
 /** Text of the first `<h1>` in `html`, with any inline markup (anchor, code) stripped. */
@@ -31,19 +32,11 @@ beforeEach(() => {
   vi.stubGlobal('navigator', undefined)
 })
 afterEach(() => {
-  // Restore first, then assert: if an unexpected console call throws below,
-  // the spies (and the navigator stub) must still be torn down, or they
-  // stay installed and cascade into every later test in this file.
+  // The navigator stub has no recorded calls to lose, so it can be torn
+  // down up front; assertConsoleSilent (src/test/assert-console-silent.ts)
+  // handles the spies, where the ordering actually matters.
   vi.unstubAllGlobals()
-  try {
-    for (const spy of consoleSpies) {
-      expect(spy).not.toHaveBeenCalled()
-    }
-  } finally {
-    for (const spy of consoleSpies) {
-      spy.mockRestore()
-    }
-  }
+  assertConsoleSilent(consoleSpies)
 })
 
 it('does not see a Node-provided navigator global (SSR must not read browser globals)', () => {
@@ -141,16 +134,27 @@ it('renders the docs index as a list of every docs page', async () => {
   }
 })
 
-it('renders every public route to complete, well-formed HTML', async () => {
-  for (const route of PUBLIC_ROUTES) {
-    const { html, status } = await render(route)
-    expect(status, route).toBe(route === '/404' ? 404 : 200)
-    expect(html, route).toContain('<main')
-    expect(html, route).not.toContain('Loading…')
-    // U+0000 is never valid in HTML, so it can only be stream corruption.
-    expect(html, route).not.toContain('\u0000')
-  }
-})
+it(
+  'renders every public route to complete, well-formed HTML',
+  async () => {
+    for (const route of PUBLIC_ROUTES) {
+      const { html, status } = await render(route)
+      expect(status, route).toBe(route === '/404' ? 404 : 200)
+      expect(html, route).toContain('<main')
+      expect(html, route).not.toContain('Loading…')
+      // U+0000 is never valid in HTML, so it can only be stream corruption.
+      expect(html, route).not.toContain('\u0000')
+    }
+  },
+  // Vitest's 5000ms default is tight for a real, un-mocked SSR render of
+  // every public route in one test; under concurrent load (every other
+  // test file's real work competing for the same CPU) this was timing
+  // out with nothing actually stuck. 20s matches the order of magnitude
+  // of RENDER_TIMEOUT_MS above, the deadline already accepted there as
+  // "generous but still catches a real hang" — given to this one test
+  // rather than the whole suite, so a hang anywhere else still fails fast.
+  20_000,
+)
 
 it('renders the same URL to the same markup every time', async () => {
   const first = await render('/docs/core/fields')
