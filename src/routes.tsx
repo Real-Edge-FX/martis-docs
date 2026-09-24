@@ -22,6 +22,9 @@ const NotFound = lazyPage(() => import('@/pages/NotFound'))
 
 interface PageRoute {
   path: string
+  /** Always true: `getRouteMeta` and the prerendered files on disk are
+   *  case-sensitive, so `/PRODUCT` must render the 404 page, not Product. */
+  caseSensitive: true
   element: ReactElement
   /** Imports the chunk(s) `pathname` needs before this route renders it. */
   preload: (pathname: string) => Promise<unknown>
@@ -31,41 +34,20 @@ interface PageRoute {
  *  etc. Shared by the route table below (which decides `/docs/*` renders
  *  the docs shell) and `render-context.tsx` (which resolves the MDX
  *  module a `/docs/*` URL needs), so the two can never disagree about
- *  what counts as a docs URL. */
-export const DOCS_ROUTE_PATTERN = '/docs/*'
+ *  what counts as a docs URL. Case-sensitive, like every route here. */
+export const DOCS_ROUTE_PATTERN = { path: '/docs/*', caseSensitive: true } as const
 
 /**
- * Opts every Router instance (BrowserRouter, StaticRouter, and the
- * MemoryRouters used in tests) into the two v6 behaviors React Router
- * warns about by default: wrapping navigations in `React.startTransition`,
- * and the v7 relative-splat-path resolution. Silences the warnings.
+ * The `future` flags every Router (BrowserRouter, StaticRouter and the
+ * test MemoryRouters) shares, so server, client and tests resolve links
+ * and schedule navigations the same way. Opts into the two v6 behaviours
+ * React Router otherwise warns about.
  *
- * What keeps server, client and every test Router agreeing on how a
- * relative link under `/docs/*` resolves is not the *value* of
- * `v7_relativeSplatPath` below — it's that every Router imports this one
- * constant instead of setting its own `future` prop, so changing the
- * value here moves every consumer together. (Today it changes nothing
- * observable either way: every `Link`/`navigate()` target in this
- * codebase is already an absolute path — `/`, `/product`, `/docs/...`,
- * etc. — so no relative resolution is ever in play.)
- *
- * `v7_startTransition` does have one real, currently-accepted UX
- * consequence, worth knowing about before it's mistaken for a bug: `App`
- * (src/App.tsx) wraps every route in one shared `<Suspense>`, and
- * `DocumentMeta` sits outside that boundary, reading the same location
- * state as a sibling. Wrapping the navigation's state update in
- * `React.startTransition` means that when a navigation's destination page
- * has not finished loading its chunk, React does not commit that
- * `<Suspense>`'s fallback the way a non-transition update would — the
- * whole pending render (the new page *and* DocumentMeta's new head/title,
- * since they update together) stays uncommitted, so the *previous* page
- * and its title remain on screen, together, until the new chunk resolves
- * and both swap in at once. The URL itself still changes immediately
- * (the history API updates independently of React's commit). Net effect:
- * on a slow chunk load, the address bar can disagree with the visible
- * page and title for a moment, with no loading indicator. Deliberately
- * left as-is here — no pending indicator built — so a future phase does
- * not mistake it for a hydration bug when it's noticed.
+ * With `v7_startTransition`, a navigation to a page whose chunk is still
+ * loading keeps the previous page and its head (DocumentMeta sits outside
+ * App's `<Suspense>`) on screen until the chunk resolves; the address bar
+ * already shows the new URL meanwhile. That is expected, not a hydration
+ * bug.
  */
 export const ROUTER_FUTURE = { v7_startTransition: true, v7_relativeSplatPath: true } as const
 
@@ -88,13 +70,15 @@ function DocsOrNotFound() {
 }
 
 // The route table, read by both `App` (via `useRoutes`) and `preloadRoute`
-// so they always agree on which page a URL renders.
+// so they always agree on which page a URL renders. Every static route in
+// `site-routes.ts` has its own entry (site-routes.test.ts checks it).
 export const PAGE_ROUTES: PageRoute[] = [
-  { path: '/', element: <Landing />, preload: Landing.preload },
+  { path: '/', caseSensitive: true, element: <Landing />, preload: Landing.preload },
   // Provisional pages until Phases 2 and 3 ship the real ones: each of
   // those tasks replaces its route's element (and preload) here.
   {
     path: '/product',
+    caseSensitive: true,
     element: (
       <ProvisionalPage
         eyebrow="Product"
@@ -106,6 +90,7 @@ export const PAGE_ROUTES: PageRoute[] = [
   },
   {
     path: '/for-agencies',
+    caseSensitive: true,
     element: (
       <ProvisionalPage
         eyebrow="For Laravel agencies"
@@ -117,6 +102,7 @@ export const PAGE_ROUTES: PageRoute[] = [
   },
   {
     path: '/compare',
+    caseSensitive: true,
     element: (
       <ProvisionalPage
         eyebrow="Compare"
@@ -128,6 +114,7 @@ export const PAGE_ROUTES: PageRoute[] = [
   },
   {
     path: '/compare/nova',
+    caseSensitive: true,
     element: (
       <ProvisionalPage
         eyebrow="Compare"
@@ -139,6 +126,7 @@ export const PAGE_ROUTES: PageRoute[] = [
   },
   {
     path: '/compare/filament',
+    caseSensitive: true,
     element: (
       <ProvisionalPage
         eyebrow="Compare"
@@ -150,6 +138,7 @@ export const PAGE_ROUTES: PageRoute[] = [
   },
   {
     path: '/changelog',
+    caseSensitive: true,
     element: (
       <ProvisionalPage
         eyebrow="Changelog"
@@ -160,11 +149,12 @@ export const PAGE_ROUTES: PageRoute[] = [
     preload: ProvisionalPage.preload,
   },
   {
-    path: DOCS_ROUTE_PATTERN,
+    ...DOCS_ROUTE_PATTERN,
     element: <DocsOrNotFound />,
     preload: (pathname) => (isKnownDocsPath(pathname) ? Docs.preload() : NotFound.preload()),
   },
-  { path: '*', element: <NotFound />, preload: NotFound.preload },
+  { path: '/404', caseSensitive: true, element: <NotFound />, preload: NotFound.preload },
+  { path: '*', caseSensitive: true, element: <NotFound />, preload: NotFound.preload },
 ]
 
 /**

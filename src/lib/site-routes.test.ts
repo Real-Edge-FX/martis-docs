@@ -1,6 +1,13 @@
+import { matchRoutes } from 'react-router-dom'
 import { expect, it } from 'vitest'
+import { PAGE_ROUTES } from '@/routes'
 import { DOC_FLAT } from './docs-tree'
+import { listSlugs } from './mdx-loader'
 import { getRouteMeta, PUBLIC_ROUTES, SITE_URL, type RouteMeta } from './site-routes'
+
+const DOC_ROUTES = new Set(DOC_FLAT.map(({ slug }) => `/docs/${slug}`))
+/** The routes `site-routes.ts` declares by hand (ROUTE_META), not derived from DOC_FLAT. */
+const STATIC_ROUTES = PUBLIC_ROUTES.filter((route) => !DOC_ROUTES.has(route))
 
 it('contains every required marketing route exactly once', () => {
   expect(PUBLIC_ROUTES).toEqual(expect.arrayContaining([
@@ -107,5 +114,21 @@ it('never repeats the "Martis" brand name within a single route title or descrip
       description.split('Martis').length - 1,
       `description "${description}" for ${path}`,
     ).toBeLessThanOrEqual(1)
+  }
+})
+
+// PUBLIC_ROUTES and getRouteMeta come from DOC_FLAT + ROUTE_META, while
+// the router renders from PAGE_ROUTES + the MDX glob. The two tests below
+// keep those registries from drifting apart.
+
+it('lists exactly the docs pages that have an MDX module', () => {
+  expect(new Set(DOC_FLAT.map(({ slug }) => slug))).toEqual(new Set(listSlugs()))
+})
+
+it('gives every static route its own PAGE_ROUTES entry instead of the catch-all', () => {
+  for (const route of STATIC_ROUTES) {
+    const [match] = matchRoutes(PAGE_ROUTES, route) ?? []
+    expect(match?.route.path, route).not.toBe('*')
+    expect(match?.route.path, route).toBeDefined()
   }
 })

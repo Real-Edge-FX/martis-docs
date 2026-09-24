@@ -96,6 +96,17 @@ describe('status and head', () => {
     expect(firstHeading(html)).toBe(mdxHeading('getting-started/installation'))
   })
 
+  it.each(['/PRODUCT', '/Docs', '/Docs/getting-started/installation', '/docs/Getting-Started/Installation'])(
+    'matches routes case-sensitively, like getRouteMeta and the files on disk: %s is a 404',
+    async (url) => {
+      const notFound = await render('/404')
+      const { html, head, status } = await render(url)
+      expect(status).toBe(404)
+      expect(head).toBe(notFound.head)
+      expect(html).toBe(notFound.html)
+    },
+  )
+
   it('treats a trailing slash like the bare path', async () => {
     const page = await render('/for-agencies/')
     expect(page.status).toBe(200)
@@ -137,10 +148,14 @@ it('renders the docs index as a list of every docs page', async () => {
 it(
   'renders every public route to complete, well-formed HTML',
   async () => {
+    const notFound = await render('/404')
     for (const route of PUBLIC_ROUTES) {
       const { html, status } = await render(route)
       expect(status, route).toBe(route === '/404' ? 404 : 200)
       expect(html, route).toContain('<main')
+      // A route the router does not know renders the 404 page with a 200
+      // head: the registries in site-routes.ts and routes.tsx disagree.
+      if (route !== '/404') expect(html === notFound.html, `${route} renders the 404 page`).toBe(false)
       expect(html, route).not.toContain('Loading…')
       // U+0000 is never valid in HTML, so it can only be stream corruption.
       expect(html, route).not.toContain('\u0000')
