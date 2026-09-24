@@ -36,7 +36,7 @@
 // The script is intentionally synchronous and dependency-free so it
 // can be invoked from CI without reaching for esbuild/sucrase.
 //
-// The pure pieces below (rewriteLinks, findRelativeLinkOffenders,
+// The pure pieces below (rewriteLinks, transform, findRelativeLinkOffenders,
 // parseArgs) are exported for scripts/sync-docs-unit.test.mjs. Importing
 // this module never touches the filesystem or calls process.exit as a
 // side effect: every side-effecting step (reading/writing src/content/,
@@ -144,15 +144,36 @@ function splitAnchor(target) {
     : { targetPath: target.slice(0, hashIndex), anchor: target.slice(hashIndex) }
 }
 
-function lineAt(text, index) {
-  return text.slice(0, index).split('\n').length
-}
-
 // [text](target) — target excludes whitespace and an unescaped `)`,
 // which the whole corpus of package docs satisfies (no titled links).
 // Matches an image's `![alt](target)` too (the `!` sits outside the
 // capture groups), which is fine: the skip/resolve rules are identical.
 const LINK_RE = /\[([^\]]+)\]\(([^)\s]+)\)/g
+
+// Same fence-boundary convention findRelativeLinkOffenders uses below
+// (up to 3 leading spaces of indentation, per CommonMark).
+const FENCE_RE = /^\s{0,3}```/
+
+// The 0-based line indexes of `text` that fall inside a fenced code
+// block (the fence marker lines themselves count as "inside": nothing
+// meaningful — no link text — ever sits directly on a ``` line).
+function fencedLineIndexes(text) {
+  const fenced = new Set()
+  let inFence = false
+  text.split('\n').forEach((line, index) => {
+    if (FENCE_RE.test(line)) {
+      inFence = !inFence
+      fenced.add(index)
+      return
+    }
+    if (inFence) fenced.add(index)
+  })
+  return fenced
+}
+
+function lineIndexAt(text, offset) {
+  return text.slice(0, offset).split('\n').length - 1 // 0-based
+}
 
 export function rewriteLinks(md, sourceFile) {
   // Every relative target resolves against the folder the *package repo*
@@ -160,14 +181,27 @@ export function rewriteLinks(md, sourceFile) {
   // on its own), so a link that climbs out of docs/ (`../src/...`,
   // `../resources/...`) still resolves to the right package-relative path.
   const sourceDir = path.posix.dirname(sourceFile)
+  const fencedLines = fencedLineIndexes(md)
+  // A single md.replace() over the whole string (not a per-line pass):
+  // package docs hard-wrap prose, so a link's `[text]` regularly spans a
+  // line break (e.g. "...after an\nupgrade](installation-guide.md#...)")
+  // — splitting into lines first would silently break that link's
+  // `[`/`]` pair apart and leave it unrewritten.
   return md.replace(LINK_RE, (whole, text, target, offset) => {
+    // A link-looking string inside a fenced code sample (the docs
+    // include PHP/HTML/markdown snippets) is example text, not a real
+    // link: it must not be rewritten, and must not trip the
+    // escapes-the-package-root check below.
+    const line = lineIndexAt(md, offset)
+    if (fencedLines.has(line)) return whole
+
     if (isSkippableTarget(target)) return whole
 
     const { targetPath, anchor } = splitAnchor(target)
     const packagePath = path.posix.normalize(path.posix.join('docs', sourceDir, targetPath))
     if (packagePath === '..' || packagePath.startsWith('../')) {
       throw new Error(
-        `${sourceFile}:${lineAt(md, offset)}: link target "${target}" escapes the package root`,
+        `${sourceFile}:${line + 1}: link target "${target}" escapes the package root`,
       )
     }
 
@@ -181,7 +215,7 @@ export function rewriteLinks(md, sourceFile) {
     // Anything else that still resolves inside the package repository
     // (a source file, or a docs/*.md page deliberately left out of
     // MAP/LINK_ONLY): link straight at GitHub instead of leaving a
-    // relative path that 404s once this page ships on the site.
+    // relative path that 404s once this page ships.
     const kind = targetPath.endsWith('/') ? 'tree' : 'blob'
     return `[${text}](${PACKAGE_REPO_URL}/${kind}/main/${packagePath}${anchor})`
   })
@@ -269,10 +303,17 @@ function deriveTitleAndDescription(md) {
 }
 
 // `relativeSource` is `file` from MAP (e.g. "fields.md", "api/overview.md")
-// — already the path relative to the package docs/ folder, so rewriteLinks
-// needs no access to where those docs were actually read from on disk.
-function transform(slug, sourceFile, relativeSource) {
-  const md = fs.readFileSync(sourceFile, 'utf8')
+// — the path relative to the package docs/ folder. Reused both for
+// rewriteLinks (see there) and for the sourcePath frontmatter field below,
+// so this needs no access to where these docs were actually read from on
+// disk: `md` is the already-read file content, and the function is pure.
+//
+// sourcePath used to be `path.basename(sourceFile)`, which silently
+// dropped any subfolder: api/overview.md became "martis-package/docs/
+// overview.md" instead of ".../api/overview.md". relativeSource already
+// carries the full package-docs-relative path, so using it directly fixes
+// this for every nested source, not just api/overview.md.
+export function transform(md, relativeSource) {
   const { title, description } = deriveTitleAndDescription(md)
   // Strip the duplicated H1 (we render the title from frontmatter).
   const body = md.replace(/^#\s+.+?\s*$/m, '').trimStart()
@@ -283,7 +324,7 @@ function transform(slug, sourceFile, relativeSource) {
     '---',
     `title: "${safeTitle}"`,
     `description: "${safeDesc}"`,
-    `sourcePath: "martis-package/docs/${path.basename(sourceFile)}"`,
+    `sourcePath: "martis-package/docs/${relativeSource}"`,
     '---',
     '',
     `# ${title}`,
@@ -439,23 +480,25 @@ function checkPortedPagesMapped() {
 export function findRelativeLinkOffenders(content) {
   const offenders = []
   const linkRe = /!?\[[^\]]*\]\(([^)\s]+)\)/g
-  const htmlAttrRe = /\b(?:href|src)\s*=\s*(?:"([^"]*)"|'([^']*)')/g
-  let inFence = false
-  content.split('\n').forEach((line, index) => {
-    if (/^\s{0,3}```/.test(line)) {
-      inFence = !inFence
-      return
-    }
-    if (inFence) return
+  const htmlAttrRe = /\b(?:href|src)\s*=\s*(?:"([^"]*)"|'([^']*)')/gi
+  // Whole-string matchAll, not a per-line scan: same reason as
+  // rewriteLinks above — a link's `[text]` can wrap onto the next line,
+  // which a per-line match would silently miss entirely.
+  const fencedLines = fencedLineIndexes(content)
 
-    for (const m of line.matchAll(linkRe)) {
-      if (!isSkippableTarget(m[1])) offenders.push({ line: index + 1, target: m[1] })
-    }
-    for (const m of line.matchAll(htmlAttrRe)) {
-      const target = m[1] ?? m[2]
-      if (!isSkippableTarget(target)) offenders.push({ line: index + 1, target })
-    }
-  })
+  for (const m of content.matchAll(linkRe)) {
+    const line = lineIndexAt(content, m.index)
+    if (fencedLines.has(line)) continue
+    if (!isSkippableTarget(m[1])) offenders.push({ line: line + 1, target: m[1] })
+  }
+  for (const m of content.matchAll(htmlAttrRe)) {
+    const line = lineIndexAt(content, m.index)
+    if (fencedLines.has(line)) continue
+    const target = m[1] ?? m[2]
+    if (!isSkippableTarget(target)) offenders.push({ line: line + 1, target })
+  }
+
+  offenders.sort((a, b) => a.line - b.line)
   return offenders
 }
 
@@ -513,7 +556,7 @@ async function main() {
     }
     const dest = path.join(CONTENT_DIR, `${slug}.mdx`)
     fs.mkdirSync(path.dirname(dest), { recursive: true })
-    const next = transform(slug, source, file)
+    const next = transform(fs.readFileSync(source, 'utf8'), file)
     const prev = fs.existsSync(dest) ? fs.readFileSync(dest, 'utf8') : ''
     if (next !== prev) {
       if (isCheckMode) {

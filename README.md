@@ -56,8 +56,8 @@ MARTIS_PACKAGE_DIR=<path> pnpm sync-docs      # same, via environment variable
 `--package-dir` (and `MARTIS_PACKAGE_DIR`) name the **martis-package repository root**, resolved against the current working directory, defaulting to the sibling checkout (`../martis-package`). This is what makes it possible to sync from a specific tag instead of the live checkout, which may carry unreleased work:
 
 ```bash
-git -C ../martis-package archive <tag> docs | tar -x -C /tmp/pkg-docs
-pnpm sync-docs --check --package-dir /tmp/pkg-docs   # /tmp/pkg-docs/docs is what archive produced
+git -C ../martis-package archive <tag> docs | tar -x -C <path>
+pnpm sync-docs --check --package-dir <path>   # <path>/docs is what archive produced
 ```
 
 Run `--check` locally before opening a PR. It is not part of `.github/workflows/ci.yml` — that workflow only checks out this repo, and the check needs the sibling `martis-package` repo alongside it.

@@ -10,7 +10,7 @@
 // scripts/prerender-unit.test.mjs for why scripts/** is excluded).
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { findRelativeLinkOffenders, parseArgs, rewriteLinks } from './sync-docs.mjs'
+import { findRelativeLinkOffenders, parseArgs, rewriteLinks, transform } from './sync-docs.mjs'
 
 const REPO = 'https://github.com/Real-Edge-FX/martis-package'
 
@@ -95,6 +95,59 @@ test('rewriteLinks throws, naming the file and line, when a target escapes the p
   )
 })
 
+test('rewriteLinks leaves a relative link inside a fenced code block untouched, rewrites the same link outside', () => {
+  const md = [
+    '```md',
+    '[Fields](fields.md)',
+    '```',
+    '',
+    '[Fields](fields.md)',
+  ].join('\n')
+  const lines = rewriteLinks(md, 'differentials.md').split('\n')
+  assert.equal(lines[1], '[Fields](fields.md)')
+  assert.equal(lines[4], '[Fields](/docs/core/fields)')
+})
+
+test('rewriteLinks does not throw on an escaping-looking target inside a fenced code block', () => {
+  const md = ['```md', '[Outside](../../outside.md)', '```'].join('\n')
+  assert.doesNotThrow(() => rewriteLinks(md, 'fields.md'))
+})
+
+test('rewriteLinks still rewrites a link whose text wraps onto the next line', () => {
+  // Regression: overrides.md hard-wraps prose, so a real link's `[text]`
+  // regularly spans a line break, e.g.
+  //   see [Refreshing the extension scaffold after an
+  //   upgrade](installation-guide.md#refreshing-the-extension-scaffold-after-an-upgrade).
+  // A naive line-by-line fence check (splitting `md` into lines before
+  // matching LINK_RE per line) breaks the `[`/`]` pair apart and leaves
+  // this kind of link completely unrewritten.
+  const md = [
+    'See [Refreshing the extension scaffold after an',
+    'upgrade](installation-guide.md#refreshing-the-extension-scaffold-after-an-upgrade).',
+  ].join('\n')
+  const out = rewriteLinks(md, 'overrides.md')
+  assert.match(
+    out,
+    /\[Refreshing the extension scaffold after an\nupgrade\]\(\/docs\/getting-started\/installation#refreshing-the-extension-scaffold-after-an-upgrade\)\./,
+  )
+})
+
+// --- transform --------------------------------------------------------
+
+test('transform writes sourcePath relative to the package docs folder, not just the basename', () => {
+  // Regression: api/overview.md previously became "overview.md" in the
+  // frontmatter (path.basename dropped the "api/" folder).
+  const md = '# Overview\n\nSome body text.\n'
+  const out = transform(md, 'api/overview.md')
+  assert.match(out, /sourcePath: "martis-package\/docs\/api\/overview\.md"/)
+})
+
+test('transform writes a top-level sourcePath unchanged (no folder to lose)', () => {
+  const md = '# Fields\n\nSome body text.\n'
+  const out = transform(md, 'fields.md')
+  assert.match(out, /sourcePath: "martis-package\/docs\/fields\.md"/)
+})
+
 // --- findRelativeLinkOffenders --------------------------------------------
 
 test('findRelativeLinkOffenders catches a relative markdown link', () => {
@@ -120,6 +173,13 @@ test('findRelativeLinkOffenders catches a relative src in inline HTML', () => {
   const offenders = findRelativeLinkOffenders('<img src="./pic.png" />\n')
   assert.equal(offenders.length, 1)
   assert.equal(offenders[0].target, './pic.png')
+})
+
+test('findRelativeLinkOffenders catches href/src regardless of attribute case', () => {
+  const offenders = findRelativeLinkOffenders('<a HREF="../page.html">x</a>\n<img SRC=\'./pic.png\'>\n')
+  assert.equal(offenders.length, 2)
+  assert.equal(offenders[0].target, '../page.html')
+  assert.equal(offenders[1].target, './pic.png')
 })
 
 test('findRelativeLinkOffenders reports the offending line number', () => {
@@ -182,4 +242,18 @@ test('parseArgs prefers --package-dir over MARTIS_PACKAGE_DIR when both are set'
     '/work',
   )
   assert.equal(packageDir, '/flag/pkg')
+})
+
+test('findRelativeLinkOffenders still catches a link whose text wraps onto the next line', () => {
+  // Same multi-line-prose shape as the rewriteLinks regression above,
+  // but as a raw offender that never went through rewriteLinks (e.g. a
+  // hand-authored page): a per-line scan would split the `[`/`]` pair
+  // across two lines and miss it entirely.
+  const content = [
+    'See [Refreshing the extension scaffold after an',
+    'upgrade](../installation-guide.md#refreshing-the-extension-scaffold-after-an-upgrade).',
+  ].join('\n')
+  const offenders = findRelativeLinkOffenders(content)
+  assert.equal(offenders.length, 1)
+  assert.equal(offenders[0].target, '../installation-guide.md#refreshing-the-extension-scaffold-after-an-upgrade')
 })
