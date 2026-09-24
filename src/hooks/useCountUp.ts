@@ -15,30 +15,27 @@ export function useCountUp(target: string, durationMs = 1400) {
   const [display, setDisplay] = useState('0')
   const done = useRef(false)
 
+  // Parse the numeric portion up front. Targets with no countable number
+  // (or the literal `0`), and targets rendered under
+  // `prefers-reduced-motion`, have nothing to animate, so `display` just
+  // mirrors `target` directly instead of being synced from an effect.
+  const numeric = Number(target.replace(/[^0-9.]/g, ''))
+  const isCountable = Number.isFinite(numeric) && numeric !== 0
+  const reduce =
+    typeof window !== 'undefined' &&
+    window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+  const shouldAnimate = isCountable && !reduce
+
   useEffect(() => {
     const el = ref.current
-    if (!el) return
+    if (!el || !shouldAnimate) return
 
-    const reduce =
-      typeof window !== 'undefined' &&
-      window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
-
-    // Parse the numeric portion and remember how to re-format it.
-    const numeric = Number(target.replace(/[^0-9.]/g, ''))
-    if (!Number.isFinite(numeric) || numeric === 0) {
-      setDisplay(target)
-      return
-    }
+    // Remember how to re-format the counted value.
     const hasComma = target.includes(',')
     const format = (n: number) => {
       const rounded = Math.round(n)
       const base = hasComma ? rounded.toLocaleString('en-US') : String(rounded)
       return target.replace(/[\d,]+/, base)
-    }
-
-    if (reduce) {
-      setDisplay(target)
-      return
     }
 
     const run = () => {
@@ -69,7 +66,7 @@ export function useCountUp(target: string, durationMs = 1400) {
     )
     io.observe(el)
     return () => io.disconnect()
-  }, [target, durationMs])
+  }, [target, durationMs, shouldAnimate, numeric])
 
-  return [ref, display] as const
+  return [ref, shouldAnimate ? display : target] as const
 }

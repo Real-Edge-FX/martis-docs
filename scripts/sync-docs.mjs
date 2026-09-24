@@ -116,7 +116,7 @@ function rewriteLinks(md, sourceFile) {
   // package docs), so `api/overview.md` can link `../fields.md`.
   const sourceDir = path.posix.dirname(sourceFile)
   return md.replace(
-    /\[([^\]]+)\]\(((?:\.{1,2}\/)*(?:[a-z0-9_\-]+\/)*[a-z0-9_\-]+)\.md(#[a-z0-9_\-]+)?\)/gi,
+    /\[([^\]]+)\]\(((?:\.{1,2}\/)*(?:[a-z0-9_-]+\/)*[a-z0-9_-]+)\.md(#[a-z0-9_-]+)?\)/gi,
     (whole, text, target, anchor) => {
       const file = path.posix.normalize(path.posix.join(sourceDir, `${target}.md`))
       const slug = INVERSE[file]

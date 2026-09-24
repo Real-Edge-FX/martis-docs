@@ -22,8 +22,8 @@
       "@/*": ["src/*"],
       "@content/*": ["src/content/*"]
     },
-    "types": ["vite/client", "node"]
+    "types": ["vite/client", "node", "vitest/globals"]
   },
-  "include": ["src", "vite.config.ts", "src/types/mdx.d.ts"],
+  "include": ["src", "vite.config.ts", "vitest.config.ts", "src/types/mdx.d.ts"],
   "exclude": ["node_modules", "dist"]
 }

@@ -10,7 +10,7 @@ import { DocsPagination } from '@/components/docs/Pagination'
 import { LoadingScreen } from '@/components/LoadingScreen'
 import { mdxComponents } from '@/components/docs/MdxComponents'
 import { DOC_DEFAULT_SLUG, findBySlug } from '@/lib/docs-tree'
-import { loadMdx } from '@/lib/mdx-loader'
+import { hasMdx, loadMdx } from '@/lib/mdx-loader'
 
 /**
  * `/docs/*` route. Renders the doc shell (sidebar + breadcrumbs +
@@ -38,18 +38,22 @@ function DocPage() {
   const { hash } = useLocation()
   const slug = (params['*'] ?? '').replace(/^\/+|\/+$/g, '')
   const [Component, setComponent] = useState<ComponentType | null>(null)
-  const [notFound, setNotFound] = useState(false)
   const meta = findBySlug(slug)
+  const notFound = slug !== '' && !hasMdx(slug)
+
+  // A fresh slug means a fresh MDX module: drop the previous one during
+  // render (before this paints) so a stale page is never shown under the
+  // new URL while the loader below fetches its replacement.
+  const [prevSlug, setPrevSlug] = useState(slug)
+  if (slug !== prevSlug) {
+    setPrevSlug(slug)
+    setComponent(null)
+  }
 
   useEffect(() => {
-    setComponent(null)
-    setNotFound(false)
     if (!slug) return
     const loader = loadMdx(slug)
-    if (!loader) {
-      setNotFound(true)
-      return
-    }
+    if (!loader) return
     let cancelled = false
     loader.then((mod) => {
       if (cancelled) return
