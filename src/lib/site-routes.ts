@@ -8,6 +8,12 @@ import { DOC_FLAT } from '@/lib/docs-tree'
 
 export const SITE_URL = 'https://getmartis.com'
 
+/** The social card every route shares (1200x630, public/brand/og-cover.png)
+ *  until per-route cards exist. `pnpm smoke:dist` fails for any og:image or
+ *  twitter:image under SITE_URL with no file in dist/, so a route pointing
+ *  at a card that was never generated cannot ship. */
+const DEFAULT_IMAGE = `${SITE_URL}/brand/og-cover.png`
+
 export interface RouteMeta {
   path: string
   title: string
@@ -29,7 +35,7 @@ export const NOT_FOUND_META: RouteMeta = {
   title: 'Page not found · Martis',
   description: 'This page does not exist. Head back to the Martis homepage or browse the documentation.',
   canonical: `${SITE_URL}/404`,
-  image: `${SITE_URL}/social/home.png`,
+  image: DEFAULT_IMAGE,
   noIndex: true,
 }
 
@@ -45,7 +51,7 @@ const ROUTE_META: RouteMeta[] = [
     description:
       'The open-source Laravel admin foundation agencies ship again and again on client projects. MIT licensed. No paid tier.',
     canonical: `${SITE_URL}/`,
-    image: `${SITE_URL}/social/home.png`,
+    image: DEFAULT_IMAGE,
   },
   {
     path: '/product',
@@ -53,7 +59,7 @@ const ROUTE_META: RouteMeta[] = [
     description:
       'Model, operate, secure, adapt, extend and ship: the six systems behind the Martis Laravel admin foundation.',
     canonical: `${SITE_URL}/product`,
-    image: `${SITE_URL}/social/product.png`,
+    image: DEFAULT_IMAGE,
   },
   {
     path: '/for-agencies',
@@ -61,7 +67,7 @@ const ROUTE_META: RouteMeta[] = [
     description:
       'Ship the craft, reuse the foundation. How Laravel agencies standardize client admin delivery with Martis and protect their margin.',
     canonical: `${SITE_URL}/for-agencies`,
-    image: `${SITE_URL}/social/for-agencies.png`,
+    image: DEFAULT_IMAGE,
   },
   {
     path: '/compare',
@@ -69,7 +75,7 @@ const ROUTE_META: RouteMeta[] = [
     description:
       'A decision aid, not a scorecard. Compare Martis with Laravel Nova and Filament on licensing, stack and extensibility.',
     canonical: `${SITE_URL}/compare`,
-    image: `${SITE_URL}/social/compare.png`,
+    image: DEFAULT_IMAGE,
   },
   {
     path: '/compare/nova',
@@ -77,7 +83,7 @@ const ROUTE_META: RouteMeta[] = [
     description:
       'How Martis compares with Laravel Nova on licensing, frontend stack, customization and agency economics.',
     canonical: `${SITE_URL}/compare/nova`,
-    image: `${SITE_URL}/social/compare.png`,
+    image: DEFAULT_IMAGE,
   },
   {
     path: '/compare/filament',
@@ -85,7 +91,7 @@ const ROUTE_META: RouteMeta[] = [
     description:
       'How Martis compares with Filament on licensing, frontend stack, customization and agency economics.',
     canonical: `${SITE_URL}/compare/filament`,
-    image: `${SITE_URL}/social/compare.png`,
+    image: DEFAULT_IMAGE,
   },
   {
     path: '/docs',
@@ -93,7 +99,7 @@ const ROUTE_META: RouteMeta[] = [
     description:
       'Install Martis, build your first resource and go deeper: task-based navigation through the documentation.',
     canonical: `${SITE_URL}/docs`,
-    image: `${SITE_URL}/social/docs.png`,
+    image: DEFAULT_IMAGE,
   },
   {
     path: '/changelog',
@@ -101,7 +107,7 @@ const ROUTE_META: RouteMeta[] = [
     description:
       'Built in public, shipped with proof. Every Martis release with upgrade notes, generated from validated release data.',
     canonical: `${SITE_URL}/changelog`,
-    image: `${SITE_URL}/social/home.png`,
+    image: DEFAULT_IMAGE,
   },
   NOT_FOUND_META,
 ]
@@ -154,7 +160,7 @@ export function getRouteMeta(pathname: string): RouteMeta {
       title: docsTitle(doc.label),
       description: docsDescription(doc.label),
       canonical: `${SITE_URL}${normalized}`,
-      image: `${SITE_URL}/social/docs.png`,
+      image: DEFAULT_IMAGE,
     }
   }
 

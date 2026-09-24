@@ -37,7 +37,7 @@ it('derives metadata for a docs route from DOC_FLAT', () => {
     title: 'Filters · Martis docs',
     description: 'Learn about Filters in Martis.',
     canonical: 'https://getmartis.com/docs/core/filters',
-    image: 'https://getmartis.com/social/docs.png',
+    image: 'https://getmartis.com/brand/og-cover.png',
   })
 })
 
@@ -65,7 +65,7 @@ it('gives every static route non-empty, on-brief metadata', () => {
     expect(meta.description.length).toBeGreaterThan(0)
     expect(meta.description.length).toBeLessThanOrEqual(160)
     expect(meta.canonical).toBe(`${SITE_URL}${path === '/' ? '/' : path}`)
-    expect(meta.image).toMatch(new RegExp(`^${SITE_URL}/social/.+\\.png$`))
+    expect(meta.image).toBe(`${SITE_URL}/brand/og-cover.png`)
   }
 })
 
@@ -89,7 +89,7 @@ it('avoids repeating the brand for a docs page whose own label already names Mar
     title: 'Martis differentials · Docs',
     description: 'Learn about Martis differentials.',
     canonical: 'https://getmartis.com/docs/reference/differentials',
-    image: 'https://getmartis.com/social/docs.png',
+    image: 'https://getmartis.com/brand/og-cover.png',
   })
 })
 

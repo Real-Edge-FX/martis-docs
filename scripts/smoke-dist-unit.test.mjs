@@ -14,6 +14,7 @@ import {
   checkRobots,
   checkRoute,
   checkSearchIndex,
+  checkSiteImages,
   checkSitemap,
   countMainTags,
   extractAssetReferences,
@@ -423,4 +424,35 @@ test('checkHtaccess passes a clean, prerendered-site config', () => {
     'RewriteRule ^(.*[^/])$ $1/index.html [L]',
   ].join('\n')
   assert.deepEqual(checkHtaccess(text), [])
+})
+
+// --- og:image / twitter:image files ---
+
+test('checkSiteImages reports an og:image and a twitter:image under the site URL with no file in dist/', () => {
+  const html = okHtml().replace(
+    '</head>',
+    '<meta name="twitter:image" content="https://getmartis.com/social/missing.png" />\n</head>',
+  )
+  const failures = checkSiteImages(html, 'https://getmartis.com', () => false)
+  assert.deepEqual(failures, [
+    'og:image "https://getmartis.com/social/product.png" has no file in dist/ (/social/product.png)',
+    'twitter:image "https://getmartis.com/social/missing.png" has no file in dist/ (/social/missing.png)',
+  ])
+})
+
+test('checkSiteImages passes when every site image exists, and looks each one up by its path', () => {
+  const looked = []
+  const failures = checkSiteImages(okHtml(), 'https://getmartis.com', (urlPath) => {
+    looked.push(urlPath)
+    return true
+  })
+  assert.deepEqual(failures, [])
+  assert.deepEqual(looked, ['/social/product.png'])
+})
+
+test('checkSiteImages ignores an image hosted elsewhere and one that only appears in the body', () => {
+  const html = okHtml()
+    .replace('https://getmartis.com/social/product.png', 'https://cdn.example.com/card.png')
+    .replace('<h1>Product</h1>', '<h1>Product</h1><meta property="og:image" content="https://getmartis.com/x.png" />')
+  assert.deepEqual(checkSiteImages(html, 'https://getmartis.com', () => false), [])
 })

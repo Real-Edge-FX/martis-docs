@@ -1,7 +1,8 @@
 // Verifies dist/ is a complete, correct static build before it is
 // deployed or gated in CI: every public route has its own prerendered
 // HTML with real content, title, description, canonical and Open
-// Graph tags; every /assets/ file a page references actually exists;
+// Graph tags; every /assets/ file and every og:image/twitter:image under
+// the site URL a page references actually exists;
 // search-index.json, sitemap.xml, robots.txt and .htaccess agree with
 // the route registry; and nothing in the output leaks a local
 // hostname or a machine-specific path.
@@ -221,6 +222,28 @@ export function checkRoute(route, html, meta) {
   return [...new Set(failures)]
 }
 
+const SOCIAL_IMAGE_TAGS = [
+  ['og:image', /<meta\s+property="og:image"\s+content="([^"]+)"\s*\/?>/g],
+  ['twitter:image', /<meta\s+name="twitter:image"\s+content="([^"]+)"\s*\/?>/g],
+]
+
+/** Checks that every og:image / twitter:image in `html`'s <head> served
+ *  from `siteUrl` has a file in dist/. `fileExists(urlPath)` answers for
+ *  a URL path such as `/brand/og-cover.png`; images hosted elsewhere are
+ *  not checked. */
+export function checkSiteImages(html, siteUrl, fileExists) {
+  const head = extractHeadSection(html)
+  const failures = []
+  for (const [name, pattern] of SOCIAL_IMAGE_TAGS) {
+    for (const [, url] of head.matchAll(pattern)) {
+      if (!url.startsWith(`${siteUrl}/`)) continue
+      const urlPath = new URL(url).pathname
+      if (!fileExists(urlPath)) failures.push(`${name} "${url}" has no file in dist/ (${urlPath})`)
+    }
+  }
+  return failures
+}
+
 /** Parses dist/search-index.json and checks it is non-empty. */
 export function checkSearchIndex(raw) {
   let parsed
@@ -315,6 +338,10 @@ async function main() {
     }
     const html = await readFile(filePath, 'utf8')
     addFailures(route, checkRoute(route, html, getRouteMeta(route)))
+    addFailures(
+      route,
+      checkSiteImages(html, SITE_URL, (urlPath) => existsSync(path.join(DIST, decodeURIComponent(urlPath)))),
+    )
     for (const assetPath of extractAssetReferences(html)) referencedAssets.add(assetPath)
   }
 
