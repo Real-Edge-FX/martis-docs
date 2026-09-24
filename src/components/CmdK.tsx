@@ -129,13 +129,18 @@ export function CmdK({ open, onClose }: CmdKProps) {
     return () => window.removeEventListener('keydown', onKey)
   }, [open, flat, active, onClose, navigate])
 
-  // Reset highlight when the query changes. Adjusted during render
-  // (rather than in an effect) so the first paint after a keystroke
-  // already reflects the reset selection.
+  // Reset highlight and drop the previous query's full-text hits the
+  // instant the query changes. Adjusted during render (rather than in
+  // an effect) so the first paint after a keystroke already reflects
+  // the reset selection, and so a hit from an abandoned query can never
+  // flash into `flat` while the new query's own debounce is in flight
+  // (the pagefind effect below only *populates* `fullTextHits`; nothing
+  // else clears it between two non-blank queries).
   const [prevQ, setPrevQ] = useState(q)
   if (q !== prevQ) {
     setPrevQ(q)
     setActive(0)
+    setFullTextHits([])
   }
 
   if (!open) return null
