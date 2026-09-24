@@ -1,0 +1,9 @@
+# Vite copies this file to dist/assets/.htaccess. Everything Vite writes
+# here has a content hash in its name, so a file never changes under the
+# same URL: cache it for a year. The site root's .htaccess gives every
+# other static file a short cache; this later, deeper rule wins here.
+<IfModule mod_headers.c>
+  <FilesMatch "\.(js|css|woff2?|png|jpg|jpeg|svg|webp|avif|ico)$">
+    Header set Cache-Control "public, max-age=31536000, immutable"
+  </FilesMatch>
+</IfModule>

@@ -40,7 +40,7 @@ The resolved payload is injected into `window.MartisConfig.preferences.initial` 
 
 ### Auth awareness
 
-When the user logs in client-side (no hard reload), `PreferencesProvider` refetches `/api/preferences` so the authenticated user's saved preferences replace the guest defaults. This is why `AuthProvider` wraps `PreferencesProvider` in [app.tsx](../resources/js/app.tsx).
+When the user logs in client-side (no hard reload), `PreferencesProvider` refetches `/api/preferences` so the authenticated user's saved preferences replace the guest defaults. This is why `AuthProvider` wraps `PreferencesProvider` in [app.tsx](https://github.com/Real-Edge-FX/martis-package/blob/main/resources/js/app.tsx).
 
 The refetch and the optimistic PUT are BOTH skipped when `user` is null (v1.7.6). The endpoints live behind `martis.auth`, so a guest mount or guest theme/locale tweak would otherwise log a 401 in the browser console. localStorage and the SSR payload are already authoritative for guests; the server has nothing extra to add until the user signs in.
 

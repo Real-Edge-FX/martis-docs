@@ -115,6 +115,3 @@ export function prevNext(slug: string): {
     next: idx >= 0 && idx < DOC_FLAT.length - 1 ? DOC_FLAT[idx + 1] : null,
   }
 }
-
-/** Default landing slug for /docs (no path). */
-export const DOC_DEFAULT_SLUG = 'getting-started/installation'

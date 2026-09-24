@@ -1,25 +1,109 @@
 # Martis Docs — Apache/LiteSpeed config for shared hosting (getmartis.com).
 #
-# The docs site is a client-rendered Vite/React SPA. Every deep link
-# (e.g. /docs/getting-started/installation) must boot from /index.html
-# so react-router can take over. Vite copies this file from public/ to
-# the build root, so every `pnpm build` ships it in dist/.
+# The site is prerendered: `pnpm build` writes real static HTML for
+# every public route (dist/<route>/index.html, dist/index.html for
+# "/", dist/404.html for the not-found page) — this file's job is just
+# to map each canonical, slash-less URL to its file and hand back a
+# real 404 for anything else. It is NOT an SPA fallback: there is no
+# rewrite to /index.html for unmatched paths.
+#
+# Every canonical URL in the route registry (src/lib/site-routes.ts)
+# has no trailing slash except "/" itself, so a request that does
+# carry one is redirected down to the canonical form.
+#
+# Vite copies this file from public/ to the build root, so every
+# `pnpm build` ships it as dist/.htaccess.
+#
+# Validated against a local Apache 2.4 (mod_rewrite, mod_dir,
+# mod_headers), not against LiteSpeed: check it on the real Hostinger
+# host too (scripts/deploy.sh probes a handful of these URLs after every
+# deploy, and pnpm smoke:dist checks this file's key rules).
+
+# No directory listings for a folder without its own index.html
+# (/docs/core, /assets: the rewrite below answers those with the 404
+# page instead). No content-negotiation guessing either:
+# every path below is resolved explicitly by this file, never by
+# Apache trying alternate extensions on its own.
+Options -Indexes -MultiViews
+
+<IfModule mod_dir.c>
+  # Serve index.html for a directory request, not *.php or another
+  # host default.
+  DirectoryIndex index.html
+  # Off, deliberately. With this on (the default), Apache 301-redirects
+  # a directory request without a trailing slash (…/product) to add one
+  # (…/product/) before serving its index — the opposite of what we
+  # want, since every canonical URL is slash-less. The mod_rewrite rule
+  # below serves each route's index.html directly at the clean,
+  # slash-less URL instead. Safe here specifically because every asset
+  # and internal link in this build is an absolute path (/assets/…,
+  # /docs/…), never a relative one — the one documented caveat of
+  # turning this off.
+  DirectorySlash Off
+</IfModule>
 
 <IfModule mod_rewrite.c>
   RewriteEngine On
   RewriteBase /
-  RewriteRule ^index\.html$ - [L]
-  RewriteCond %{REQUEST_FILENAME} -f [OR]
+
+  # /index.html and /<route>/index.html name the same page as the clean
+  # URL (/, /<route>): 301 them there so each page has one address.
+  # Matched on %{THE_REQUEST}, the request line the client actually sent,
+  # so the internal rewrite to <route>/index.html further down (which
+  # re-runs these rules with the rewritten path) never matches it.
+  RewriteCond %{THE_REQUEST} ^\S+\s/index\.html[?\s]
+  RewriteRule ^index\.html$ / [R=301,L]
+  RewriteCond %{THE_REQUEST} ^\S+\s/.+/index\.html[?\s]
+  RewriteRule ^(.+)/index\.html$ /$1 [R=301,L]
+
+  # A directory with no index.html of its own (/docs/core, /assets) is
+  # not a page: answer the branded 404 (ErrorDocument below) instead of
+  # the 403 that "Options -Indexes" would give.
   RewriteCond %{REQUEST_FILENAME} -d
-  RewriteRule ^ - [L]
-  RewriteRule . /index.html [L]
+  RewriteCond %{REQUEST_FILENAME}/index.html !-f
+  RewriteRule ^ - [R=404,L]
+
+  # A trailing-slash request for a real prerendered route (…/product/)
+  # is not the canonical URL: 301 it down to the slash-less form.
+  # Excludes "/" itself, which has no slash-less form.
+  RewriteCond %{REQUEST_URI} !^/$
+  RewriteCond %{REQUEST_FILENAME} -d
+  RewriteRule ^(.+)/$ /$1 [R=301,L]
+
+  # The canonical, slash-less request for a route (…/product) is not a
+  # file on disk — it's a directory (product/). Internally rewrite it
+  # to that directory's prerendered index.html, without changing the
+  # URL the browser shows. Real files (assets, brand images, …) already
+  # exist and skip this rule via the first condition below.
+  RewriteCond %{REQUEST_FILENAME} !-f
+  RewriteCond %{REQUEST_FILENAME}/index.html -f
+  RewriteRule ^(.*[^/])$ $1/index.html [L]
+
+  # Anything else (a typo, a removed page, the literal "/404" URL — no
+  # dist/404/ directory exists to match) is a genuine miss: fall
+  # through to Apache's normal "file not found" handling, which
+  # ErrorDocument below turns into a real static 404 response. No
+  # catch-all rewrite to the HTML shell here — that was the old SPA
+  # fallback; every route now has its own real prerendered file.
 </IfModule>
 
-# Long-cache fingerprinted assets; never cache the HTML shell or the
-# search index so new releases show up immediately.
+# A real HTTP 404 for anything that does not match a prerendered
+# route, with the prerendered 404 page's own markup as the body
+# (dist/404.html — noindex, but otherwise a normal page: title,
+# description, canonical, Open Graph). Apache serves this whenever it
+# cannot resolve a request to a file, so it also covers the literal
+# "/404" URL itself.
+ErrorDocument 404 /404.html
+
+# Files outside /assets/ keep their name across releases (/brand,
+# /screenshots, generated social cards), so they get a short cache, and
+# the HTML and the search index are revalidated on every request so a new
+# release shows up immediately. Only Vite's fingerprinted files under
+# /assets/ are cached for a year, by public/assets/.htaccess (copied to
+# dist/assets/.htaccess), which overrides the rule below there.
 <IfModule mod_headers.c>
   <FilesMatch "\.(js|css|woff2?|png|jpg|jpeg|svg|webp|avif|ico)$">
-    Header set Cache-Control "public, max-age=31536000, immutable"
+    Header set Cache-Control "public, max-age=3600"
   </FilesMatch>
   <FilesMatch "\.(html|json)$">
     Header set Cache-Control "no-cache"

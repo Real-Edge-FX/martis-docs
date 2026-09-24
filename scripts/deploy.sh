@@ -36,17 +36,38 @@ else
   PNPM=(npx -y pnpm@9.15.9)
 fi
 
+# --- Clean tree -------------------------------------------------------
+# Publish only what is committed: a build from uncommitted changes would
+# put code on getmartis.com that no commit (and no review) describes.
+if [ -n "$(git status --porcelain)" ]; then
+  echo "ERROR: the working tree has uncommitted changes; commit or stash them before deploying:" >&2
+  git status --short >&2
+  exit 1
+fi
+
 echo "==> Building docs site"
 "${PNPM[@]}" build
 
-echo "==> SPA fallback"
+echo "==> Smoke-checking dist/"
+# The same artifact gate CI runs: every route's HTML and head, assets,
+# social images, sitemap, robots.txt and both .htaccess files.
+"${PNPM[@]}" smoke:dist
+
+echo "==> Verifying prerendered build output"
 # .htaccess ships from public/ via Vite; assert it landed in the build.
 test -f dist/.htaccess || {
   echo "ERROR: dist/.htaccess missing — expected Vite to copy public/.htaccess." >&2
   exit 1
 }
-# Robust safety net in addition to the .htaccess rewrite.
-cp dist/index.html dist/404.html
+# dist/404.html is written by scripts/prerender.mjs (part of `pnpm
+# build` above), not copied here: the site is prerendered now, not a
+# client-rendered SPA, so overwriting it with dist/index.html (the old
+# safety net) would ship the wrong <title>, canonical and noindex for
+# every 404.
+test -f dist/404.html || {
+  echo "ERROR: dist/404.html missing — expected \`pnpm build\` to prerender it." >&2
+  exit 1
+}
 
 # --- Publish (SSH key preferred, password fallback) ------------------
 echo "==> Publishing dist/ -> ${SSH_USER}@${SSH_HOST}:${DOCROOT}"
@@ -100,10 +121,25 @@ fi
 # --- Verify ----------------------------------------------------------
 echo "==> Verifying ${SITE_URL}"
 fail=0
-for path in / /docs /search-index.json; do
+for path in / /docs /docs/getting-started/installation /product /search-index.json; do
   code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 25 "${SITE_URL}${path}" || echo 000)
-  printf '  %-22s HTTP %s\n' "$path" "$code"
+  printf '  %-45s HTTP %s (expect 200)\n' "$path" "$code"
   [ "$code" = "200" ] || fail=1
 done
+
+# A path that cannot exist, and a directory with no page of its own,
+# must come back as a real 404 (not a 200 SPA-fallback page, not a 403
+# directory refusal): proves .htaccess's rewrites and ErrorDocument are
+# live on the real host, not just correct on paper. A trailing-slash URL
+# and an /index.html URL must redirect to the clean one.
+not_found_path="/this-page-does-not-exist-$(date +%s)"
+for probe in "${not_found_path} 404" "/docs/core 404" "/product/ 301" "/docs/index.html 301"; do
+  path="${probe% *}"
+  expected="${probe##* }"
+  code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 25 "${SITE_URL}${path}" || echo 000)
+  printf '  %-45s HTTP %s (expect %s)\n' "$path" "$code" "$expected"
+  [ "$code" = "$expected" ] || fail=1
+done
+
 [ "$fail" -eq 0 ] && echo "✅ Deployed and verified: ${SITE_URL}" \
-  || { echo "⚠️  Deploy uploaded but a smoke check did not return 200." >&2; exit 1; }
+  || { echo "⚠️  Deploy uploaded but a smoke check did not return the expected status." >&2; exit 1; }

@@ -1,4 +1,3 @@
-import { useEffect } from 'react'
 import { TopBar } from '@/components/landing/TopBar'
 import { Hero } from '@/components/landing/Hero'
 import { StatStrip } from '@/components/landing/StatStrip'
@@ -17,10 +16,6 @@ import { Footer } from '@/components/landing/Footer'
  * the file boundaries match the section boundaries on the page.
  */
 export default function Landing() {
-  useEffect(() => {
-    document.title = 'Martis — The Laravel Admin Engine'
-  }, [])
-
   return (
     <div className="min-h-screen bg-ink-900 text-ink-100">
       <TopBar />

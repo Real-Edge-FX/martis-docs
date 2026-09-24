@@ -154,3 +154,16 @@ Decisões tomadas com o utilizador na revisão prévia dos planos contra o códi
 - Segredos e environments (`MARTIS_RELEASE_TOKEN`, chave SSH de deploy, `site-release-staging`, `production`) são criados pelo utilizador.
 - Impedir tags fora do pipeline exige um ruleset de tags nas definições do `martis-package`, que o plano não prevê.
 - Definir que execução da matriz Pest (PHP × Laravel) alimenta o manifesto e a política para os testes skipped esperados.
+
+### Critérios herdados da Fase 1 (vinculativos)
+
+- **Fase 2, homepage:** o HTML pré-renderizado de `/` tem de ser totalmente visível sem JavaScript. Hoje saem cerca de 50 elementos com `opacity:0`, vindos dos estados iniciais do `motion`. Os stats mostram valores reais no HTML. Cada página nova entra nos testes de hidratação (`HYDRATION_URLS`), incluindo uma variante com `prefers-reduced-motion`. Os STATS escritos à mão em `landing.ts` saem ou passam a vir de dados gerados.
+- **Fase 2, previews:** o utilizador vê o preview de cada página construída (servidor estático fiel ao `.htaccess`, nunca `vite preview`).
+- **Fase 3, Task 2:** os metadados das páginas de docs passam a usar o `title`/`description` do frontmatter MDX, a partir de uma fonte síncrona gerada no build (por exemplo `docs-meta.json`, da mesma extração do `build-search-index`), iguais no SSR e no `DocumentMeta`. A rota `/docs/search` fica registada no `ROUTE_META` e no `PAGE_ROUTES` antes de `/docs/*`, e só lê `q` depois do mount.
+- **Fase 4, antes do primeiro deploy de produção desta árvore:** validar numa staging LiteSpeed as regras do `.htaccess`:
+  - redirect de barra final e de `index.html`;
+  - 404 de diretórios e de rotas inexistentes;
+  - maiúsculas;
+  - `Cache-Control` imutável só em `/assets/`.
+  O `deploy.sh` passa a sondar também o `Cache-Control` de um ficheiro de `/assets/`. As imagens `/social/*.png` geradas substituem o `og-cover.png` partilhado. O smoke (`checkSiteImages`) já exige que existam.
+- **Repositório:** o CI deve passar a ser required status check em `release/**` e `main`. É uma definição do GitHub e só o utilizador a pode ativar.

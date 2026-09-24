@@ -1,0 +1,11 @@
+{
+  "version": "1.39.1",
+  "packageCommit": "0171bcd2ede0595539500a1707f3c23eaa8e7bfb",
+  "releaseHeadline": "Callable config keys take an invokable class name",
+  "phpRequirement": "^8.3",
+  "laravelRequirement": "^12.0|^13.0",
+  "pestTests": 3185,
+  "vitestTests": 872,
+  "totalTests": 4057,
+  "generatedAt": "2026-09-24T20:56:11.000Z"
+}

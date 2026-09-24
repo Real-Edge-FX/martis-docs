@@ -1,24 +1,27 @@
-import { lazy, Suspense } from 'react'
-import { Routes, Route } from 'react-router-dom'
+import { Suspense } from 'react'
+import { useRoutes } from 'react-router-dom'
 import { LoadingScreen } from '@/components/LoadingScreen'
+import { DocumentMeta } from '@/components/site/DocumentMeta'
 import { CmdKProvider } from '@/lib/cmdk-context'
+import { PAGE_ROUTES } from '@/routes'
 
-// Lazy-load the two top-level surfaces so the landing's CSS / JS
-// budget does not pay for the docs renderer (and vice-versa). Both
-// chunks are fetched on demand at the route level.
-const Landing = lazy(() => import('@/pages/Landing'))
-const Docs = lazy(() => import('@/pages/Docs'))
-const NotFound = lazy(() => import('@/pages/NotFound'))
+function PageRoutes() {
+  return useRoutes(PAGE_ROUTES)
+}
 
+/**
+ * The route tree shared by every entry: the browser wraps it in
+ * `BrowserRouter`, the server in `StaticRouter`, tests in `MemoryRouter`.
+ * Exports only this component (the route table, `lazyPage` and
+ * `preloadRoute` live in `src/routes.tsx`) so this file stays a plain
+ * Fast Refresh boundary.
+ */
 export function App() {
   return (
     <CmdKProvider>
+      <DocumentMeta />
       <Suspense fallback={<LoadingScreen />}>
-        <Routes>
-          <Route path="/" element={<Landing />} />
-          <Route path="/docs/*" element={<Docs />} />
-          <Route path="*" element={<NotFound />} />
-        </Routes>
+        <PageRoutes />
       </Suspense>
     </CmdKProvider>
   )

@@ -3,26 +3,26 @@
 // `design-system/Martis Docs/src/landing.jsx`.
 
 import type { IconName } from '@/components/icons'
+import {
+  loadReleaseManifest,
+  formatCount,
+  formatPhpRequirement,
+  formatLaravelRequirement,
+} from '@/lib/generated-data'
 
-/**
- * Passing-test total (Pest + Vitest) of the release CI run. The hero
- * status line (components/landing/Hero.tsx) and the stat strip both
- * read it, so a count bump lands everywhere the landing page shows it.
- */
-export const TESTS_PASSING = '4,057'
-
-/**
- * Runtime requirements from martis-package's composer.json, shown in the
- * hero status line and the stack table.
- */
-export const PHP_REQUIREMENT = 'PHP 8.3+'
-export const LARAVEL_REQUIREMENT = 'Laravel 12/13'
+// Release facts (test totals, PHP/Laravel requirements) are never
+// hand-maintained here: they come from the validated snapshot at
+// src/data/generated/release.json, read once through the loader and
+// formatters in src/lib/generated-data.ts. VERSION and RELEASE_HEADLINE
+// moved the same way — components/landing/Hero.tsx and TopBar.tsx read
+// the loader directly instead of importing them from this module.
+const release = loadReleaseManifest()
 
 export const STATS: { n: string; l: string }[] = [
-  { n: '50',          l: 'Field types' },
-  { n: '12',          l: 'Relationship kinds' },
-  { n: '94',          l: 'Theme tokens' },
-  { n: TESTS_PASSING, l: 'Tests passing' },
+  { n: '50',                            l: 'Field types' },
+  { n: '12',                            l: 'Relationship kinds' },
+  { n: '94',                            l: 'Theme tokens' },
+  { n: formatCount(release.totalTests), l: 'Tests passing' },
 ]
 
 export interface FeatureCard {
@@ -60,7 +60,7 @@ export const NAV_LINKS: NavLink[] = [
 ]
 
 export const STACK_ROWS: { k: string; v: string }[] = [
-  { k: 'Backend',  v: `${PHP_REQUIREMENT} · ${LARAVEL_REQUIREMENT}` },
+  { k: 'Backend',  v: `${formatPhpRequirement(release.phpRequirement)} · ${formatLaravelRequirement(release.laravelRequirement)}` },
   { k: 'Frontend', v: 'React 18 · TypeScript · PrimeReact · Tailwind' },
   { k: 'Data',     v: 'TanStack Query · React Router' },
   { k: 'Icons',    v: 'Phosphor Icons' },
@@ -167,14 +167,3 @@ class SendInvoice extends Action
 } as const
 
 export type CodeSampleKey = keyof typeof CODE_SAMPLES
-
-export const VERSION = 'v1.39.1'
-
-/**
- * One-line headline shown alongside VERSION in the landing-page
- * release badge (see components/landing/Hero.tsx). Pair this with
- * every VERSION bump so the badge never falls out of sync with what
- * the tag actually ships. Keep under ~60 chars so the badge stays on
- * one line on common desktop widths.
- */
-export const RELEASE_HEADLINE = 'Callable config keys take an invokable class name'

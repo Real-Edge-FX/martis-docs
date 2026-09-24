@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
+import { AnimatePresence, motion } from 'motion/react'
+import { usePrefersReducedMotion } from '@/hooks/usePrefersReducedMotion'
 import { Icons } from '@/components/icons'
 import { Reveal, RevealItem } from '@/components/landing/Reveal'
 
@@ -28,7 +29,7 @@ const EASE = [0.22, 1, 0.36, 1] as const
  * backdrop, with keyboard + prev/next navigation. Honours reduced-motion.
  */
 export function Showcase() {
-  const reduce = useReducedMotion()
+  const reduce = usePrefersReducedMotion()
   const [active, setActive] = useState<number | null>(null)
 
   const close = useCallback(() => setActive(null), [])

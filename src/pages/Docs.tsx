@@ -1,5 +1,5 @@
-import { useEffect, useState, type ComponentType } from 'react'
-import { Navigate, Routes, Route, useParams, useLocation, Link } from 'react-router-dom'
+import { useEffect, useRef, useState, useSyncExternalStore, type ComponentType } from 'react'
+import { Routes, Route, useParams, useLocation, Link } from 'react-router-dom'
 import { MDXProvider } from '@mdx-js/react'
 import { TopBar } from '@/components/landing/TopBar'
 import { Footer } from '@/components/landing/Footer'
@@ -9,13 +9,16 @@ import { DocsBreadcrumbs } from '@/components/docs/Breadcrumbs'
 import { DocsPagination } from '@/components/docs/Pagination'
 import { LoadingScreen } from '@/components/LoadingScreen'
 import { mdxComponents } from '@/components/docs/MdxComponents'
-import { DOC_DEFAULT_SLUG, findBySlug } from '@/lib/docs-tree'
-import { loadMdx } from '@/lib/mdx-loader'
+import { DOC_NAV } from '@/lib/docs-tree'
+import { docSlugFromSplat, loadMdx } from '@/lib/mdx-loader'
+import { useInitialDocument } from '@/lib/render-context'
 
 /**
  * `/docs/*` route. Renders the doc shell (sidebar + breadcrumbs +
  * MDX article + on-this-page TOC + prev/next). The actual MDX module
- * is dynamically imported by slug so each page is its own chunk.
+ * is dynamically imported by slug so each page is its own chunk; the
+ * page the app first renders arrives already resolved through
+ * `RenderProvider` instead.
  */
 export default function Docs() {
   return (
@@ -24,7 +27,7 @@ export default function Docs() {
       <div className="max-w-[1280px] mx-auto px-6 flex gap-8">
         <DocsSidebar />
         <Routes>
-          <Route index element={<Navigate to={DOC_DEFAULT_SLUG} replace />} />
+          <Route index element={<DocsIndex />} />
           <Route path="*" element={<DocPage />} />
         </Routes>
       </div>
@@ -33,45 +36,100 @@ export default function Docs() {
   )
 }
 
+/**
+ * Minimal `/docs` index: every `DOC_NAV` group as a list of links, so the
+ * prerendered page has real content and navigation without JavaScript.
+ * Phase 3 replaces it with the full docs home.
+ */
+function DocsIndex() {
+  return (
+    <main className="flex-1 min-w-0 py-12">
+      <h1 className="text-3xl font-medium text-white tracking-tight">Documentation</h1>
+      <div className="mt-8 grid gap-8 sm:grid-cols-2">
+        {DOC_NAV.map((group) => (
+          <section key={group.group}>
+            <h2 className="text-[11px] font-mono uppercase tracking-[0.18em] text-ink-400">
+              {group.group}
+            </h2>
+            <ul className="mt-3 space-y-2">
+              {group.items.map((item) => (
+                <li key={item.slug}>
+                  <Link to={`/docs/${item.slug}`} className="text-[14px] text-ink-200 hover:text-white">
+                    {item.label}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </section>
+        ))}
+      </div>
+    </main>
+  )
+}
+
+/** `useSyncExternalStore` subscription for a value that never changes. */
+function subscribeNever(): () => void {
+  return () => {}
+}
+
 function DocPage() {
   const params = useParams<{ '*': string }>()
   const { hash } = useLocation()
-  const slug = (params['*'] ?? '').replace(/^\/+|\/+$/g, '')
-  const [Component, setComponent] = useState<ComponentType | null>(null)
-  const [notFound, setNotFound] = useState(false)
-  const meta = findBySlug(slug)
+  // `App`'s `/docs/*` route only ever mounts `Docs` for the index or a
+  // slug with a registered MDX module (see `isKnownDocsPath`), so `slug`
+  // here always resolves to a real page.
+  const slug = docSlugFromSplat(params['*'])
+  // The page the app first rendered (on the server, or before hydrating)
+  // comes resolved from `RenderProvider`, so it renders on the first pass;
+  // every other page is imported by the effect below. Components are
+  // functions, so both the initial state and the setters wrap them.
+  const initialModule = useInitialDocument(slug)
+  const [Component, setComponent] = useState<ComponentType | null>(
+    () => initialModule?.default ?? null,
+  )
+
+  // A fresh slug means a fresh MDX module: swap it during render (before
+  // this paints) so a stale page is never shown under the new URL while
+  // the loader below fetches its replacement.
+  const [prevSlug, setPrevSlug] = useState(slug)
+  if (slug !== prevSlug) {
+    setPrevSlug(slug)
+    setComponent(() => initialModule?.default ?? null)
+  }
 
   useEffect(() => {
-    setComponent(null)
-    setNotFound(false)
-    if (!slug) return
+    if (!slug || initialModule) return
     const loader = loadMdx(slug)
-    if (!loader) {
-      setNotFound(true)
-      return
-    }
+    if (!loader) return
     let cancelled = false
     loader.then((mod) => {
       if (cancelled) return
       setComponent(() => mod.default)
-      if (mod.frontmatter?.title) {
-        document.title = `${mod.frontmatter.title} · Martis docs`
-      } else if (meta) {
-        document.title = `${meta.label} · Martis docs`
-      }
     })
     return () => {
       cancelled = true
     }
-  }, [slug, meta])
+  }, [slug, initialModule])
+
+  // The location this page was hydrated at, until the reader navigates
+  // away: the browser has already put them where they belong there (the
+  // top, the hash target, or wherever they scrolled before the JavaScript
+  // arrived), so neither scroll effect below may move them. A page that
+  // mounts after a client-side navigation was not hydrated, and scrolls.
+  const location = `${slug}${hash}`
+  const hydrating = useSyncExternalStore(subscribeNever, () => false, () => true)
+  const hydratedAt = useRef(hydrating ? location : null)
+  useEffect(() => {
+    if (hydratedAt.current !== location) hydratedAt.current = null
+  }, [location])
 
   // After the MDX module mounts, honour the URL hash by scrolling to
-  // the matching heading. Without this, hitting `/docs/foo#bar` directly
-  // (or having React Router navigate via Link to a hashed URL) leaves
-  // the page at the top — the headings only get IDs once the article
-  // is rendered, so the browser's default scroll-to-hash misses them.
+  // the matching heading. Without this, a client-side navigation to a
+  // hashed URL leaves the page at the top: the headings only get IDs once
+  // the article is rendered, so the browser's own scroll-to-hash misses
+  // them.
   useEffect(() => {
-    if (!Component || !hash) return
+    if (!Component || !hash || hydratedAt.current === location) return
     const id = hash.startsWith('#') ? hash.slice(1) : hash
     const el = document.getElementById(decodeURIComponent(id))
     if (el) {
@@ -79,18 +137,14 @@ function DocPage() {
         el.scrollIntoView({ behavior: 'auto', block: 'start' })
       })
     }
-  }, [Component, hash])
+  }, [Component, hash, location])
 
   // Slug change → scroll to top so a fresh page does not inherit the
   // previous page's scroll position. Skipped when there is a hash.
   useEffect(() => {
-    if (hash) return
+    if (hash || hydratedAt.current === location) return
     window.scrollTo({ top: 0 })
-  }, [slug, hash])
-
-  if (notFound) {
-    return <DocNotFound slug={slug} />
-  }
+  }, [slug, hash, location])
 
   if (!Component) {
     return (
@@ -113,22 +167,5 @@ function DocPage() {
       </main>
       <Toc slug={slug} />
     </>
-  )
-}
-
-function DocNotFound({ slug }: { slug: string }) {
-  return (
-    <main className="flex-1 min-w-0 py-12">
-      <h1 className="text-3xl font-medium text-white tracking-tight">Doc not found</h1>
-      <p className="mt-3 text-ink-200">
-        No MDX file is registered at <code>/src/content/{slug}.mdx</code>.
-      </p>
-      <Link
-        to="/docs"
-        className="mt-6 inline-flex items-center gap-2 h-9 px-4 rounded-lg btn-primary text-white text-[13px]"
-      >
-        Back to docs
-      </Link>
-    </main>
   )
 }

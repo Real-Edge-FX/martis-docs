@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
+import { AnimatePresence, motion } from 'motion/react'
+import { usePrefersReducedMotion } from '@/hooks/usePrefersReducedMotion'
 import { CodeBlock } from '@/components/CodeBlock'
 import { Icons } from '@/components/icons'
 import { Reveal } from '@/components/landing/Reveal'
@@ -13,7 +14,7 @@ const TABS: { id: CodeSampleKey; label: string; lines: number; preview: string; 
 
 export function CodeUI() {
   const [tab, setTab] = useState<CodeSampleKey>('resource')
-  const reduce = useReducedMotion()
+  const reduce = usePrefersReducedMotion()
   const sample = CODE_SAMPLES[tab]
   const cur = TABS.find((t) => t.id === tab)!
 

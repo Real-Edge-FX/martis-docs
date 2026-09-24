@@ -2,8 +2,12 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Logo } from '@/components/Logo'
 import { Icons } from '@/components/icons'
-import { NAV_LINKS, VERSION } from '@/data/landing'
+import { NAV_LINKS } from '@/data/landing'
+import { loadReleaseManifest, formatVersion } from '@/lib/generated-data'
 import { useCmdK } from '@/lib/cmdk-context'
+
+// Same validated snapshot Hero.tsx reads — never hand-written here.
+const VERSION = formatVersion(loadReleaseManifest().version)
 
 /**
  * Sticky top bar — direct port of `landing.jsx → TopBar`. The
