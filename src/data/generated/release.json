@@ -1,0 +1,11 @@
+{
+  "version": "1.39.0",
+  "packageCommit": "57c41e462caeddea706b9e2f8505cda2b91df00c",
+  "releaseHeadline": "PrimeReact theme reads the Martis tokens",
+  "phpRequirement": "^8.3",
+  "laravelRequirement": "^12.0|^13.0",
+  "pestTests": 3118,
+  "vitestTests": 872,
+  "totalTests": 3990,
+  "generatedAt": "2026-09-24T16:11:03.000Z"
+}

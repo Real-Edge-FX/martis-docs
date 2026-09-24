@@ -3,15 +3,24 @@ import { Link } from 'react-router-dom'
 import { motion, useReducedMotion, useScroll, useTransform } from 'motion/react'
 import { Icons } from '@/components/icons'
 import {
-  VERSION,
-  RELEASE_HEADLINE,
-  TESTS_PASSING,
-  PHP_REQUIREMENT,
-  LARAVEL_REQUIREMENT,
-} from '@/data/landing'
+  loadReleaseManifest,
+  formatVersion,
+  formatCount,
+  formatPhpRequirement,
+  formatLaravelRequirement,
+} from '@/lib/generated-data'
 import { AuroraBackdrop } from '@/components/landing/AuroraBackdrop'
 
 const EASE = [0.22, 1, 0.36, 1] as const
+
+// Release facts read once from the validated snapshot (never hand-written
+// here — see src/data/generated/release.json and src/lib/generated-data.ts).
+const release = loadReleaseManifest()
+const VERSION = formatVersion(release.version)
+const RELEASE_HEADLINE = release.releaseHeadline
+const TESTS_PASSING = formatCount(release.totalTests)
+const PHP_REQUIREMENT = formatPhpRequirement(release.phpRequirement)
+const LARAVEL_REQUIREMENT = formatLaravelRequirement(release.laravelRequirement)
 
 // Headline split into words so each rises in sequence. The emphasised
 // "actually" keeps its serif italic treatment.
