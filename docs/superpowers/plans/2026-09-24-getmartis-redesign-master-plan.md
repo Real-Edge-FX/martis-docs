@@ -119,3 +119,38 @@ npm run build
 ```
 
 Resultado esperado: todas as suites passam e o build publicado permanece idêntico às fontes.
+
+---
+
+## Adenda de execução (24 de setembro de 2026)
+
+Decisões tomadas com o utilizador na revisão prévia dos planos contra o código real. Prevalecem sobre o texto dos planos 01 a 04 onde houver diferença.
+
+### Base, branches e paragens
+
+- A produção (getmartis.com, v1.39.0) vive em `docs/v1.16.1-compat-notifications`, 92 commits à frente do `main` de 29 de junho. A `release/getmartis-redesign-v2` parte dessa branch; o `main` só recebe tudo no fim, pelo PR da release, fundido pelo utilizador na web.
+- Em cada fronteira de fase, a branch de produção é integrada na release para não acumular deriva de conteúdo.
+- Cada fase tem a sua work branch a partir da release. O agente faz push, abre o PR para a release e faz o merge quando o gate da fase passa.
+- A release branch confirmada vale para as Fases 1 a 3. Paragens obrigatórias: revisão visual humana do Gate 2 e checkpoint antes da Fase 4, que mexe em três repositórios.
+
+### Resoluções aceites
+
+1. **Alvo de deploy.** O deploy real é o `scripts/deploy.sh` para a Hostinger (Apache/LiteSpeed); o `.github/workflows/deploy.yml` fica desativado. Na Fase 1, o `public/.htaccess` passa a servir `<rota>/index.html` sem redirecionamento para a barra final, devolve 404 real com `404.html` e deixa de reescrever tudo para `/index.html`; o `scripts/deploy.sh` deixa de copiar `index.html` por cima de `404.html`. Na Fase 4, a publicação é feita na Hostinger por SSH, e não no root Caddy.
+2. **Contratos de dados.** A Task 1 do Plano 04 é executada como Task 6 da Fase 1. Os snapshots `release.json` e `packagist.json` são semeados com os valores reais atuais e passam a ser gerados na Fase 4.
+3. **Páginas provisórias.** A Fase 1 cria páginas mínimas (`main`, H1 e ligação para a instalação) para `/product`, `/for-agencies`, `/compare`, `/compare/nova`, `/compare/filament` e `/changelog`. As Fases 2 e 3 substituem-nas; os respetivos passos RED falham pela ausência dos headings aprovados.
+4. **SSR com páginas lazy.** `entry-server.tsx` usa `renderToPipeableStream` com `onAllReady`, em vez de `renderToString`, e `entry-client.tsx` pré-carrega o chunk da rota antes de `hydrateRoot`.
+5. **Teste da Home.** `MIT licensed · No paid tier` é verificado separadamente no hero e no CTA final, em vez de um único `getByText` dentro do `main`.
+6. **Teste do validador de comparações.** A fixture inválida usa um domínio oficial em `http://`; a allowlist de domínios tem um teste próprio.
+7. **Changelog.** O parser aceita `-` e `—` entre versão e data, normaliza as categorias pelo prefixo (Added, Changed, Fixed, Removed, Security, Deprecated, Breaking), converte Migration, Recovery e Notes for consumers em notas de upgrade, exclui as categorias internas (Tests, Internal, Stats, Validation, Vendor, Documentation, Docs) e falha perante uma categoria sem mapeamento. O JSON gerado é versionado; o build não depende de `../martis-package`.
+8. **Caminhos e inputs.** O documento do pacote é `internal/release-process.md`, não `docs/release-process.md`. As referências a `StatStrip.tsx` no Plano 04 passam a `ProofStrip`. O ensaio usa um input booleano `dry_run` com a versão real, em vez de `create_tag=false` e `1.39.0-site-dry-run`.
+9. **Verificação antes da tag.** O `pre-tag-check.sh` do workspace passa a ler `src/data/generated/release.json`; a alteração é feita na Fase 4, quando o processo de release muda.
+10. **Mockups aprovados.** Versionados em `docs/superpowers/specs/2026-09-24-getmartis-redesign-mockups/`; são a referência da revisão visual.
+
+### Pontos em aberto para o checkpoint da Fase 4
+
+- Nem o `martis-package` nem o `martis-playground` têm release branch.
+- A checkout do Playground tem alterações de outra sessão por commitar; o trabalho da Fase 4 corre numa worktree.
+- `lmelomoura/martis-playground` é privado e exige um token com acesso aos três repositórios.
+- Segredos e environments (`MARTIS_RELEASE_TOKEN`, chave SSH de deploy, `site-release-staging`, `production`) são criados pelo utilizador.
+- Impedir tags fora do pipeline exige um ruleset de tags nas definições do `martis-package`, que o plano não prevê.
+- Definir que execução da matriz Pest (PHP × Laravel) alimenta o manifesto e a política para os testes skipped esperados.

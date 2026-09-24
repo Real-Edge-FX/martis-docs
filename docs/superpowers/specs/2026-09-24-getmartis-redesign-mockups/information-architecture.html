@@ -1,0 +1,115 @@
+<style>
+  .martis-ia { --accent:#6d7dff; --violet:#9a6cff; --line:color-mix(in srgb,var(--foreground) 16%,transparent); }
+  .martis-ia .journey { display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:10px; margin:18px 0 28px; align-items:center; }
+  .martis-ia .journey-step { position:relative; padding:14px 12px; min-height:74px; border-top:2px solid var(--accent); background:color-mix(in srgb,var(--muted) 54%,transparent); }
+  .martis-ia .journey-step:not(:last-child):after { content:'→'; position:absolute; right:-10px; top:24px; z-index:2; color:var(--muted-foreground); }
+  .martis-ia .journey-step b { display:block; margin-bottom:5px; font-weight:500; }
+  .martis-ia .journey-step span { display:block; color:var(--muted-foreground); font-size:12px; line-height:1.35; }
+  .martis-ia .site-map { display:grid; grid-template-columns:repeat(6,minmax(0,1fr)); gap:10px; align-items:start; }
+  .martis-ia .page-column { min-width:0; }
+  .martis-ia .page-head { padding:11px 10px; background:linear-gradient(135deg,color-mix(in srgb,var(--accent) 82%,#111),color-mix(in srgb,var(--violet) 70%,#111)); color:white; font-weight:500; text-align:center; border-radius:8px; }
+  .martis-ia .page-items { list-style:none; padding:0; margin:7px 0 0; }
+  .martis-ia .page-items li { padding:8px 7px; border-bottom:1px solid var(--line); color:var(--muted-foreground); font-size:12px; line-height:1.25; }
+  .martis-ia .page-items li strong { color:var(--foreground); font-weight:500; }
+  .martis-ia .shared-system { margin-top:24px; padding-top:18px; border-top:1px solid var(--line); }
+  .martis-ia .shared-row { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px; }
+  .martis-ia .shared-item { padding:12px; background:color-mix(in srgb,var(--muted) 48%,transparent); border-left:2px solid var(--violet); }
+  .martis-ia .shared-item b { display:block; margin-bottom:4px; font-weight:500; }
+  .martis-ia .shared-item span { color:var(--muted-foreground); font-size:12px; }
+  .martis-ia .principle { margin-top:20px; padding:14px 16px; border-left:3px solid var(--accent); }
+  @media(max-width:900px){ .martis-ia .site-map{grid-template-columns:repeat(3,1fr)} .martis-ia .journey{grid-template-columns:1fr} .martis-ia .journey-step:not(:last-child):after{content:'↓';right:14px;top:auto;bottom:-13px}.martis-ia .shared-row{grid-template-columns:repeat(2,1fr)} }
+  @media(max-width:520px){ .martis-ia .site-map,.martis-ia .shared-row{grid-template-columns:1fr} }
+</style>
+
+<div id="martis-information-architecture" class="martis-ia">
+  <h2>Arquitectura editorial e percurso de conversão</h2>
+  <p class="subtitle">O site deixa de ser uma montra de funcionalidades e passa a responder, por ordem, às perguntas que uma agência faz antes de adoptar uma base técnica.</p>
+
+  <div class="journey" aria-label="Percurso de conversão">
+    <div class="journey-step"><b>1 · Descoberta</b><span>“Existe uma alternativa open-source séria?”</span></div>
+    <div class="journey-step"><b>2 · Encaixe</b><span>“Serve o tipo de projectos que entregamos?”</span></div>
+    <div class="journey-step"><b>3 · Prova</b><span>Produto real, código real, 3 990 testes.</span></div>
+    <div class="journey-step"><b>4 · Comparação</b><span>Martis vs Nova vs Filament, com fontes e data.</span></div>
+    <div class="journey-step"><b>5 · Instalação</b><span>Composer → install → primeiro recurso.</span></div>
+  </div>
+
+  <div class="site-map" aria-label="Mapa das páginas principais">
+    <section class="page-column">
+      <div class="page-head">Home</div>
+      <ul class="page-items">
+        <li><strong>Hero</strong><br>Outcome + produto</li>
+        <li>Proof ribbon</li>
+        <li>Product cinema</li>
+        <li>Agency value</li>
+        <li>Comparison teaser</li>
+        <li>Install CTA</li>
+      </ul>
+    </section>
+    <section class="page-column">
+      <div class="page-head">Product</div>
+      <ul class="page-items">
+        <li>Interactive tour</li>
+        <li>Code → interface</li>
+        <li>Resources & forms</li>
+        <li>Operations</li>
+        <li>Auth & security</li>
+        <li>Overrides</li>
+      </ul>
+    </section>
+    <section class="page-column">
+      <div class="page-head">For Agencies</div>
+      <ul class="page-items">
+        <li>No project licence</li>
+        <li>Reusable foundation</li>
+        <li>Client branding</li>
+        <li>Extension model</li>
+        <li>Delivery workflow</li>
+        <li>Agency CTA</li>
+      </ul>
+    </section>
+    <section class="page-column">
+      <div class="page-head">Compare</div>
+      <ul class="page-items">
+        <li><strong>Overview matrix</strong></li>
+        <li>Martis vs Nova</li>
+        <li>Martis vs Filament</li>
+        <li>Methodology</li>
+        <li>Dated sources</li>
+        <li>Correction link</li>
+      </ul>
+    </section>
+    <section class="page-column">
+      <div class="page-head">Docs</div>
+      <ul class="page-items">
+        <li>Quick start path</li>
+        <li>Search / Cmd K</li>
+        <li>Task-based nav</li>
+        <li>Readable content</li>
+        <li>Code actions</li>
+        <li>Version context</li>
+      </ul>
+    </section>
+    <section class="page-column">
+      <div class="page-head">Changelog</div>
+      <ul class="page-items">
+        <li>Release narrative</li>
+        <li>Version filters</li>
+        <li>Upgrade notes</li>
+        <li>RSS-ready feed</li>
+        <li>GitHub release links</li>
+      </ul>
+    </section>
+  </div>
+
+  <section class="shared-system">
+    <h3>Prova partilhada em todo o site</h3>
+    <div class="shared-row">
+      <div class="shared-item"><b>Live downloads</b><span>Packagist total, actualizado no build e datado.</span></div>
+      <div class="shared-item"><b>Engineering proof</b><span>Testes, campos, relações, tokens e compatibilidade.</span></div>
+      <div class="shared-item"><b>Real product media</b><span>Capturas do Playground, clips curtos e código correspondente.</span></div>
+      <div class="shared-item"><b>One conversion</b><span>Todos os caminhos terminam na instalação, não em CTAs concorrentes.</span></div>
+    </div>
+  </section>
+
+  <div class="principle"><strong>Princípio editorial:</strong> cada afirmação de marketing tem uma prova adjacente — imagem, exemplo de código, estatística verificável ou documentação.</div>
+</div>

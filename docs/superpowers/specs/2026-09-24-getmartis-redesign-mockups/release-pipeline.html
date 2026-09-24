@@ -1,0 +1,52 @@
+<style>
+  .martis-release{--mr-blue:#7187ff;--mr-violet:#a674ff;--mr-green:#56c98b;--mr-red:#ef7272;--mr-line:color-mix(in srgb,var(--foreground) 16%,transparent)}
+  .martis-release .phase{margin:22px 0 30px}.martis-release .phase-head{display:flex;align-items:center;gap:10px;margin-bottom:12px}.martis-release .phase-no{display:grid;place-items:center;width:28px;height:28px;border-radius:50%;background:var(--mr-blue);color:white;font-weight:500}.martis-release .phase-title{font-weight:500}.martis-release .phase-title small{display:block;color:var(--muted-foreground);font-weight:400;margin-top:2px}
+  .martis-release .pipeline{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;align-items:stretch}.martis-release .node{position:relative;padding:13px 11px;min-height:104px;background:color-mix(in srgb,var(--muted) 46%,transparent);border-top:2px solid var(--mr-blue)}.martis-release .node:not(:last-child):after{content:'→';position:absolute;right:-10px;top:38px;z-index:2;color:var(--muted-foreground)}.martis-release .node b{display:block;margin-bottom:6px;font-weight:500}.martis-release .node span{display:block;color:var(--muted-foreground);font-size:12px;line-height:1.35}.martis-release .node.gate{border-top-color:var(--mr-green)}.martis-release .node.final{border-top-color:var(--mr-violet)}
+  .martis-release .sources{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:14px}.martis-release .source{padding:12px;border-left:2px solid var(--mr-violet);background:color-mix(in srgb,var(--muted) 42%,transparent)}.martis-release .source b{display:block;font-weight:500;margin-bottom:4px}.martis-release .source span{color:var(--muted-foreground);font-size:12px;line-height:1.35}
+  .martis-release .guards{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:22px}.martis-release .guard{padding:15px;border-top:2px solid var(--mr-green);background:color-mix(in srgb,var(--muted) 40%,transparent)}.martis-release .guard.fail{border-top-color:var(--mr-red)}.martis-release .guard h3{margin:0 0 8px}.martis-release .guard ul{margin:0;padding-left:18px;color:var(--muted-foreground);font-size:12px;line-height:1.5}
+  .martis-release .daily{margin-top:22px;padding:14px 16px;border-left:3px solid var(--mr-blue)}
+  @media(max-width:900px){.martis-release .pipeline{grid-template-columns:1fr}.martis-release .node:not(:last-child):after{content:'↓';right:13px;top:auto;bottom:-13px}.martis-release .sources{grid-template-columns:repeat(2,1fr)}}
+  @media(max-width:520px){.martis-release .sources,.martis-release .guards{grid-template-columns:1fr}}
+</style>
+
+<div id="martis-release-pipeline" class="martis-release">
+  <h2>Release e site tornam-se um único contrato</h2>
+  <p class="subtitle">A tag só pode nascer quando o site estiver sincronizado, validado e associado ao mesmo commit do pacote.</p>
+
+  <section class="phase">
+    <div class="phase-head"><span class="phase-no">1</span><div class="phase-title">Prepare release site <small>Cria um PR no martis-docs; não cria a tag.</small></div></div>
+    <div class="pipeline">
+      <div class="node"><b>Validate package</b><span>Versão, CHANGELOG, release branch, build e CI verdes.</span></div>
+      <div class="node"><b>Sync content</b><span>Porta docs do pacote e detecta qualquer página desactualizada.</span></div>
+      <div class="node"><b>Generate release data</b><span>Versão, headline, requisitos, totais de testes e commit de origem.</span></div>
+      <div class="node"><b>Refresh product media</b><span>Playground seeded → capturas canónicas em desktop e mobile.</span></div>
+      <div class="node gate"><b>Open docs PR</b><span>Build, links, visual regression, a11y e freshness da comparação.</span></div>
+    </div>
+  </section>
+
+  <section class="phase">
+    <div class="phase-head"><span class="phase-no">2</span><div class="phase-title">Publish release <small>Executado apenas depois do PR do site estar aprovado e merged.</small></div></div>
+    <div class="pipeline">
+      <div class="node gate"><b>Cross-repo gate</b><span>O manifest do site aponta para a versão e SHA exactos do package main.</span></div>
+      <div class="node"><b>Build immutable site</b><span>Docs, search index, comparação e dados públicos num único dist.</span></div>
+      <div class="node"><b>Create tag + release</b><span>Tag no merge commit verificado; notas extraídas do CHANGELOG.</span></div>
+      <div class="node"><b>Deploy same dist</b><span>Publicação Hostinger sem reconstruir artefactos diferentes.</span></div>
+      <div class="node final"><b>Production proof</b><span>Smoke de rotas, versão, contador, assets, docs e comparação.</span></div>
+    </div>
+  </section>
+
+  <h3>Fontes geradas, nunca duplicadas à mão</h3>
+  <div class="sources">
+    <div class="source"><b>Package manifest</b><span>Versão, requisitos e SHA vêm do package.json/composer.json.</span></div>
+    <div class="source"><b>Release evidence</b><span>Headline e notas vêm da secção correspondente do CHANGELOG.</span></div>
+    <div class="source"><b>Test reports</b><span>Totais Pest + Vitest vêm de relatórios machine-readable do CI.</span></div>
+    <div class="source"><b>Packagist</b><span>Downloads total/mês/dia actualizados no build, com timestamp e fallback.</span></div>
+  </div>
+
+  <div class="guards">
+    <section class="guard"><h3>A tag é permitida quando…</h3><ul><li>package e site estão limpos e em main;</li><li>o manifest do site corresponde ao SHA da release;</li><li>sync, build, links, screenshots e acessibilidade passam;</li><li>a comparação foi revista dentro do prazo definido;</li><li>o dist final tem checksum registado.</li></ul></section>
+    <section class="guard fail"><h3>A tag é recusada quando…</h3><ul><li>há versão ou documentação em drift;</li><li>os totais de testes foram editados manualmente;</li><li>faltam capturas obrigatórias após mudança visual;</li><li>uma fonte da comparação está indisponível ou expirada;</li><li>o site não passa o smoke local de release.</li></ul></section>
+  </div>
+
+  <div class="daily"><strong>Entre releases:</strong> um workflow diário actualiza apenas o snapshot de downloads do Packagist e volta a publicar se o número mudou. O site mostra “updated …” e nunca depende da API no browser do visitante.</div>
+</div>
