@@ -1,8 +1,9 @@
 import { lazy, Suspense, type ComponentType, type ReactElement } from 'react'
-import { matchRoutes, useRoutes } from 'react-router-dom'
+import { matchPath, matchRoutes, useLocation, useRoutes } from 'react-router-dom'
 import { LoadingScreen } from '@/components/LoadingScreen'
 import { DocumentMeta } from '@/components/site/DocumentMeta'
 import { CmdKProvider } from '@/lib/cmdk-context'
+import { docSlugFromSplat, hasMdx } from '@/lib/mdx-loader'
 
 /** `lazy()` that keeps its import factory as `preload`, so the page's chunk
  *  can be fetched before the page renders. */
@@ -20,8 +21,26 @@ const NotFound = lazyPage(() => import('@/pages/NotFound'))
 interface PageRoute {
   path: string
   element: ReactElement
-  /** Imports the chunk of the page `element` renders. */
-  preload: () => Promise<unknown>
+  /** Imports the chunk(s) `pathname` needs before this route renders it. */
+  preload: (pathname: string) => Promise<unknown>
+}
+
+/** Whether `pathname` is a `/docs` URL this site can actually render: the
+ *  index or a slug with a registered MDX module. The boundary between the
+ *  docs shell and the global not-found page for `/docs/*` — an unmatched
+ *  slug must render identical markup to any other unknown URL (see
+ *  `DocsOrNotFound`), so Apache's static `404.html` and a client-side
+ *  hydration at that same URL never disagree. */
+function isKnownDocsPath(pathname: string): boolean {
+  const slug = docSlugFromSplat(matchPath('/docs/*', pathname)?.params['*'])
+  return slug === '' || hasMdx(slug)
+}
+
+/** Element for `/docs/*`: the docs shell for the index and every known
+ *  slug, the global not-found page for anything else. */
+function DocsOrNotFound() {
+  const { pathname } = useLocation()
+  return isKnownDocsPath(pathname) ? <Docs /> : <NotFound />
 }
 
 // The route table, read by both `PageRoutes` and `preloadRoute` so they
@@ -96,7 +115,11 @@ const PAGE_ROUTES: PageRoute[] = [
     ),
     preload: ProvisionalPage.preload,
   },
-  { path: '/docs/*', element: <Docs />, preload: Docs.preload },
+  {
+    path: '/docs/*',
+    element: <DocsOrNotFound />,
+    preload: (pathname) => (isKnownDocsPath(pathname) ? Docs.preload() : NotFound.preload()),
+  },
   { path: '*', element: <NotFound />, preload: NotFound.preload },
 ]
 
@@ -126,5 +149,5 @@ export function App() {
  */
 export function preloadRoute(pathname: string): Promise<unknown> {
   const [match] = matchRoutes(PAGE_ROUTES, pathname) ?? []
-  return match ? match.route.preload() : Promise.resolve()
+  return match ? match.route.preload(pathname) : Promise.resolve()
 }

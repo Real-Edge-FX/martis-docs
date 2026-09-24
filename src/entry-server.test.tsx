@@ -63,7 +63,18 @@ describe('status and head', () => {
   it('answers 404 for a docs slug with no page', async () => {
     const { html, status } = await render('/docs/core/not-a-page')
     expect(status).toBe(404)
-    expect(firstHeading(html)).toBe('Doc not found')
+    expect(firstHeading(html)).toBe('Lost in the docs.')
+  })
+
+  it('renders an unknown docs slug identically to any other unknown URL', async () => {
+    // Apache serves the same static dist/404.html for every unmatched
+    // path, including one under /docs/: the markup for all three must
+    // be byte-identical, or the client hydrates over different server
+    // HTML than what was actually served (React hydration errors #418
+    // and #422).
+    const notFound = await render('/404')
+    expect((await render('/docs/does-not-exist')).html).toBe(notFound.html)
+    expect((await render('/no/such/page')).html).toBe(notFound.html)
   })
 
   it('ignores the query string and hash when resolving the route', async () => {
@@ -137,6 +148,20 @@ it('rejects when a page throws, instead of resolving with a client-only fallback
   try {
     const { render: renderWithBrokenPage } = await import('./entry-server')
     await expect(renderWithBrokenPage('/missing')).rejects.toThrow('page exploded')
+  } finally {
+    vi.doUnmock('@/pages/NotFound')
+    vi.resetModules()
+  }
+})
+
+it('rejects within the timeout when a lazy import never resolves, instead of hanging', async () => {
+  vi.resetModules()
+  // A page whose dynamic import never settles: no throw, no resolve.
+  // Without a timeout, `render` would wait for it forever.
+  vi.doMock('@/pages/NotFound', () => new Promise(() => {}))
+  try {
+    const { render: renderWithHangingPage } = await import('./entry-server')
+    await expect(renderWithHangingPage('/missing', 50)).rejects.toThrow(/did not complete within 50ms/)
   } finally {
     vi.doUnmock('@/pages/NotFound')
     vi.resetModules()

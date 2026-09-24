@@ -10,7 +10,7 @@ import { DocsPagination } from '@/components/docs/Pagination'
 import { LoadingScreen } from '@/components/LoadingScreen'
 import { mdxComponents } from '@/components/docs/MdxComponents'
 import { DOC_NAV } from '@/lib/docs-tree'
-import { docSlugFromSplat, hasMdx, loadMdx } from '@/lib/mdx-loader'
+import { docSlugFromSplat, loadMdx } from '@/lib/mdx-loader'
 import { useInitialDocument } from '@/lib/render-context'
 
 /**
@@ -70,6 +70,9 @@ function DocsIndex() {
 function DocPage() {
   const params = useParams<{ '*': string }>()
   const { hash } = useLocation()
+  // `App`'s `/docs/*` route only ever mounts `Docs` for the index or a
+  // slug with a registered MDX module (see `isKnownDocsPath`), so `slug`
+  // here always resolves to a real page.
   const slug = docSlugFromSplat(params['*'])
   // The page the app first rendered (on the server, or before hydrating)
   // comes resolved from `RenderProvider`, so it renders on the first pass;
@@ -79,7 +82,6 @@ function DocPage() {
   const [Component, setComponent] = useState<ComponentType | null>(
     () => initialModule?.default ?? null,
   )
-  const notFound = slug !== '' && !hasMdx(slug)
 
   // A fresh slug means a fresh MDX module: swap it during render (before
   // this paints) so a stale page is never shown under the new URL while
@@ -127,10 +129,6 @@ function DocPage() {
     window.scrollTo({ top: 0 })
   }, [slug, hash])
 
-  if (notFound) {
-    return <DocNotFound slug={slug} />
-  }
-
   if (!Component) {
     return (
       <main className="flex-1 min-w-0 py-12">
@@ -152,22 +150,5 @@ function DocPage() {
       </main>
       <Toc slug={slug} />
     </>
-  )
-}
-
-function DocNotFound({ slug }: { slug: string }) {
-  return (
-    <main className="flex-1 min-w-0 py-12">
-      <h1 className="text-3xl font-medium text-white tracking-tight">Doc not found</h1>
-      <p className="mt-3 text-ink-200">
-        No MDX file is registered at <code>/src/content/{slug}.mdx</code>.
-      </p>
-      <Link
-        to="/docs"
-        className="mt-6 inline-flex items-center gap-2 h-9 px-4 rounded-lg btn-primary text-white text-[13px]"
-      >
-        Back to docs
-      </Link>
-    </main>
   )
 }

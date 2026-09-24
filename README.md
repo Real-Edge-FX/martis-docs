@@ -12,7 +12,7 @@ Live at **https://martis-docs.realedgefx.com**.
 - **react-router-dom v6** — `/` (landing) and `/docs/*` (docs shell with sidebar/TOC).
 - **Cmd+K palette** — static index built from `DOC_NAV` plus a JSON full-text index over the MDX bodies, generated at build time.
 
-No Astro, no SSG, no server runtime. Caddy serves `dist/` as static files; the SPA boots from `index.html` and lazy-loads each doc as its own JS chunk.
+No Astro, no server runtime at request time. `pnpm build` prerenders every public route to static HTML (see Build below), so each page ships real markup, `<title>`, description, canonical and Open Graph tags without running JavaScript first. Apache/LiteSpeed serves `dist/` as static files; every page then hydrates the same SPA shell and lazy-loads its own JS chunk.
 
 ## Development
 
@@ -29,13 +29,18 @@ Open <http://localhost:5173>. The dev script first regenerates `public/search-in
 pnpm build
 ```
 
-Outputs to `dist/`. The build runs:
+Outputs to `dist/`. The build chains four steps:
 
-1. `node scripts/build-search-index.mjs` — builds `public/search-index.json` from the MDX bodies.
-2. `tsc -b` — type-checks `src/`.
-3. `vite build` — produces the static bundle in `dist/`.
+1. `pnpm build-search` (`node scripts/build-search-index.mjs`) — builds `public/search-index.json` from the MDX bodies.
+2. `pnpm build:client` (`vite build`) — produces the client bundle and `dist/index.html`, the template every prerendered page starts from.
+3. `pnpm build:ssr` (`vite build --config vite.ssr.config.ts`) — compiles `src/entry-server.tsx` to `dist-ssr/entry-server.js`, a Node-executable module exporting `render(url)` plus `PUBLIC_ROUTES`, `getRouteMeta` and `SITE_URL`.
+4. `pnpm prerender` (`node scripts/prerender.mjs`) — calls `render()` for every route in `PUBLIC_ROUTES` and writes each as static HTML: `dist/index.html`, `dist/<route>/index.html` per route, `dist/404.html` for the not-found page, plus `dist/sitemap.xml` (indexable routes only) and `dist/robots.txt`.
 
-`pnpm preview` serves the built site at <http://localhost:4173>.
+Type-checking is a separate gate, not part of `build`: run `pnpm typecheck` (`tsc -b`) yourself, or let CI run it.
+
+`pnpm test:prerender` (`node scripts/prerender.test.mjs`) is a fast smoke test over the files a `pnpm build` just produced: every expected file exists, and a sample page carries real content and its canonical tag.
+
+`pnpm preview` serves the built site at <http://localhost:4173>, but it falls back to the root `index.html` for any unmatched path (Vite's SPA default) — visiting a deep route without a trailing slash (`/docs`, not `/docs/`) serves the wrong prerendered page there and can show hydration warnings that do not reflect a real bug. Apache does not have this quirk (it resolves a directory request to its `index.html`, per `public/.htaccess`). To verify a specific route's own prerendered HTML locally, request it with a trailing slash, or serve `dist/` with a plain static file server instead.
 
 ## Content sync
 

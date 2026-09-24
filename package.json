@@ -6,14 +6,18 @@
   "description": "Documentation site for the Martis admin engine — martis-docs.realedgefx.com",
   "scripts": {
     "dev": "node scripts/build-search-index.mjs && vite",
-    "build": "node scripts/build-search-index.mjs && tsc -b && vite build",
+    "build:client": "vite build",
+    "build:ssr": "vite build --config vite.ssr.config.ts",
+    "prerender": "node scripts/prerender.mjs",
+    "build": "pnpm build-search && pnpm build:client && pnpm build:ssr && pnpm prerender",
     "preview": "vite preview --port 4173",
     "sync-docs": "node scripts/sync-docs.mjs",
     "build-search": "node scripts/build-search-index.mjs",
     "lint": "eslint . --max-warnings=0",
     "typecheck": "tsc -b",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "test:prerender": "node scripts/prerender.test.mjs"
   },
   "dependencies": {
     "@mdx-js/react": "^3.1.0",
