@@ -20,7 +20,7 @@ export interface RouteMeta {
 /** The `/404` entry, returned by `getRouteMeta` for any unmatched path. Defined
  *  separately (rather than picked out of `ROUTE_META` by position) so the
  *  fallback does not depend on where `/404` sits in the list below. */
-const NOT_FOUND_META: RouteMeta = {
+export const NOT_FOUND_META: RouteMeta = {
   path: '/404',
   title: 'Page not found · Martis',
   description: 'This page does not exist. Head back to the Martis homepage or browse the documentation.',

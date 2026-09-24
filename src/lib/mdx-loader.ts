@@ -1,6 +1,7 @@
 import type { ComponentType } from 'react'
 
-interface MdxModule {
+/** A compiled MDX page: its React component plus the frontmatter export. */
+export interface MdxModule {
   default: ComponentType
   frontmatter?: {
     title?: string
@@ -24,6 +25,12 @@ for (const [path, loader] of Object.entries(modules)) {
     // Treat `/index` as the parent slug — `core/index.mdx` ⇒ `core`.
     .replace(/\/index$/, '')
   bySlug[slug] = loader
+}
+
+/** Turns the `/docs/*` route splat (`getting-started/installation/`) into a slug
+ *  (`getting-started/installation`) by trimming leading and trailing slashes. */
+export function docSlugFromSplat(splat: string | undefined): string {
+  return (splat ?? '').replace(/^\/+|\/+$/g, '')
 }
 
 export function loadMdx(slug: string): Promise<MdxModule> | null {
