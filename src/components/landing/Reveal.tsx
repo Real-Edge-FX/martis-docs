@@ -1,5 +1,6 @@
 import { type ReactNode } from 'react'
-import { motion, useReducedMotion, type Variants } from 'motion/react'
+import { motion, type Variants } from 'motion/react'
+import { usePrefersReducedMotion } from '@/hooks/usePrefersReducedMotion'
 
 type RevealVariant = 'up' | 'fade' | 'scale'
 
@@ -50,7 +51,7 @@ export function Reveal({
   staggerGap = 0.08,
   as = 'div',
 }: RevealProps) {
-  const reduce = useReducedMotion()
+  const reduce = usePrefersReducedMotion()
   const MotionTag = motion[as]
 
   if (reduce) {
@@ -98,7 +99,7 @@ interface RevealItemProps {
 
 /** A single item inside a staggered `<Reveal stagger>` container. */
 export function RevealItem({ children, className, variant = 'up', as = 'div' }: RevealItemProps) {
-  const reduce = useReducedMotion()
+  const reduce = usePrefersReducedMotion()
   const MotionTag = motion[as]
 
   if (reduce) {

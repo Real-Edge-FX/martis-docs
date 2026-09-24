@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { motion, useReducedMotion, useScroll, useTransform } from 'motion/react'
+import { motion, useScroll, useTransform } from 'motion/react'
+import { usePrefersReducedMotion } from '@/hooks/usePrefersReducedMotion'
 import { Icons } from '@/components/icons'
 import {
   loadReleaseManifest,
@@ -31,7 +32,7 @@ const HEAD_WORDS: { t: string; em?: boolean }[] = [
 
 export function Hero() {
   const [copied, setCopied] = useState(false)
-  const reduce = useReducedMotion()
+  const reduce = usePrefersReducedMotion()
   const heroRef = useRef<HTMLDivElement | null>(null)
 
   const { scrollYProgress } = useScroll({

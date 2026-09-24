@@ -11,9 +11,8 @@ afterEach(() => {
 // none of them, so any browser-global access during a server render fails
 // there instead of silently hitting a stub.
 if (typeof window !== 'undefined') {
-  // jsdom does not implement matchMedia. `useReducedMotion` (from `motion`)
-  // and the manual `prefers-reduced-motion` check in `useCountUp` both call
-  // it on mount.
+  // jsdom does not implement matchMedia. `usePrefersReducedMotion` and
+  // `useCountUp`'s effect both read `prefers-reduced-motion` through it.
   vi.stubGlobal(
     'matchMedia',
     vi.fn().mockImplementation((query: string) => ({

@@ -6,6 +6,7 @@
 // are covered.
 
 export const HYDRATION_URLS = [
+  '/',
   '/docs/getting-started/installation',
   '/for-agencies',
   // Server HTML for an unknown docs URL is the /404 render (see

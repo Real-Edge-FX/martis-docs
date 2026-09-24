@@ -1,6 +1,7 @@
 // @vitest-environment node
 import { readFileSync } from 'node:fs'
 import { afterEach, beforeEach, describe, expect, it, vi, type MockInstance } from 'vitest'
+import { STATS } from '@/data/landing'
 import { DOC_NAV } from '@/lib/docs-tree'
 import { serializeMeta } from '@/lib/seo'
 import { getRouteMeta, PUBLIC_ROUTES } from '@/lib/site-routes'
@@ -134,6 +135,14 @@ describe('provisional marketing pages', () => {
     expect(firstHeading(html)).toBe(heading)
     expect(html).toMatch(/<a [^>]*href="\/docs\/getting-started\/installation"[^>]*>Install Martis<\/a>/)
   })
+})
+
+it('renders the real value of every landing stat, not the count-up start', async () => {
+  const { html } = await render('/')
+  expect(STATS).toHaveLength(4)
+  for (const { n } of STATS) {
+    expect(html).toContain(`tabular-nums">${n}</div>`)
+  }
 })
 
 it('renders the docs index as a list of every docs page', async () => {

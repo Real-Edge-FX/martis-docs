@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react'
-import { useReducedMotion } from 'motion/react'
+import { usePrefersReducedMotion } from '@/hooks/usePrefersReducedMotion'
 
 /**
  * Animated aurora backdrop for the hero.
@@ -80,7 +80,7 @@ function compile(gl: WebGLRenderingContext, type: number, src: string) {
 
 export function AuroraBackdrop({ className = '' }: { className?: string }) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null)
-  const reduce = useReducedMotion()
+  const reduce = usePrefersReducedMotion()
 
   useEffect(() => {
     if (reduce) return

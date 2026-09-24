@@ -7,28 +7,24 @@ import { useEffect, useRef, useState } from 'react'
  * `display` as the number. Non-digit characters in the target (commas, `+`,
  * `k`) are preserved so labels like `1,653` animate as `1,653`.
  *
- * Honours `prefers-reduced-motion`: when set, the final value renders
- * immediately with no animation.
+ * `display` starts as `target` itself, so the server HTML, a reader
+ * without JavaScript and the first (hydrating) client render all show the
+ * real number. The count only starts in an effect, after hydration, when
+ * the element comes into view; under `prefers-reduced-motion` it never
+ * starts.
  */
 export function useCountUp(target: string, durationMs = 1400) {
   const ref = useRef<HTMLElement | null>(null)
-  const [display, setDisplay] = useState('0')
+  const [display, setDisplay] = useState(target)
   const done = useRef(false)
 
-  // Parse the numeric portion up front. Targets with no countable number
-  // (or the literal `0`), and targets rendered under
-  // `prefers-reduced-motion`, have nothing to animate, so `display` just
-  // mirrors `target` directly instead of being synced from an effect.
   const numeric = Number(target.replace(/[^0-9.]/g, ''))
   const isCountable = Number.isFinite(numeric) && numeric !== 0
-  const reduce =
-    typeof window !== 'undefined' &&
-    window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
-  const shouldAnimate = isCountable && !reduce
 
   useEffect(() => {
     const el = ref.current
-    if (!el || !shouldAnimate) return
+    if (!el || !isCountable) return
+    if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return
 
     // Remember how to re-format the counted value.
     const hasComma = target.includes(',')
@@ -46,10 +42,10 @@ export function useCountUp(target: string, durationMs = 1400) {
         const t = Math.min((now - start) / durationMs, 1)
         // easeOutCubic
         const eased = 1 - Math.pow(1 - t, 3)
-        setDisplay(format(numeric * eased))
+        setDisplay(t < 1 ? format(numeric * eased) : target)
         if (t < 1) requestAnimationFrame(tick)
-        else setDisplay(target)
       }
+      setDisplay(format(0))
       requestAnimationFrame(tick)
     }
 
@@ -66,7 +62,7 @@ export function useCountUp(target: string, durationMs = 1400) {
     )
     io.observe(el)
     return () => io.disconnect()
-  }, [target, durationMs, shouldAnimate, numeric])
+  }, [target, durationMs, isCountable, numeric])
 
-  return [ref, shouldAnimate ? display : target] as const
+  return [ref, display] as const
 }
