@@ -9,7 +9,7 @@ import type { IconName } from '@/components/icons'
  * status line (components/landing/Hero.tsx) and the stat strip both
  * read it, so a count bump lands everywhere the landing page shows it.
  */
-export const TESTS_PASSING = '3,990'
+export const TESTS_PASSING = '4,057'
 
 /**
  * Runtime requirements from martis-package's composer.json, shown in the
@@ -168,7 +168,7 @@ class SendInvoice extends Action
 
 export type CodeSampleKey = keyof typeof CODE_SAMPLES
 
-export const VERSION = 'v1.39.0'
+export const VERSION = 'v1.39.1'
 
 /**
  * One-line headline shown alongside VERSION in the landing-page
@@ -177,4 +177,4 @@ export const VERSION = 'v1.39.0'
  * the tag actually ships. Keep under ~60 chars so the badge stays on
  * one line on common desktop widths.
  */
-export const RELEASE_HEADLINE = 'PrimeReact theme reads the Martis tokens'
+export const RELEASE_HEADLINE = 'Callable config keys take an invokable class name'
