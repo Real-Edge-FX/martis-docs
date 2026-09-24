@@ -41,3 +41,58 @@ describe('client hydration reuses the server markup', () => {
     expect(hasReactFiber(serverMain!)).toBe(true)
   })
 })
+
+describe('docs scroll handling', () => {
+  const docsUrl = '/docs/getting-started/installation'
+  let scrollIntoView: MockInstance<Element['scrollIntoView']>
+
+  beforeEach(() => {
+    vi.mocked(window.scrollTo).mockClear()
+    // jsdom does not implement scrollIntoView.
+    const stub = vi.fn<Element['scrollIntoView']>()
+    Element.prototype.scrollIntoView = stub
+    scrollIntoView = stub
+  })
+
+  afterEach(() => {
+    delete (Element.prototype as Partial<Element>).scrollIntoView
+  })
+
+  /** Lets the requestAnimationFrame the hash scroll waits for run. */
+  const nextFrame = () => act(() => new Promise<void>((resolve) => requestAnimationFrame(() => resolve())))
+
+  // The browser has already placed the reader (at the top, at the hash
+  // target, or wherever they scrolled before the JavaScript arrived):
+  // hydrating must not move them.
+  it.each([docsUrl, `${docsUrl}#requirements`])('does not scroll while hydrating %s', async (url) => {
+    const { root } = await hydrateServerHtml(url, serverResults[docsUrl].html)
+    hydratedRoot = root
+    await nextFrame()
+
+    expect(window.scrollTo).not.toHaveBeenCalled()
+    expect(scrollIntoView).not.toHaveBeenCalled()
+  })
+
+  it('scrolls a newly opened page to the top, and to the hash target, after hydration', async () => {
+    const { root, container } = await hydrateServerHtml(docsUrl, serverResults[docsUrl].html)
+    hydratedRoot = root
+
+    const link = container.querySelector<HTMLAnchorElement>('a[href="/docs/getting-started/quick-start"]')
+    await act(async () => {
+      link!.click()
+    })
+    await vi.waitFor(() => expect(window.scrollTo).toHaveBeenCalledWith({ top: 0 }), { timeout: 10_000 })
+
+    await act(async () => {
+      window.history.pushState({}, '', `${docsUrl}#requirements`)
+      window.dispatchEvent(new PopStateEvent('popstate'))
+    })
+    await vi.waitFor(
+      async () => {
+        await nextFrame()
+        expect(scrollIntoView).toHaveBeenCalled()
+      },
+      { timeout: 10_000 },
+    )
+  }, 30_000)
+})

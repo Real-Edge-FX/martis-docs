@@ -1,4 +1,4 @@
-import { useEffect, useState, type ComponentType } from 'react'
+import { useEffect, useRef, useState, useSyncExternalStore, type ComponentType } from 'react'
 import { Routes, Route, useParams, useLocation, Link } from 'react-router-dom'
 import { MDXProvider } from '@mdx-js/react'
 import { TopBar } from '@/components/landing/TopBar'
@@ -67,6 +67,11 @@ function DocsIndex() {
   )
 }
 
+/** `useSyncExternalStore` subscription for a value that never changes. */
+function subscribeNever(): () => void {
+  return () => {}
+}
+
 function DocPage() {
   const params = useParams<{ '*': string }>()
   const { hash } = useLocation()
@@ -106,13 +111,25 @@ function DocPage() {
     }
   }, [slug, initialModule])
 
-  // After the MDX module mounts, honour the URL hash by scrolling to
-  // the matching heading. Without this, hitting `/docs/foo#bar` directly
-  // (or having React Router navigate via Link to a hashed URL) leaves
-  // the page at the top — the headings only get IDs once the article
-  // is rendered, so the browser's default scroll-to-hash misses them.
+  // The location this page was hydrated at, until the reader navigates
+  // away: the browser has already put them where they belong there (the
+  // top, the hash target, or wherever they scrolled before the JavaScript
+  // arrived), so neither scroll effect below may move them. A page that
+  // mounts after a client-side navigation was not hydrated, and scrolls.
+  const location = `${slug}${hash}`
+  const hydrating = useSyncExternalStore(subscribeNever, () => false, () => true)
+  const hydratedAt = useRef(hydrating ? location : null)
   useEffect(() => {
-    if (!Component || !hash) return
+    if (hydratedAt.current !== location) hydratedAt.current = null
+  }, [location])
+
+  // After the MDX module mounts, honour the URL hash by scrolling to
+  // the matching heading. Without this, a client-side navigation to a
+  // hashed URL leaves the page at the top: the headings only get IDs once
+  // the article is rendered, so the browser's own scroll-to-hash misses
+  // them.
+  useEffect(() => {
+    if (!Component || !hash || hydratedAt.current === location) return
     const id = hash.startsWith('#') ? hash.slice(1) : hash
     const el = document.getElementById(decodeURIComponent(id))
     if (el) {
@@ -120,14 +137,14 @@ function DocPage() {
         el.scrollIntoView({ behavior: 'auto', block: 'start' })
       })
     }
-  }, [Component, hash])
+  }, [Component, hash, location])
 
   // Slug change → scroll to top so a fresh page does not inherit the
   // previous page's scroll position. Skipped when there is a hash.
   useEffect(() => {
-    if (hash) return
+    if (hash || hydratedAt.current === location) return
     window.scrollTo({ top: 0 })
-  }, [slug, hash])
+  }, [slug, hash, location])
 
   if (!Component) {
     return (
