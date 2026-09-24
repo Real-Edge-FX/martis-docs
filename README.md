@@ -47,8 +47,17 @@ Type-checking is a separate gate, not part of `build`: run `pnpm typecheck` (`ts
 Most docs are mirrored from `martis-package/docs/*.md` so the site cannot drift from the package source. The mapping is declared explicitly in `scripts/sync-docs.mjs`:
 
 ```bash
-pnpm sync-docs           # copies + transforms package docs into src/content/
-pnpm sync-docs --check   # exits non-zero if any synced page is stale
+pnpm sync-docs                                # copies + transforms package docs into src/content/
+pnpm sync-docs --check                        # exits non-zero if any synced page is stale
+pnpm sync-docs --package-dir <path>           # read the package from somewhere other than ../martis-package
+MARTIS_PACKAGE_DIR=<path> pnpm sync-docs      # same, via environment variable
+```
+
+`--package-dir` (and `MARTIS_PACKAGE_DIR`) name the **martis-package repository root**, resolved against the current working directory, defaulting to the sibling checkout (`../martis-package`). This is what makes it possible to sync from a specific tag instead of the live checkout, which may carry unreleased work:
+
+```bash
+git -C ../martis-package archive <tag> docs | tar -x -C /tmp/pkg-docs
+pnpm sync-docs --check --package-dir /tmp/pkg-docs   # /tmp/pkg-docs/docs is what archive produced
 ```
 
 Run `--check` locally before opening a PR. It is not part of `.github/workflows/ci.yml` — that workflow only checks out this repo, and the check needs the sibling `martis-package` repo alongside it.
@@ -56,11 +65,14 @@ Run `--check` locally before opening a PR. It is not part of `.github/workflows/
 Each `.md` is rewritten into `.mdx` with:
 
 - a frontmatter block (title, description, sourcePath),
-- relative `[link](other.md)` rewritten to `/docs/<slug>`,
+- relative `[link](other.md)` (also `../other.md` from a page in a subfolder) rewritten to `/docs/<slug>`,
+- any other relative link target that still resolves inside the package repository — a source file, or a `docs/*.md` page deliberately left out of the sync (dev-only docs) — rewritten to `https://github.com/Real-Edge-FX/martis-package/blob/main/<path>` (`tree/main/<path>` for a directory target) instead, since a relative link to a package file works on GitHub but 404s once mirrored onto this site. `#anchors`, including line anchors like `#L10`, are kept. A target that would escape the package repository root entirely fails the sync loudly (file and line) rather than silently shipping a broken link.
 - self-closing void HTML (`<br>`, `<hr>`, `<img>`, ...) so MDX is happy,
 - escaped `{` outside fenced code blocks (avoid spurious JSX expressions).
 
-A few pages (`getting-started/quick-start.mdx`, `getting-started/troubleshooting.mdx`, `reference/api.mdx`) are hand-authored: they live only in this repo because the package source has no equivalent.
+`--check` also guards against a relative link/image target or a relative `href`/`src` in inline HTML anywhere under `src/content/` — synced pages and hand-authored ones alike, since a hand-authored `.mdx` is never fed through the rewriting above and can carry a raw relative link of its own. Any survivor is reported as `file:line` and fails the check.
+
+A few pages (`getting-started/quick-start.mdx`, `getting-started/troubleshooting.mdx`, `auth/roles.mdx`, `core/gates.mdx`) are hand-authored: they live only in this repo because the package source has no equivalent, or because the site intentionally diverges from it.
 
 ## Project layout
 

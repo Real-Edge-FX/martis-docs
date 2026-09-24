@@ -8,18 +8,40 @@
 //     `release-process.md` / `v1-roadmap.md` / etc. that are dev-only).
 //
 // Run from the docs repo root:
-//   pnpm sync-docs           # copies + transforms
-//   pnpm sync-docs --check   # exits non-zero if anything is stale
+//   pnpm sync-docs                              # copies + transforms
+//   pnpm sync-docs --check                      # exits non-zero if anything is stale
+//   pnpm sync-docs --package-dir <path>          # read the package from elsewhere
+//   MARTIS_PACKAGE_DIR=<path> pnpm sync-docs     # same, via env var
+//
+// `--package-dir` (and MARTIS_PACKAGE_DIR) name the martis-package
+// *repository root*, resolved against the current working directory —
+// not the docs/ subfolder itself — so it defaults to the sibling checkout
+// this repo normally sits next to (`../martis-package`) and also accepts
+// a `git archive <tag> docs | tar -x -C <dir>` extraction (pass `<dir>`;
+// the archive recreates `<dir>/docs/*.md` underneath it, same layout as
+// a real checkout's docs/ subfolder).
 //
 // Transformations applied to each .md → .mdx:
 //   1. Frontmatter block prepended (title, description, sourcePath).
 //   2. Relative `[link](other.md)` (also `../other.md` from a page in a
 //      subfolder) rewritten to `/docs/<slug>`.
-//   3. `<` and `{` outside fenced blocks escaped so JSX does not eat
+//   3. Any other relative link target that still resolves inside the
+//      package repository (source files, dev-only docs excluded from
+//      the maps below) rewritten to a `github.com/.../blob|tree/main/...`
+//      URL instead — a relative link to a package file works on GitHub
+//      but 404s once mirrored onto this site.
+//   4. `<` and `{` outside fenced blocks escaped so JSX does not eat
 //      them. (MDX is strict about `{` and tag-like sequences.)
 //
 // The script is intentionally synchronous and dependency-free so it
 // can be invoked from CI without reaching for esbuild/sucrase.
+//
+// The pure pieces below (rewriteLinks, findRelativeLinkOffenders,
+// parseArgs) are exported for scripts/sync-docs-unit.test.mjs. Importing
+// this module never touches the filesystem or calls process.exit as a
+// side effect: every side-effecting step (reading/writing src/content/,
+// reading the package docs, the MDX compile check) runs inside main(),
+// which only runs behind the is-entry-point guard at the bottom.
 
 import fs from 'node:fs'
 import path from 'node:path'
@@ -31,13 +53,15 @@ import remarkGfm from 'remark-gfm'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const ROOT = path.resolve(__dirname, '..')
-const PACKAGE_DOCS = path.resolve(
-  ROOT,
-  '..',
-  'martis-package',
-  'docs',
-)
 const CONTENT_DIR = path.resolve(ROOT, 'src', 'content')
+
+// Default martis-package repository root, relative to the current working
+// directory (see the header comment and parseArgs below).
+const DEFAULT_PACKAGE_DIR = path.join('..', 'martis-package')
+
+// Where an in-repo, non-docs-page relative link is sent. One constant so
+// the org/repo/branch triple can't drift between call sites.
+const PACKAGE_REPO_URL = 'https://github.com/Real-Edge-FX/martis-package'
 
 // slug → package source filename. Keep in sync with `docs-tree.ts`.
 // Slugs not listed here remain "to be authored" and stay as
@@ -107,23 +131,60 @@ const INVERSE = Object.fromEntries(
   Object.entries({ ...LINK_ONLY, ...MAP }).map(([slug, file]) => [file, slug]),
 )
 
-const isCheckMode = process.argv.includes('--check')
+// A relative link target we never touch: an absolute URL (any scheme,
+// including mailto:), a site-absolute path, or a pure same-page anchor.
+function isSkippableTarget(target) {
+  return /^[a-z][a-z0-9+.-]*:/i.test(target) || target.startsWith('/') || target.startsWith('#')
+}
 
-function rewriteLinks(md, sourceFile) {
-  // [text](file.md), [text](../file.md) or [text](dir/file.md#anchor)
-  // → [text](/docs/<slug>#anchor). The target resolves against the
-  // folder of the page that links it (`sourceFile` is relative to the
-  // package docs), so `api/overview.md` can link `../fields.md`.
+function splitAnchor(target) {
+  const hashIndex = target.indexOf('#')
+  return hashIndex === -1
+    ? { targetPath: target, anchor: '' }
+    : { targetPath: target.slice(0, hashIndex), anchor: target.slice(hashIndex) }
+}
+
+function lineAt(text, index) {
+  return text.slice(0, index).split('\n').length
+}
+
+// [text](target) — target excludes whitespace and an unescaped `)`,
+// which the whole corpus of package docs satisfies (no titled links).
+// Matches an image's `![alt](target)` too (the `!` sits outside the
+// capture groups), which is fine: the skip/resolve rules are identical.
+const LINK_RE = /\[([^\]]+)\]\(([^)\s]+)\)/g
+
+export function rewriteLinks(md, sourceFile) {
+  // Every relative target resolves against the folder the *package repo*
+  // sees the linking page in (`docs/<sourceFile>`, not just `<sourceFile>`
+  // on its own), so a link that climbs out of docs/ (`../src/...`,
+  // `../resources/...`) still resolves to the right package-relative path.
   const sourceDir = path.posix.dirname(sourceFile)
-  return md.replace(
-    /\[([^\]]+)\]\(((?:\.{1,2}\/)*(?:[a-z0-9_-]+\/)*[a-z0-9_-]+)\.md(#[a-z0-9_-]+)?\)/gi,
-    (whole, text, target, anchor) => {
-      const file = path.posix.normalize(path.posix.join(sourceDir, `${target}.md`))
-      const slug = INVERSE[file]
-      if (!slug) return whole // unmapped; leave the broken link visible
-      return `[${text}](/docs/${slug}${anchor ?? ''})`
-    },
-  )
+  return md.replace(LINK_RE, (whole, text, target, offset) => {
+    if (isSkippableTarget(target)) return whole
+
+    const { targetPath, anchor } = splitAnchor(target)
+    const packagePath = path.posix.normalize(path.posix.join('docs', sourceDir, targetPath))
+    if (packagePath === '..' || packagePath.startsWith('../')) {
+      throw new Error(
+        `${sourceFile}:${lineAt(md, offset)}: link target "${target}" escapes the package root`,
+      )
+    }
+
+    // A page we mirror to the site (MAP) or link only (LINK_ONLY): keep
+    // pointing at its slug, exactly as before.
+    if (packagePath.startsWith('docs/')) {
+      const slug = INVERSE[packagePath.slice('docs/'.length)]
+      if (slug) return `[${text}](/docs/${slug}${anchor})`
+    }
+
+    // Anything else that still resolves inside the package repository
+    // (a source file, or a docs/*.md page deliberately left out of
+    // MAP/LINK_ONLY): link straight at GitHub instead of leaving a
+    // relative path that 404s once this page ships on the site.
+    const kind = targetPath.endsWith('/') ? 'tree' : 'blob'
+    return `[${text}](${PACKAGE_REPO_URL}/${kind}/main/${packagePath}${anchor})`
+  })
 }
 
 // Self-closing void HTML elements that MDX rejects without a slash.
@@ -207,12 +268,14 @@ function deriveTitleAndDescription(md) {
   return { title, description }
 }
 
-function transform(slug, sourceFile) {
+// `relativeSource` is `file` from MAP (e.g. "fields.md", "api/overview.md")
+// — already the path relative to the package docs/ folder, so rewriteLinks
+// needs no access to where those docs were actually read from on disk.
+function transform(slug, sourceFile, relativeSource) {
   const md = fs.readFileSync(sourceFile, 'utf8')
   const { title, description } = deriveTitleAndDescription(md)
   // Strip the duplicated H1 (we render the title from frontmatter).
   const body = md.replace(/^#\s+.+?\s*$/m, '').trimStart()
-  const relativeSource = path.relative(PACKAGE_DOCS, sourceFile).split(path.sep).join('/')
   const transformed = escapeMdxHazards(rewriteLinks(body, relativeSource))
   const safeTitle = title.replace(/"/g, '\\"')
   const safeDesc = description.replace(/"/g, '\\"')
@@ -227,31 +290,6 @@ function transform(slug, sourceFile) {
     '',
   ].join('\n')
   return frontmatter + transformed + '\n'
-}
-
-let stale = 0
-let written = 0
-
-for (const [slug, file] of Object.entries(MAP)) {
-  const source = path.join(PACKAGE_DOCS, file)
-  if (!fs.existsSync(source)) {
-    console.error(`SKIP ${slug}: source missing (${source})`)
-    continue
-  }
-  const dest = path.join(CONTENT_DIR, `${slug}.mdx`)
-  fs.mkdirSync(path.dirname(dest), { recursive: true })
-  const next = transform(slug, source)
-  const prev = fs.existsSync(dest) ? fs.readFileSync(dest, 'utf8') : ''
-  if (next !== prev) {
-    if (isCheckMode) {
-      console.error(`STALE ${slug}`)
-      stale++
-    } else {
-      fs.writeFileSync(dest, next)
-      console.log(`WROTE ${slug}`)
-      written++
-    }
-  }
 }
 
 // Patterns we never want to ship to the public docs site. If any of
@@ -296,8 +334,6 @@ function leakSweep() {
   }
   console.log('✓ no forbidden patterns in src/content/.')
 }
-
-leakSweep()
 
 // Compile every MDX file (synced + hand-authored) through the same
 // remark/rehype pipeline the runtime uses. Catches MDX syntax errors
@@ -347,8 +383,6 @@ async function validateAll() {
   console.log(`✓ ${all.length} MDX file(s) compile cleanly.`)
 }
 
-await validateAll()
-
 // Guard against the "hand-authored page silently drifts" class of bug: any
 // page that declares a `sourcePath` (i.e. is meant to mirror a
 // martis-package/docs/*.md) MUST be in MAP, or `pnpm sync-docs` never touches
@@ -395,51 +429,124 @@ function checkPortedPagesMapped() {
   return true
 }
 
-const portedMapOk = checkPortedPagesMapped()
+// Every relative markdown/image target, and every relative href/src
+// attribute in inline HTML, found in `content` outside fenced code
+// blocks. `rewriteLinks` above should have already turned every real
+// relative link into either `/docs/<slug>` or a GitHub URL for a synced
+// page — but a hand-authored page is never fed through rewriteLinks, so
+// this also has to catch a raw relative link written directly in an .mdx
+// file. Anything this returns is a 404 in waiting.
+export function findRelativeLinkOffenders(content) {
+  const offenders = []
+  const linkRe = /!?\[[^\]]*\]\(([^)\s]+)\)/g
+  const htmlAttrRe = /\b(?:href|src)\s*=\s*(?:"([^"]*)"|'([^']*)')/g
+  let inFence = false
+  content.split('\n').forEach((line, index) => {
+    if (/^\s{0,3}```/.test(line)) {
+      inFence = !inFence
+      return
+    }
+    if (inFence) return
 
-// A relative `.md` link on the site is a 404: the pages live under
-// /docs/<slug>. The porter rewrites every link to a mapped page, so one
-// that survives points at an unmapped file, or sits in a hand-authored page
-// that must use the /docs/<slug> form itself. Fenced code is ignored.
-function checkRelativeMdLinks() {
+    for (const m of line.matchAll(linkRe)) {
+      if (!isSkippableTarget(m[1])) offenders.push({ line: index + 1, target: m[1] })
+    }
+    for (const m of line.matchAll(htmlAttrRe)) {
+      const target = m[1] ?? m[2]
+      if (!isSkippableTarget(target)) offenders.push({ line: index + 1, target })
+    }
+  })
+  return offenders
+}
+
+function checkRelativeLinks() {
   const offenders = []
   ;(function walk(dir) {
     for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
       const full = path.join(dir, entry.name)
       if (entry.isDirectory()) walk(full)
       else if (entry.isFile() && full.endsWith('.mdx')) {
-        let inFence = false
-        fs.readFileSync(full, 'utf8').split('\n').forEach((line, index) => {
-          if (/^\s{0,3}```/.test(line)) {
-            inFence = !inFence
-            return
-          }
-          if (inFence) return
-          for (const m of line.matchAll(/\]\(([^)\s]+?\.md(?:#[^)\s]*)?)\)/g)) {
-            if (/^[a-z]+:\/\//i.test(m[1])) continue
-            offenders.push(`${path.relative(ROOT, full)}:${index + 1}: ${m[1]}`)
-          }
-        })
+        const rel = path.relative(ROOT, full)
+        const content = fs.readFileSync(full, 'utf8')
+        for (const { line, target } of findRelativeLinkOffenders(content)) {
+          offenders.push(`${rel}:${line}: ${target}`)
+        }
       }
     }
   })(CONTENT_DIR)
 
   if (offenders.length) {
-    console.error(`\n${offenders.length} relative .md link(s) that 404 on the site (use /docs/<slug>, or map the page):`)
+    console.error(`\n${offenders.length} relative link/image target(s) or href/src that 404 on the site:`)
     for (const o of offenders) console.error(`  ✗ ${o}`)
     return false
   }
-  console.log('✓ no relative .md links in src/content/.')
+  console.log('✓ no relative link/image targets or href/src in src/content/.')
   return true
 }
 
-const linksOk = checkRelativeMdLinks()
-
-if (isCheckMode && (stale > 0 || !portedMapOk || !linksOk)) {
-  if (stale > 0) console.error(`\n${stale} doc(s) stale — run \`pnpm sync-docs\` to update.`)
-  process.exit(1)
+// Pure CLI argument / environment parsing: --check, and the martis-package
+// repository root (--package-dir, else MARTIS_PACKAGE_DIR, else
+// DEFAULT_PACKAGE_DIR), resolved against `cwd`. Kept free of `process`
+// reads in its body (all three inputs are parameters) so it is callable
+// from tests without an environment to fake.
+export function parseArgs(argv, env = process.env, cwd = process.cwd()) {
+  const isCheckMode = argv.includes('--check')
+  const flagIndex = argv.indexOf('--package-dir')
+  const flagValue = flagIndex !== -1 ? argv[flagIndex + 1] : undefined
+  const rawPackageDir = flagValue ?? env.MARTIS_PACKAGE_DIR ?? DEFAULT_PACKAGE_DIR
+  const packageDir = path.resolve(cwd, rawPackageDir)
+  return { isCheckMode, packageDir }
 }
 
-if (!isCheckMode) {
-  console.log(`\n${written} doc(s) written, ${Object.keys(MAP).length - written} unchanged.`)
+async function main() {
+  const { isCheckMode, packageDir } = parseArgs(process.argv.slice(2), process.env, process.cwd())
+  const packageDocsDir = path.join(packageDir, 'docs')
+
+  let stale = 0
+  let written = 0
+
+  for (const [slug, file] of Object.entries(MAP)) {
+    const source = path.join(packageDocsDir, file)
+    if (!fs.existsSync(source)) {
+      console.error(`SKIP ${slug}: source missing (${source})`)
+      continue
+    }
+    const dest = path.join(CONTENT_DIR, `${slug}.mdx`)
+    fs.mkdirSync(path.dirname(dest), { recursive: true })
+    const next = transform(slug, source, file)
+    const prev = fs.existsSync(dest) ? fs.readFileSync(dest, 'utf8') : ''
+    if (next !== prev) {
+      if (isCheckMode) {
+        console.error(`STALE ${slug}`)
+        stale++
+      } else {
+        fs.writeFileSync(dest, next)
+        console.log(`WROTE ${slug}`)
+        written++
+      }
+    }
+  }
+
+  leakSweep()
+  await validateAll()
+  const portedMapOk = checkPortedPagesMapped()
+  const linksOk = checkRelativeLinks()
+
+  if (isCheckMode && (stale > 0 || !portedMapOk || !linksOk)) {
+    if (stale > 0) console.error(`\n${stale} doc(s) stale — run \`pnpm sync-docs\` to update.`)
+    process.exitCode = 1
+    return
+  }
+
+  if (!isCheckMode) {
+    console.log(`\n${written} doc(s) written, ${Object.keys(MAP).length - written} unchanged.`)
+  }
+}
+
+const isEntryPoint = process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)
+if (isEntryPoint) {
+  main().catch((error) => {
+    console.error(error)
+    process.exitCode = 1
+  })
 }
