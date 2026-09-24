@@ -5,7 +5,6 @@ sourcePath: "martis-package/docs/filters.md"
 ---
 
 # Filters
-
 Filters allow users to narrow down resource index results by applying criteria. They appear as a collapsible panel on the resource index page with active filter pills for at-a-glance visibility.
 
 Martis ships four built-in filter types and supports custom filters for advanced use cases.
@@ -85,6 +84,41 @@ public function options(Request $request): array
 
 ```php
 SelectFilter::make('Country')->searchable()
+```
+
+### MultiSelectFilter
+
+> Since **v1.31.0**.
+
+A searchable dropdown that lets users pick **multiple** values — an "any of these" facet (e.g. a growing set of tags). The selected value is an **array** of the chosen `value`s, so `apply()` is typically a `whereIn()` (ANY-match). Mirrors `SelectFilter` (override `options()`, enable search with `->searchable()`); the React side renders a PrimeReact MultiSelect.
+
+Martis skips empty selections before `apply()` runs — an empty array carries no constraint, so it shows all records — which means you never have to guard against `whereIn('col', [])` compiling to `WHERE 0 = 1`. Add your own `empty($value)` guard only if you call `apply()` directly outside the request pipeline.
+
+```php
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Http\Request;
+use Martis\Filters\MultiSelectFilter;
+
+class TagsFilter extends MultiSelectFilter
+{
+    public function options(Request $request): array
+    {
+        return ['PHP' => 'php', 'Laravel' => 'laravel', 'Vue' => 'vue'];
+    }
+
+    public function apply(Request $request, Builder $query, mixed $value): Builder
+    {
+        return $query->whereHas('tags', fn ($q) => $q->whereIn('slug', (array) $value));
+    }
+}
+```
+
+```php
+// in the resource
+public function filters(Request $request): array
+{
+    return [TagsFilter::make('Tags')->searchable()];
+}
 ```
 
 ### BooleanFilter
@@ -291,10 +325,19 @@ SelectFilter::make('Status')->withMeta(['placeholder' => 'Choose a status...'])
 
 ## Custom Component
 
-Override the default frontend component with `componentKey()`:
+Override the default frontend control with `componentKey()`. Since **v1.31.0** the filter panel resolves the key from the component registry (mirroring cards, metrics, and fields) and renders your component with a `{ filter, value, onChange }` contract; register it from your consumer-extension bundle (`resources/js/martis-extensions/`). Before v1.31.0 the key was serialized but the SPA ignored it.
 
 ```php
 SelectFilter::make('Status')->componentKey('my-custom-filter')
+```
+
+```tsx
+// resources/js/martis-extensions/filters/MyCustomFilter.tsx
+export default function MyCustomFilter({ filter, value, onChange }: {
+  filter: FilterDefinition; value: unknown; onChange: (value: unknown) => void
+}) {
+  // render any control; call onChange(newValue) to update the active filter
+}
 ```
 
 ## Filter Grid Layout (span)
@@ -316,6 +359,30 @@ public function filters(Request $request): array
 ```
 
 Default spans: select/boolean = 3 columns, date-range = 6 columns. Override with `->span()`.
+
+**Responsive (v1.38.0+).** The span applies from the `md` breakpoint (768px); below it every filter takes the full row, one per row, the same rule as the form grid and the dashboard grid. The panel never writes `grid-column` inline: each filter carries its span as the custom property `--martis-filter-span` and `.martis-filter-grid` in `martis.css` owns the placement per media query. A theme that wants the spans on phones too can override the mobile rule:
+
+```css
+@media (max-width: 767px) {
+  .martis-filter-grid > * {
+    grid-column: span var(--martis-filter-span);
+  }
+}
+```
+
+Before v1.38.0 the panel stayed 12 columns at every viewport, so a `span(3)` filter was a quarter of a phone screen.
+
+## Placeholder
+
+> **Martis extension** — placeholder distinct from the filter name.
+
+By default, a filter's empty-state placeholder (shown in the select/date control before a value is chosen) is the same as its display label. Use `->placeholder()` to make them differ:
+
+```php
+SelectFilter::make('Project')->searchable()->placeholder('Select…')
+```
+
+Here the field label above the control still reads "Project", but the dropdown itself shows "Select…" until a value is picked. Passing `null` (or omitting the call) restores the default behaviour of falling back to the filter name.
 
 ## Filter Interaction
 
@@ -375,6 +442,7 @@ Each filter in the `filters` array includes:
     { "label": "Inactive", "value": "inactive" }
   ],
   "default": null,
+  "placeholder": null,
   "meta": { "searchable": false }
 }
 ```
@@ -403,3 +471,4 @@ Grouped options include a `group` key:
 | **Per-filter clear** | Individual clear button (X) on each filter pill. |
 | **Default values on load** | Defaults are applied correctly on the frontend initial load and included in the first query. |
 | **Searchable select** | Built-in `searchable()` option on SelectFilter. |
+

@@ -1,11 +1,10 @@
 ---
 title: "Theming"
-description: "Martis uses **CSS custom properties** (variables) for all styling. A theme is a CSS file that overrides these variables. Themes apply globally and support both **dark** and **light** modes."
+description: "Martis uses CSS custom properties (variables) for all styling. A theme is a CSS file that overrides these variables. Themes apply globally and support both dark and light modes."
 sourcePath: "martis-package/docs/theming.md"
 ---
 
 # Theming
-
 > Complete guide to customizing the visual appearance of Martis.
 
 Martis uses **CSS custom properties** (variables) for all styling. A theme is a CSS file that overrides these variables. Themes apply globally and support both **dark** and **light** modes.
@@ -40,6 +39,16 @@ Edit the CSS file (no rebuild needed) and refresh the browser. Changes are immed
 
 Themes load **after** the package CSS, so any variable you redefine wins. You only need to declare variables you want to change — others fall back to defaults.
 
+### PrimeReact components (v1.39.0)
+
+Martis renders its controls (inputs, dropdowns, tables, calendars, tooltips, toasts) with PrimeReact 10. The PrimeReact theme ships inside the package CSS, compiled from the lara theme's SASS source with every colour variable pointed at a `--martis-*` token. Every PrimeReact component therefore follows the active palette: light and dark mode, the accent presets and your theme. That includes components Martis never renders itself, such as a `Slider` or a `TabView` in a Tool page or an extension bundle.
+
+- Severity fills (`severity="success"` buttons, for example) use the matching token (`--martis-success`) with white text, like the Martis buttons.
+- `<Badge severity="…">` matches the `.martis-badge-*` pills (`--martis-badge-*` tokens). The default badge is a solid `--martis-accent` counter.
+- The PrimeReact CSS variables (`--primary-color`, `--surface-ground`, `--surface-card`, `--surface-0` to `--surface-900`, `--text-color`, `--highlight-bg`, `--maskbg`, …) point at the same tokens, for code that reads them.
+
+A theme only sets the Martis tokens; it never needs to restyle PrimeReact selectors to change colours.
+
 ### Configuration
 
 ```php
@@ -71,13 +80,12 @@ Surface and background colors used throughout the UI.
 | `--martis-card` | Card components |
 | `--martis-input-bg` | Form input backgrounds |
 
-### 2. Text & Borders (4 variables)
+### 2. Text & Borders (3 variables)
 
 | Variable | Purpose |
 |----------|---------|
 | `--martis-text` | Primary text color |
-| `--martis-text-muted` | Secondary, placeholder, label text |
-| `--martis-text-faint` | Tertiary text (footers, timestamps, helper text) |
+| `--martis-text-muted` | Secondary, placeholder, label, and dimmed/tertiary text |
 | `--martis-border` | Default border color (inputs, panels, table cells) |
 
 ### 3. Accent / Brand (7 variables)
@@ -89,7 +97,7 @@ The brand identity colors — buttons, links, focus states, selected items.
 | `--martis-accent` | Primary brand color |
 | `--martis-accent-hover` | Hover state |
 | `--martis-accent-active` | Active/pressed state |
-| `--martis-accent-contrast` | Text/icon colour rendered **on top of** an accent fill (buttons, badges) |
+| `--martis-accent-contrast` | Text/icon colour rendered **on top of** an accent fill. Every accent fill reads it (primary buttons, paginator and datepicker highlights, calendar trigger, checkbox ticks, Trix dialog buttons, the SPA's accent-filled buttons and the PrimeReact `--primary-color-text` bridge), with `#ffffff` as the fallback. A theme with a bright accent sets a dark value here (`#071726`) instead of darkening the accent; for `MARTIS_CUSTOM_ACCENTS` and a per-user `brandColor` Martis derives it from the accent's luminance |
 | `--martis-accent-bg-light` | Subtle background tint (e.g. selected row) |
 | `--martis-accent-bg` | Stronger background tint |
 | `--martis-focus-ring` | Focus ring color (with alpha for box-shadow) |
@@ -239,6 +247,9 @@ Tokens for hero / welcome / marquee surfaces (currently the dashboard `WelcomeCa
 | `--martis-brand-grid-dot` | Dot-grid overlay opacity. |
 | `--martis-brand-shadow` | Shadow pushed under the brand surface. |
 | `--martis-brand-text` | Default text colour on top of the brand surface. |
+| `--martis-brand-badge-bg` | Glass fill of the version badge on the hero (default: a 12 % → 6 % white gradient). |
+| `--martis-brand-badge-border` | Border of the version badge (default `rgba(255, 255, 255, 0.22)`). |
+| `--martis-brand-shimmer` | Colour of the bright band that sweeps across the version badge every 3.5 s (default `rgba(255, 255, 255, 0.28)`). On a bright gradient the band can push the badge text below WCAG AA for a slice of every cycle: lower the alpha, or set `transparent` to remove the sweep. The band also stops under `prefers-reduced-motion` and `html[data-reduced-motion="true"]` (the aurora blobs keep drifting; they sit below the vestibular threshold, a bright highlight moving over text does not). |
 | `--martis-brand-logo-height-auth` | Logo height (px) on the auth screen lockup. |
 | `--martis-brand-logo-height-menu` | Logo height (px) in the user dropdown menu. |
 
@@ -443,10 +454,10 @@ The preset is additive — your existing `colors`, `fontFamily`, etc. stay untou
 
 ### In TSX (canvas/Chart.js — runtime resolution)
 
-CSS variables can't be read by canvas APIs. Use the helper:
+CSS variables can't be read by canvas APIs. Use the helpers on `@martis/runtime` (v1.38.0+):
 
 ```tsx
-import { cssVar, accentColor, mutedTextColor, chartPalette, resolveColor } from '@/lib/themeColors'
+import { cssVar, accentColor, mutedTextColor, chartPalette, resolveColor } from '@martis/runtime'
 
 const accent = accentColor()                           // 'rgb(...)' resolved
 const muted = mutedTextColor()
@@ -475,6 +486,18 @@ ProjectsByStatusMetric::make()->colors([
 // TrendMetric / ProgressMetric — single color
 RevenueMetric::make()->color('var(--martis-success)');
 ```
+
+### Placeholder text in custom controls (v1.37.1)
+
+A bare `<input placeholder="…">`, `<textarea>` or `<select>` rendered by a Tool page or an extension bundle gets a theme-aware placeholder without any Martis class: the package CSS declares a global `::placeholder { color: var(--martis-text-muted); opacity: 1 }`, loaded after the PrimeReact theme and outside its cascade layer. Up to v1.38 that theme painted every placeholder white at 60 %, invisible on the light theme; since v1.39.0 it reads the same token, and the global rule keeps bare controls on it whatever else they match. The rule follows the active mode through `--martis-text-muted`, and a theme that redefines that token re-colours bare placeholders too.
+
+Martis controls (`.p-inputtext`, `.martis-input`, `.martis-search-input`, the ⌘K search, the resource search) keep their own `::placeholder` rules, which win by specificity, so their placeholders are unchanged. A custom control that wants a different placeholder colour declares its own class-scoped rule the same way:
+
+```css
+.my-tool-search::placeholder { color: var(--martis-text); opacity: .5; }
+```
+
+Before v1.37.1 the workaround was to add `className="martis-input"` (or `p-inputtext`) to the control just to reach a class-scoped placeholder rule; that is no longer needed.
 
 ---
 
@@ -587,10 +610,28 @@ Exit codes: `0` (everything aligned), `2` (drift detected — useful for CI gate
 4. Inspect HTML `<head>` — theme `<link>` must appear AFTER app CSS
 
 ### Some colors don't change
-Since v0.6.0, Martis ships a **PrimeReact bridge**: `--primary-color`, `--surface-card`, `--surface-border`, `--text-color`, `--text-color-secondary`, `--highlight-bg`, `--highlight-text-color`, `--focus-ring`, `--border-radius`, and `--maskbg` are mapped to the matching `--martis-*` tokens. PrimeReact components therefore inherit your theme automatically. If a specific PrimeReact internal still uses its own colour, override it alongside the Martis tokens in your theme file.
+Every PrimeReact component reads the `--martis-*` tokens (see [PrimeReact components](#primereact-components-v1390)). When a colour does not follow your theme:
+
+1. Check that the variable is a Martis token: `php artisan martis:theme:diff` lists the ones your theme declares that the package does not know.
+2. Declare it for both modes (`:root` and `html:not(.dark)`), as the defaults do.
+3. Look for a literal colour in your own CSS or in an extension bundle: it wins over the token. Use `var(--martis-…)` there too.
+
+Setting a PrimeReact variable such as `--primary-color` restyles nothing: the components read the Martis tokens, and the PrimeReact variables only mirror them. To give one PrimeReact component a colour of its own, override its selector in your theme file:
+
+```css
+.p-slider .p-slider-range {
+  background: var(--martis-success);
+}
+```
+
+On martis/martis < 1.39.0 the bundled `lara-dark-indigo` theme painted with literal colours, and only the components Martis restyled in `martis.css` followed the tokens (a `Slider` in an extension stayed indigo, and dark in light mode). Upgrade, or override those selectors as above.
 
 ### Chart colors don't update
 Chart.js receives resolved color strings, not CSS variables. The theme system already resolves `--martis-chart-*` at runtime. If you provide `var(--my-custom-var)` directly to a chart prop without using the helper, it won't work.
 
 ### Typography variables not applied
 Ensure variables are declared in **both** `:root` (dark) and `html:not(.dark)` (light) blocks. Typography variables are inherited from `body` — applied automatically to all elements unless overridden.
+
+### Placeholder text invisible on the light theme
+On martis/martis < 1.37.1 an input without a Martis class inherited the bundled dark theme's white placeholder (`rgba(255,255,255,.6)`), invisible on a light surface. Upgrade, or on an older version give the control `className="martis-input"` (or `p-inputtext`) to reach a class-scoped placeholder rule. From 1.37.1 the global `::placeholder` default covers every control; see [Placeholder text in custom controls](#placeholder-text-in-custom-controls-v1371).
+

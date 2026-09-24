@@ -1,6 +1,6 @@
 ---
 title: "Global Search"
-description: "Martis ships a single, unified search surface accessible from anywhere in the SPA via `Cmd+K` (macOS) / `Ctrl+K` (Windows / Linux) or `/`. It searches every resource the authenticated user can view, grouped by resource label, with optional Scout integration."
+description: "Martis ships a single, unified search surface accessible from anywhere in the SPA via Cmd+K (macOS) / Ctrl+K (Windows / Linux) or /. It searches every resource the authenticated user can view, grouped by resource label, with optional Scout integration."
 sourcePath: "martis-package/docs/global-search.md"
 ---
 
@@ -92,6 +92,25 @@ public function searchOrderBy(Builder $query, string $term): Builder
 ```
 
 The hook runs **after** `SearchResolver::apply()` so any `orderBy()` you add operates on the already-filtered set. Default implementation is a no-op.
+
+---
+
+## ⭐ Custom match predicate — `searchQuery()`
+
+By default matching is `ILIKE '%term%'` over `searchable()` fields (plus `searchableRelations()`). To match with driver-native search — PostgreSQL full-text `@@`, `pg_trgm` fuzzy, MySQL `FULLTEXT`, SQLite FTS5 — override `searchQuery()`. When it returns a `Builder`, `SearchResolver` applies **no** matching of its own (no `ILIKE`, no `field:value` parsing, no priority ranking, and it skips the empty-set `1 = 0` guard); the resource owns the entire `WHERE`. Return `null` (default) to keep the built-in `ILIKE`. This is the non-Scout seam — a resource that opts into `usesScout()` uses Scout instead.
+
+```php
+use Illuminate\Database\Eloquent\Builder;
+
+public function searchQuery(Builder $query, string $term): ?Builder
+{
+    // A model scope in YOUR app owns the SQL (e.g. tsvector @@ + pg_trgm
+    // similarity, ranked by ts_rank), tenant-scoped through the model.
+    return $query->search($term);
+}
+```
+
+Because `searchQuery()` funnels through the same `SearchResolver::apply()` choke point, it covers the resource index, global Cmd+K, and every relation picker uniformly. **You own the `WHERE` — in place:** constrain and return the *given* builder (`return $query->search($term)`); returning a *different* Builder instance throws `LogicException` (it would drop already-applied index/filter scoping). A non-null return that adds no predicate bypasses the empty-set guard and dumps every row — the same trust `indexQuery()` already assumes. Filters, the user's sort, and pagination are untouched.
 
 ---
 
@@ -195,7 +214,7 @@ admin status:active          → free-text "admin" + WHERE status LIKE %active%
 title:"Quarterly Report"     → quoted value, treated as one token
 ```
 
-If the named field is not declared `searchable()` on the resource, the token is silently dropped. When a user types **only** unknown tokens (no free-text fallback), the search returns no results — preferable to returning every row from a typo.
+If the named field is not declared `searchable()` on the resource, or the user cannot see it (`canSee()`), the token is silently dropped. When a user types **only** unknown tokens (no free-text fallback), the search returns no results — preferable to returning every row from a typo.
 
 ---
 
@@ -213,6 +232,30 @@ public static function searchableRelations(): array
 A query like `John` on the snippet above also matches Orders whose `customer.name` or `customer.email` contains `John`. Defaults to `[]` (own fields only).
 
 Scout-backed resources ignore this hook — Scout indexes whatever the model exposes via `toSearchableArray()`.
+
+---
+
+## Fields the user cannot see
+
+The `LIKE` pipeline matches the term only on the `searchable()` fields the user can see (v1.38.0). A field whose `canSee()` denies the user is left out of the free-text match, its `field:value` token is dropped and it does not rank the results: otherwise the records a term returns would tell which ones hold it in a field the user may not read. A resource whose searchable fields are all hidden from a user returns nothing for them, like a resource that declares none.
+
+```php
+public function fields(Request $request): array
+{
+    return [
+        Text::make('name')->searchable(),
+        // Searched for the users who can see it only.
+        Text::make('tax_number')->searchable()
+            ->canSee(fn (Request $request) => $request->user()?->can('viewTaxNumbers') ?? false),
+    ];
+}
+```
+
+The same rule holds on every search built from the fields' `searchable()` flags: the resource index, the relationship panels and their attach picker, and the relation pickers. What the resource declares itself is searched as declared, whatever the fields show: its `searchableRelations()` paths, its `searchQuery()` predicate and, with Scout, the model's `toSearchableArray()`. Leave out of those a column a user must not be able to probe.
+
+`canSeeForModel()` is decided on one record, so a search, which spans many, still matches a field it hides on some records. Do not make such a field `searchable()` when its values must not be probed, or hide it with `canSee()`. See [Fields → Field authorization](/docs/core/fields#field-authorization-cansee-and-canseeformodel).
+
+Before v1.38.0 every search matched the searchable fields the user cannot see too, and a `field:value` token could name one.
 
 ---
 
@@ -288,21 +331,30 @@ Both values are clamped to a minimum of 1 at request time, so a misconfigured en
 
 Both paths integrate identically with the Cmd+K palette — `searchOrderBy()` runs in either case.
 
+### Case-insensitivity across drivers
+
+The `LIKE` pipeline is **case-insensitive on every supported database**. PostgreSQL's `LIKE` is case-sensitive, so the resolver emits `ILIKE` there; MySQL, SQLite, and SQL Server treat `LIKE` case-insensitively already and keep `LIKE` (byte-for-byte unchanged). The operator is chosen once per query by `SearchResolver::likeOperator($driver)` — the single source of truth reused by both the global-search pipeline and the relatable / BelongsTo dropdown search in `ResourceController`. So `RP` and `rp` return the same results regardless of the underlying database. This mirrors Laravel's own `whereLike($col, $val, caseSensitive: false)` default; column type / collation is irrelevant.
+
 See [resources.md](/docs/core/resources#laravel-scout-integration) for full Scout integration notes.
 
 ---
 
 ## Cmd+K palette sections
 
-The palette renders five kinds of sections, each grown from a different data source:
+The palette renders six kinds of sections, each grown from a different data source:
 
 1. **Resources** — every resource the user can view, filtered by query (client-side).
-2. **Actions** — standalone resource actions (`showInline=false`, `standalone=true`), filtered by query.
-3. **Recent activity** — the last few records the user opened (drawn from action events).
-4. **⭐ Recent searches** — the user's last 5 successful queries, persisted in `sessionStorage`. Visible only when the input is empty. Clicking re-runs the query.
-5. **Records** — live hits per resource via `/api/search`. Each resource gets its own labelled section with the optional "View all" footer.
+2. **⭐ Tools** — every registered custom Tool the user is authorised to see (same `authorizedToSee` gate as the sidebar), so ⌘K can jump to a Tool by name just like a resource. Each links to `/tools/{uriKey}`.
+3. **Actions** — standalone resource actions (`showInline=false`, `standalone=true`), filtered by query.
+4. **Recent activity** — the caller's last 5 action events (`martis_action_events` rows where `user_id` is the current user), linking back to the affected record. The block is a read surface of the audit log, so it is gated exactly like the audit-log index: the registered resource for the `ActionEvent` model (the built-in `ActionEventResource`, or a consumer's own) must grant `authorizedToViewAny()` (`static::$policy`, auto-discovery and `Gate::policy()` all apply), and when no resource exposes the model at all (`martis.action_events.resource = false` without a replacement) the block is empty for everyone.
+5. **⭐ Recent searches** — the user's last 5 successful queries, persisted in `sessionStorage`. Visible only when the input is empty. Clicking re-runs the query.
+6. **Records** — live hits per resource via `/api/search`. Each resource gets its own labelled section with the optional "View all" footer.
 
-Sections 1–3 are loaded from `/api/command-palette` once per session and cached for 30 s. The Recent searches section is purely client-side (no backend, no roundtrip). The Records section debounces 300 ms before firing `/api/search`.
+Sections 1–4 are loaded from `/api/command-palette` once per session and cached for 30 s. The Recent searches section is purely client-side (no backend, no roundtrip). The Records section debounces 300 ms before firing `/api/search`.
+
+### Section length cap
+
+The **Resources**, **Tools**, and **Actions** sections are each capped at **5 visible rows**. When a section has more, it's trimmed and gets a subtle **"Show N more"** row; clicking it (or pressing Enter on it) reveals the rest of that section in place — no navigation. This keeps the empty-state palette scannable: an app with 50 resources shows 5 + "Show 45 more" instead of dumping the full catalogue before the user types anything. Record groups (which carry their own "View all" footer) and the already-short recent sections are exempt from the cap.
 
 ---
 

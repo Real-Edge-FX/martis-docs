@@ -1,0 +1,27 @@
+# Martis Docs — Apache/LiteSpeed config for shared hosting (getmartis.com).
+#
+# The docs site is a client-rendered Vite/React SPA. Every deep link
+# (e.g. /docs/getting-started/installation) must boot from /index.html
+# so react-router can take over. Vite copies this file from public/ to
+# the build root, so every `pnpm build` ships it in dist/.
+
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteBase /
+  RewriteRule ^index\.html$ - [L]
+  RewriteCond %{REQUEST_FILENAME} -f [OR]
+  RewriteCond %{REQUEST_FILENAME} -d
+  RewriteRule ^ - [L]
+  RewriteRule . /index.html [L]
+</IfModule>
+
+# Long-cache fingerprinted assets; never cache the HTML shell or the
+# search index so new releases show up immediately.
+<IfModule mod_headers.c>
+  <FilesMatch "\.(js|css|woff2?|png|jpg|jpeg|svg|webp|avif|ico)$">
+    Header set Cache-Control "public, max-age=31536000, immutable"
+  </FilesMatch>
+  <FilesMatch "\.(html|json)$">
+    Header set Cache-Control "no-cache"
+  </FilesMatch>
+</IfModule>

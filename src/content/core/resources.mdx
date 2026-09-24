@@ -1,11 +1,10 @@
 ---
 title: "Resources — Complete Reference"
-description: "The `Resource` class is the core building block of Martis. Each resource maps to an Eloquent model and defines its CRUD interface, fields, authorization, and behavior."
+description: "The Resource class is the core building block of Martis. Each resource maps to an Eloquent model and defines its CRUD interface, fields, authorization, and behavior."
 sourcePath: "martis-package/docs/resources.md"
 ---
 
 # Resources — Complete Reference
-
 The `Resource` class is the core building block of Martis. Each resource maps to an Eloquent model and defines its CRUD interface, fields, authorization, and behavior.
 
 ## Creating a Resource
@@ -42,6 +41,21 @@ class PostResource extends Resource
 
 Resources are **auto-discovered** by the `ResourceDiscovery` class. No manual registration is needed.
 
+Discovery scans `config('martis.resources_path')` (default `app_path('Martis')`) recursively and maps each file to a class under `config('martis.resources_namespace')`. Since v1.36.0 the namespace is derived from Composer's PSR-4 map when the key is `null` (the default), so any autoloadable directory works. This also covers one directory per panel, tenant surface or module, each served by its own process or config:
+
+```php
+// config/martis.php
+'resources_path' => app_path('Martis/Customer'),   // App\Martis\Customer\Resources\OrganizationResource, ...
+'resources_namespace' => null,                      // derived: App\Martis\Customer
+```
+
+```php
+// A module package under "Modules\\": "modules/"
+'resources_path' => base_path('modules/Billing/Martis'),   // derived: Modules\Billing\Martis
+```
+
+Pin the namespace explicitly (`'resources_namespace' => 'App\\Martis\\Customer'`) when the directory is not autoloaded. See [Configuration → Resources path and namespace](/docs/reference/configuration#resources-path-and-namespace).
+
 ## Required Methods
 
 ### model()
@@ -70,7 +84,7 @@ public function fields(Request $request): array
 }
 ```
 
-See the [Fields Reference](fields.md) for all 50 available field types.
+See the [Fields Reference](/docs/core/fields) for all 50 available field types.
 
 ### detailSidebar() (⭐ Martis differential)
 
@@ -112,6 +126,8 @@ public function fieldsForDetail(Request $request): array
 
 Useful when the listing wants only a few summary columns while the detail page renders the full editor.
 
+A field can live on a form override alone. The endpoints that answer for one field of a form (the `BelongsTo` / `MorphTo` / `Tag` pickers, the Slug check, the `dependsOn` sync and the server-side `Select` search) read it from the form it renders on: `fieldsForUpdate()` on the edit form, `fieldsForCreate()` and `fieldsForInlineCreate()` on the create forms. See [Relationships → Relation fields declared on one form only](/docs/core/relationships#relation-fields-declared-on-one-form-only).
+
 ### filters() / lenses() / cards() / dashboards()
 
 Resources opt into the four extension subsystems by overriding these methods on the Resource class. Each returns a list of objects of the matching type.
@@ -123,7 +139,7 @@ public function cards(Request $request): array    { return [new RevenueTrend()];
 public static function dashboards(): array        { return [SalesDashboard::class]; }
 ```
 
-See [Filters](filters.md), [Lenses](lenses.md), [Metrics](metrics.md), and [Dashboards](dashboards.md) for the per-class authoring guide.
+See [Filters](/docs/core/filters), [Lenses](/docs/core/lenses), [Metrics](/docs/core/metrics), and [Dashboards](/docs/core/dashboards) for the per-class authoring guide.
 
 ### Eager-load relations declaratively — `static $with`
 
@@ -183,6 +199,8 @@ public static function menuCount(Request $request): ?int
 
 Returning `null` from `menuCount()` hides the badge for that user. Counts are formatted by the frontend with the `formatItemCount()` helper (compact `K` / `M` notation above the configured threshold).
 
+If `menuCount()` throws, the badge is hidden for that user (the rest of the sidebar renders) and the failure is reported through `report()` as a `Martis\Exceptions\MenuCountFailedException` naming the resource class (v1.32.4). See [Menus → When a badge is missing](/docs/core/menus#when-a-badge-is-missing) for the dev-mode `_failed` diagnostics and the `counts.report_failures` switch.
+
 ### Place a resource under "System" — `belongsToSystemSection()`
 
 Returns `true` to dock the resource under the sidebar's "System" group rather than the user-defined sections. Used internally by `ActionEventResource`. Override on consumer-side resources that should sit alongside the package's system tools.
@@ -190,6 +208,44 @@ Returns `true` to dock the resource under the sidebar's "System" group rather th
 ```php
 public function belongsToSystemSection(): bool { return true; }
 ```
+
+A System-section resource keeps `group() === null` — the sidebar buckets it under the **System** header, not a `group()` bucket. The command palette (⌘K) mirrors this: since **v1.29.3** it tags such resources with the same "System" label the sidebar uses, so the two surfaces agree (previously the palette showed no group tag for them).
+
+Tools have the same opt-in since **v1.35.0**: `Tool::withSystemSection()` docks a Tool in the same section, after the resources and before the Cache admin link. See [Tools → Place a Tool under "System"](/docs/customization/tools#place-a-tool-under-system--withsystemsection-v1350).
+
+Since **v1.38.0** the section is ordered by a weight. Override `systemSectionOrder(): int` (default `100`) to move the resource: a lower weight lists it earlier, and entries with equal weights keep the natural order (resources in registration order, then Tools, then the cache link at `1000`). See [Menus → Order inside the System section](/docs/core/menus#order-inside-the-system-section-v1380).
+
+```php
+public function belongsToSystemSection(): bool { return true; }
+
+public function systemSectionOrder(): int { return 10; } // first in the System section
+```
+
+### Claim a record for reverse-mapping — `matchesRecord()`
+
+When **several resources share one Eloquent model** — e.g. an Approval-Queue resource scoped to `pending` records and a Processed resource scoped to `approved`/`indexed`, both on `App\Models\Candidate` — Martis sometimes needs to turn a model instance back into the resource surface it belongs to. The clearest case is the command palette's **Recent activity** deep-links: an event only carries `model_type` + `model_id`, so the palette must decide *which* of the sharing resources a record opens.
+
+By default a resource claims every record of its model (`matchesRecord()` returns `true`), and the **first-registered** resource wins — which is wrong when a second resource scopes the same model by status. Override `matchesRecord()` on each competing resource to claim its records:
+
+```php
+class CandidateResource extends Resource // uriKey: candidates (pending/failed)
+{
+    public function matchesRecord(Model $model): bool
+    {
+        return in_array($model->status, ['pending', 'failed'], true);
+    }
+}
+
+class ProcessedCandidatesResource extends CandidateResource // uriKey: processed-candidates
+{
+    public function matchesRecord(Model $model): bool
+    {
+        return in_array($model->status, ['approved', 'indexed', 'rejected', 'deleted'], true);
+    }
+}
+```
+
+Since **v1.30.1** the palette loads the record (only when a model has 2+ registered resources; soft-deleted rows are loaded with `withTrashed()`, so a trashed record still resolves) and picks the first whose `matchesRecord()` returns `true`, so a processed candidate deep-links to `/resources/processed-candidates/{id}` and a pending one to `/resources/candidates/{id}`. It falls back to the first-registered resource when the record is gone or none claims it. Resources with a unique model never pay the lookup cost.
 
 ### Custom search ordering — `searchOrderBy()`
 
@@ -202,9 +258,26 @@ public function searchOrderBy(Builder $query, string $term): Builder
 }
 ```
 
+### Custom search matching — `searchQuery()`
+
+By default the resolver matches with `ILIKE '%term%'` over `searchable()` fields (plus `searchableRelations()`). Override `searchQuery()` to **replace the match predicate entirely** — for driver-native search (PostgreSQL full-text `@@`, `pg_trgm` fuzzy, MySQL `FULLTEXT`, SQLite FTS5) — without standing up Scout and without leaving the resource pipeline. Return a `Builder` and the resolver applies **none** of its own matching (no `ILIKE`, no `field:value` parsing, no priority ranking, and it skips the empty-set `1 = 0` guard); return `null` (the default) to keep the built-in `ILIKE`. Filters, the user's sort, and pagination are untouched, and it applies to the resource index, global Cmd+K, and relation pickers alike.
+
+```php
+use Illuminate\Database\Eloquent\Builder;
+
+public function searchQuery(Builder $query, string $term): ?Builder
+{
+    // Delegates to a model scope that owns the SQL (@@ + similarity, ranked by
+    // ts_rank), tenant-scoped through the model. The scope lives in YOUR app.
+    return $query->search($term);
+}
+```
+
+> **You own the WHERE — in place.** Constrain and return the **given** `$query` (Eloquent `where`/scope calls return `$this`, so `return $query->search($term)` is correct). Returning a **different** Builder instance throws `LogicException` — it would drop the index/filter scoping already applied and be ignored by relation-picker pagination. A non-null return that adds no predicate bypasses the empty-set guard and dumps every row — the same trust the package places in `indexQuery()`. Keep the driver-specific SQL in your own model scope; the package ships only the seam. A resource that opts into `usesScout()` uses Scout instead — `searchQuery()` is the non-Scout path.
+
 ### `$stickyView` (⭐ Martis differential)
 
-Controls whether this resource participates in the [Sticky Views](sticky_views.md) feature — per-user view state persistence on the index page (filters, sort, pagination, per-page, search). Default: `true`.
+Controls whether this resource participates in the [Sticky Views](/docs/core/sticky-views) feature — per-user view state persistence on the index page (filters, sort, pagination, per-page, search). Default: `true`.
 
 ```php
 class AuditEventResource extends Resource
@@ -247,7 +320,7 @@ The values surface in the index payload as:
 }
 ```
 
-Lenses use the same shape (see [lenses.md](lenses.md)) — they inherit nothing from the resource, so each Lens declares its own polling cadence if it wants one.
+Lenses use the same shape (see [lenses.md](/docs/core/lenses)) — they inherit nothing from the resource, so each Lens declares its own polling cadence if it wants one.
 
 ## Configuration Methods
 
@@ -337,6 +410,112 @@ public static function displayInNavigation(): bool
 
 `displayInNavigation()` is still respected even when the main menu is customized through the menu builder.
 
+### routable()
+
+Controls whether the resource has a routable **human page surface**. Default `true`. Override to `false` to make the resource a headless data source: it stays registered and fully usable as a relation target, but its index/detail/create/edit pages disappear.
+
+```php
+public static function routable(): bool
+{
+    return false; // Headless: not a page, still a valid relation target
+}
+```
+
+When `routable()` returns `false`:
+
+- The index, show, store, update, destroy, restore, schema, and replicate-fields endpoints all return 404 — the resource has no human-facing page surface.
+- The resource is excluded from the sidebar navigation, badge counts, global search, and the command palette (in addition to whatever `displayInNavigation()` already controls).
+- The resource **remains fully usable as a relation target and data source**: the relatable endpoint (`BelongsTo`/`BelongsToMany`/etc. option lists), the Slug field's slug-check endpoint, `dependsOn` field sync, inline-create, and peek all keep working, still gated by the resource's own `authorizedTo*` methods.
+
+Use this for the "a Tool owns the domain; the Resource is a headless data source" pattern: a custom Tool provides the human-facing UI and workflow for a model, while the underlying Resource definition is kept around purely so other resources can relate to it, validate slugs against it, or inline-create records of it, without exposing a redundant (and potentially confusing) standalone CRUD page for it.
+
+Unlike `displayInNavigation()`, which only hides the resource from menus while leaving its endpoints reachable by direct URL, `routable(false)` fully removes the human page surface (404) while deliberately preserving the internal/relation surface.
+
+A non-routable resource has no page to link to — see [`recordUrl()`](#recordurl) below for how to give it one anyway (and re-enter global search in the process).
+
+### recordUrl()
+
+Declares a URL template for a single record of this resource, with an `{id}` placeholder. Default `null`. `Resource::recordHref(int|string $id): string` interpolates the template (URL-encoding the id); when `recordUrl()` is `null`, `recordHref()` falls back to the standard `/resources/{uriKey}/{id}` path.
+
+```php
+public static function recordUrl(): ?string
+{
+    return '/tools/project-knowledge?id={id}'; // {id} is interpolated, URL-encoded
+}
+```
+
+**Anchor example — a headless resource whose records live in a Tool:**
+
+```php
+class ProjectResource extends Resource
+{
+    public static function routable(): bool { return false; }
+    public static function recordUrl(): ?string { return '/tools/project-knowledge?id={id}'; }
+
+    public function fields(Request $request): array
+    {
+        return [
+            Id::make('id'),
+            Text::make('name')->sortable()->searchable(),
+            Text::make('code')->searchable(),
+        ];
+    }
+}
+```
+
+`ProjectResource` has no index/detail page of its own (`routable()` is `false`), but because it declares `recordUrl()`, projects are findable in global search and every project link — a search hit, a `BelongsTo` display pointing at a project, a breadcrumb — opens `/tools/project-knowledge?id={id}` instead of a 404'd `/resources/projects/{id}`.
+
+#### Dual role
+
+`recordUrl()` does two things at once:
+
+1. **Destination for every record link.** The template drives `Resource::recordHref()` on the backend and the frontend `recordHref(uriKey, id)` helper (fed by a `resourceRecordUrls` map on `window.MartisConfig`, built from `MartisManager::recordUrlMap()`). Every surface that links to a record — global search results, `BelongsTo`/`MorphTo`/`HasMany`/`MorphMany`/`BelongsToMany`/`MorphToMany` displays, breadcrumbs, index row-click, post-save redirects — resolves through one of these two functions, so declaring `recordUrl()` once retargets the record everywhere.
+2. **Opt-in back into global search for a non-routable resource.** `SearchController` skips a resource when `! routable() && recordUrl() === null` — i.e. a non-routable resource is excluded from search unless it declares a `recordUrl`, in which case it participates like any other resource (subject to the same `globallySearchable()` and authorization gates below).
+
+The exact rule: **a non-routable resource appears in global search / the ⌘K palette if and only if it declares `recordUrl()`** — and its results deep-link to that template instead of a resource detail page.
+
+#### Interaction with `routable()` / `globallySearchable()`
+
+| Resource type | To be searchable, needs | Record links resolve to |
+|---|---|---|
+| Normal (`routable()` default `true`) | At least one `searchable()` field; `globallySearchable()` on (default `true`) | `/resources/{uriKey}/{id}` |
+| Headless (`routable() === false`) | The above, **plus** a non-null `recordUrl()` | The `recordUrl()` template, interpolated |
+
+- `globallySearchable()` remains the on/off toggle on top of everything above — a headless resource with `recordUrl()` still needs `globallySearchable()` to not return `false`.
+- `authorizedToViewAny()` still gates search participation per request. A denied user never sees the resource's results, `recordUrl()` or not.
+- For a **routable** resource, `recordUrl()` stays `null` by default, so `recordHref()` returns the unchanged `/resources/{key}/{id}` — fully backward-compatible; nothing changes unless you opt in.
+- `viewAllUrl` ("View all N") defaults to `null` for a non-routable resource, since it has no index page to send the user to — the palette then renders the count as a static, non-clickable label instead of a dead link. To give it a real destination, declare [`searchIndexUrl()`](#searchindexurl) below.
+
+**Security note:** `recordUrl()` only supplies a destination string — it does not change authorization. The v1.24 guarantee still holds: a user who fails `authorizedToViewAny()` never sees the resource's records in search, regardless of whether `recordUrl()` is set.
+
+Source: `src/Resource.php::recordUrl()` / `recordHref()`, `src/Http/Controllers/SearchController.php`, `src/MartisManager.php::recordUrlMap()`, `resources/js/lib/recordHref.ts`.
+
+### searchIndexUrl()
+
+Declares the destination for the **"View all N matches"** affordance in global search / the ⌘K palette, with an optional `{search}` placeholder (the searched term, URL-encoded). Default `null`. Companion of `recordUrl()`: `recordUrl()` resolves a single record (`{id}`), `searchIndexUrl()` resolves the listing.
+
+```php
+public static function searchIndexUrl(): ?string
+{
+    return '/tools/normas?search={search}';
+}
+```
+
+`Resource::searchIndexHref(string $search): ?string` resolves the value the backend serializes as the group's `viewAllUrl`, by this precedence:
+
+| Resource | `searchIndexUrl()` | Resolved `viewAllUrl` |
+|---|---|---|
+| Routable (default) | `null` | `/resources/{uriKey}?search={term}` (unchanged) |
+| Any | non-null template | template with `{search}` interpolated (URL-encoded) |
+| Non-routable | `null` | `null` → static, non-clickable count in the palette |
+
+This closes the one gap the headless pattern left open: a non-routable resource (v1.24) that opts back into search via `recordUrl()` (v1.25) previously showed a "View all N" row that navigated nowhere. Point `searchIndexUrl()` at the Tool that owns the listing and the affordance sends the user there, pre-filtered by the searched term.
+
+- **Backward-compatible.** A routable resource leaves `searchIndexUrl()` at `null`, so `viewAllUrl` stays byte-for-byte `/resources/{uriKey}?search={term}`. Nothing changes unless you opt in.
+- **Security.** Like `recordUrl()`, `searchIndexUrl()` is only a destination string. It never widens authorization — the group still only appears after `globallySearchable()` and `authorizedToViewAny()` pass.
+
+Source: `src/Resource.php::searchIndexUrl()` / `searchIndexHref()`, `src/Http/Controllers/SearchController.php`, `resources/js/components/GlobalSearch.tsx`.
+
 ### menuItem()
 
 Customize the navigation item generated for a resource.
@@ -388,14 +567,14 @@ Three rules govern it:
 
 1. `perPageOptions()` is the canonical list. The dropdown renders exactly what this returns.
 2. If `perPage()` is not in `perPageOptions()`, Martis clamps to `perPageOptions()[0]`. The clamp is silent (no warning, no exception).
-3. Relation fields (`HasMany`, `MorphMany`, `BelongsToMany`, `MorphToMany`) inherit the related resource's `perPageOptions()` when the developer did not call `->perPageOptions([...])` on the field itself. See [relationships.md](relationships.md).
+3. Relation fields (`HasMany`, `MorphMany`, `BelongsToMany`, `MorphToMany`) inherit the related resource's `perPageOptions()` when the developer did not call `->perPageOptions([...])` on the field itself. See [relationships.md](/docs/core/relationships).
 
 Two public accessors expose the clamped value:
 
 | Method | Return | Notes |
 |---|---|---|
 | `Resource::resolvedPerPage(): int` | Clamped value used everywhere the backend or API needs a single "effective" per-page. | Use this in custom controllers instead of `perPage()`. |
-| `Lens::resolvedPerPage(): int` | Same rule for lenses. | See [lenses.md — Effective per-page](lenses.md#effective-per-page). |
+| `Lens::resolvedPerPage(): int` | Same rule for lenses. | See [lenses.md — Effective per-page](/docs/core/lenses#effective-per-page). |
 
 ```php
 public static function perPageOptions(): array { return [10, 25, 50, 100]; }
@@ -409,6 +588,8 @@ Source: `src/Resource.php::resolvedPerPage()`.
 ### defaultSort() / defaultSortDirection()
 
 Sets the initial sort column and direction on the index page. Returns `null` (default) for no default sorting.
+
+The default sort follows the rule of every `?sort=` (v1.38.0): it orders the index only when it names a `sortable()` field the user can see (`canSee()`). For a user who cannot see that field the index keeps the order its query gives (`indexQuery()`), as for a default sort that names no sortable field. Before v1.38.0 a default sort by a field the user cannot see ordered the index by that field.
 
 ```php
 public static function defaultSort(): ?string
@@ -443,7 +624,7 @@ Source: `src/Resource.php::indexQuery()`.
 
 ### relatableQuery()
 
-Constrains the query used to list candidate records in relationship autocompletes (BelongsTo dropdowns, Tag pickers, MorphTo search). Generic fallback — for per-relationship customisation, define `relatable{PluralModelName}()` instead.
+Constrains the query used to list candidate records in every relationship picker that targets this resource: BelongsTo dropdowns, the context-free relatable form, and the BelongsToMany / MorphToMany attach pickers. It is the resource's own fence and always applies; a source resource's `relatable{PluralModelName}()` and a field's `relatableQueryUsing()` narrow on top of it, never replace it (see [Relationships → Relatable scoping precedence](/docs/core/relationships#relatable-scoping-precedence)). A resource that confines its index with `indexQuery()` on a model that cannot carry a global scope should declare the same predicate here so the fence holds on the pickers too.
 
 ```php
 public static function relatableQuery(Request $request, Builder $query): Builder
@@ -532,11 +713,13 @@ public static function bulkActionsMenuLabel(): ?string    { return 'Batch tools'
 
 Whether clicking a row in the index opens the detail page is controlled by `rowClickOpensDetail(Request $request): ?bool` (per-resource override) and resolved to a concrete boolean by `resolveRowClickOpensDetail(Request $request): bool`. When the per-resource method returns `null`, the resolver falls back to `config('martis.index.row_click_opens_detail')`.
 
-See [Default Row Actions — Row-click redundancy](default_row_actions.md#row-click-redundancy) for the full decision matrix.
+See [Default Row Actions — Row-click redundancy](/docs/core/default-row-actions#row-click-redundancy) for the full decision matrix.
 
 ### confirmUnsavedChanges()
 
 Martis differential. Opts the create/update surfaces — both drawer overrides and full-page create/update routes — into the **UnsavedChangesDialog**. When the user tries to discard changes (close the drawer, navigate away, click Cancel), the dialog asks for confirmation.
+
+On the full-page routes the browser back button is held only while the form has unsaved changes (v1.38.0+); a clean form leaves Back and Forward working as on any other page. Before v1.38.0 opening a create or edit page erased the Forward history, and Back could skip the previous page. See [Overrides → Unsaved changes guard](/docs/customization/overrides#unsaved-changes-guard).
 
 ```php
 // Enable with package defaults (generic copy).
@@ -577,7 +760,7 @@ Email::make('email')->required()->unique(['users', 'email'], 'This email is alre
 Password::make('password')->required()->rules(['min:8']),
 ```
 
-See the [Fields Reference](fields.md) for all 50 field types and validation methods.
+See the [Fields Reference](/docs/core/fields) for all 50 field types and validation methods.
 
 ### errorDisplay()
 
@@ -597,10 +780,10 @@ Both the create and update forms ship with three submit buttons each, covering t
 | Page | Button | Post-save destination |
 |---|---|---|
 | Create | `Create {Resource}` (primary) | Detail page of the new record |
-| Create | `Create & add another` | Same `/create` page with a freshly cleared form |
+| Create | `Create & add another` | Same `/create` page with a freshly cleared form, whose fields mount again so none keeps the previous record's state (v1.38.0+) |
 | Create | `Create & view list` | Resource index |
 | Update | `Save changes` (primary) | Detail page of the record |
-| Update | `Save & continue editing` | Same `/edit` page (baseline refreshed so the unsaved-changes guard does NOT re-trigger) |
+| Update | `Save & continue editing` | Same `/edit` page (baseline refreshed to the values saved, so the unsaved-changes guard does NOT re-trigger for them; anything typed while the save ran still counts as unsaved, v1.38.0+) |
 | Update | `Save & view list` | Resource index |
 
 The two extra buttons are **hidden when the form is launched from a nested relation** (i.e. `?viaResource=…&viaResourceId=…`). Nested flows already manage their own post-save redirect to the parent surface, and a "view list" jump from inside a relation panel would be confusing.
@@ -642,12 +825,14 @@ Return `null` (the default) to keep the standard behaviour. The two extra save v
 
 The string travels back to the SPA in the create/update response under `meta.redirectTo`.
 
+Since v1.38.0 a destination on another record's edit page opens that record's form from scratch; the page used to keep the form it had just saved, so the next save sent those values to the new record. A destination on the same record's edit page keeps the saved values, which no longer count as unsaved changes; what was typed while the save ran still does (before v1.38.0 it counted as saved too, and leaving the page dropped it without asking). A destination on another resource's create page, another parent's nested create or another record to replicate opens a fresh create form the same way.
+
 ## Index toolbar resets
 
 The index toolbar surfaces two reset affordances:
 
 - **Reset filters** — clears only the active filters and resets to page 1. Sort, search, pagination size, and the trashed-toggle are preserved. Visible whenever any filter is active.
-- **Reset view** — the bigger hammer that clears filters + search + sort + per-page + trashed-toggle and forgets the [sticky view](sticky_views.md) for this resource. Visible whenever any of those drift away from the resource's defaults.
+- **Reset view** — the bigger hammer that clears filters + search + sort + per-page + trashed-toggle and forgets the [sticky view](/docs/core/sticky-views) for this resource. Visible whenever any of those drift away from the resource's defaults.
 
 Both buttons coexist on the toolbar — they target different aggressiveness levels so users can pick the right one for the moment.
 
@@ -747,7 +932,7 @@ Override the default notification messages and confirm dialogs shown after CRUD 
 | `deletedMessage()` | Toast after `DELETE /resources/:key/:id` succeeds. | `martis::messages.record_deleted` |
 | `restoredMessage()` | Toast after a soft-deleted record is restored. | `martis::messages.record_restored` |
 | `forceDeletedMessage()` | Toast after a soft-deleted record is permanently deleted. | `martis::messages.record_force_deleted` |
-| `replicatedMessage()` | Toast after a record is duplicated via the Replicate action. | `martis::messages.record_replicated` |
+| `replicatedMessage()` | Toast after a record is duplicated via the Replicate action (v1.38.0+; before, the create after a Replicate showed `createdMessage()`). | `martis::messages.record_replicated` |
 | `deleteConfirmMessage()` | Body of the destructive-delete confirm dialog. | `martis::messages.delete_confirm` |
 | `archiveConfirmMessage()` | Body of the soft-delete (archive) confirm dialog. | `martis::messages.archive_confirm` |
 | `forceDeleteConfirmMessage()` | Body of the force-delete confirm dialog (trashed records only). | `martis::messages.force_delete_confirm` |
@@ -913,7 +1098,7 @@ Override these directly on a Resource to hardcode behaviour without writing a Po
 |---------|----------|-------------------|
 | `add{Model}` | Inline create related record | allowed |
 | `attach{Model}` | Attach specific related record | allowed |
-| `attachAny{Model}` | Show attach button | allowed |
+| `attachAny{Model}` | Attach at all: the list of records to attach, the attach and the attach modal's pivot pickers answer 403 when it denies (v1.38.0+) | allowed |
 | `detach{Model}` | Detach related record | allowed |
 
 ### Authorization Metadata
@@ -1027,7 +1212,7 @@ public function overrides(): array
 }
 ```
 
-See the [Override System](overrides.md) documentation for full details.
+See the [Override System](/docs/customization/overrides) documentation for full details.
 
 ## Exception Handling
 
@@ -1139,3 +1324,4 @@ class PostResource extends Resource
     }
 }
 ```
+

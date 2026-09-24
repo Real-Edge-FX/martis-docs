@@ -5,7 +5,6 @@ sourcePath: "martis-package/docs/tools.md"
 ---
 
 # Custom Tools
-
 > Free-form sidebar pages — non-resource, non-dashboard, non-lens. Use Tools when you need an admin page that isn't backed by a model: import wizards, system status, ad-hoc reports, third-party embeds, generated docs, etc.
 >
 > **Status:** shipped in v0.10. Includes a `boot()` per-tool lifecycle hook, a `ToolServiceProvider` for Composer-package distribution, asset/file publishing helpers, and a `martis:tool` artisan generator.
@@ -65,7 +64,7 @@ php artisan martis:tool SystemStatus --use-bundled --menu-section="Operations" -
 
 This produces `app/Martis/Tools/SystemStatus.php`. **No registration step required**: any concrete `Martis\Tools\Tool` subclass under `app/Martis/Tools/` is auto-discovered at boot (v1.8.20+) and added to `Martis::tools(...)` with dedup by class-string.
 
-The Tool also surfaces in the sidebar by default — auto-grouped under the localised "Tools" header, or under whatever you pass to `withMenuSection('Operations')` inside the constructor. Manual placement via `MenuItem::tool(SystemStatus::class)` is still available when you build a fully custom main menu via `Martis::mainMenu(...)`.
+The Tool also surfaces in the sidebar by default — auto-grouped under the localised "Tools" header, or under whatever you pass to `withMenuSection('Operations')` inside the constructor. Call `withSystemSection()` instead to dock it in the bundled **System** section, next to the audit log and the Cache admin link (v1.35.0+, see [Place a Tool under "System"](#place-a-tool-under-system--withsystemsection-v1350)). Manual placement via `MenuItem::tool(SystemStatus::class)` is still available when you build a fully custom main menu via `Martis::mainMenu(...)`.
 
 Done. Navigate to `/martis/tools/system-status`. The bundled `martis:tool:system-status-demo` React component renders the page inside the standard layout.
 
@@ -80,7 +79,7 @@ Martis::tools([
 ]);
 ```
 
-Override the discovery path or namespace via `martis.tools_path` and `martis.tools_namespace` if your app keeps Tools outside the conventional location.
+Override the discovery path via `martis.tools_path` if your app keeps Tools outside the conventional location. The namespace is derived from Composer's PSR-4 map for that directory (since v1.36.0; `App\Martis\Tools` for the default layout); set `martis.tools_namespace` only to pin it or when the directory is not autoloaded.
 
 ## Anatomy of a Tool class
 
@@ -113,13 +112,52 @@ Tool::make(__('Finance Imports'))
 | `icon()` | Currently-set Phosphor icon name, or `null`. Read by `MenuItem::tool()` and `toArray()`. |
 | `component()` | Registered React component key, or `null` (config-only tools). |
 | `menuSection()` | Active menu section label, or `null`. |
+| `belongsToSystemSection()` | `true` when the Tool is docked in the bundled "System" sidebar section. Defaults to `false`. v1.35.0+. |
+| `systemSectionOrder()` | Weight of the Tool inside the "System" section, lowest first. Defaults to `100`. v1.38.0+. |
+| `menuCount(Request)` | Sidebar count badge for this tool. Returns `null` (no badge) by default. Override to return a count. v1.29.0+. |
+| `showMenuCount()` | Whether the count badge renders. Defaults to `true`; the badge only appears when `menuCount()` also returns non-null. v1.29.0+. |
 | `meta()` | The accumulated metadata array (mirrors what `withMeta()` set). |
 | `withIcon(string)` | Phosphor icon for the menu entry. Chainable. |
 | `withComponent(string)` | React component key. The frontend looks this up in `componentRegistry`. Chainable. |
 | `withMenuSection(?string)` | Optional menu section label. Chainable. |
+| `withSystemSection(bool $value = true, ?int $order = null)` | Dock the Tool in the bundled "System" section (with the audit log, the System-section resources and the Cache admin link). Wins over `withMenuSection()`. `order:` sets `systemSectionOrder()` (v1.38.0+); `null` keeps the current weight. Chainable. v1.35.0+. |
 | `withMeta(array)` | Merge arbitrary descriptor data; surfaced verbatim to the React component. Chainable. |
 | `breadcrumb()` | Breadcrumb override getter. Returns `null` when the breadcrumb tracks `name()` (default). v1.10.3+. |
 | `withBreadcrumb(?string)` | Override the breadcrumb label without touching `name()`. Pass `null` to clear. Chainable. v1.10.3+. |
+
+### Place a Tool under "System" — `withSystemSection()` (v1.35.0+)
+
+Resources can opt into the package's own **System** sidebar section (the one that holds the audit log, `martis:roles` / `martis:invitations` resources and the "System cache" link) via `belongsToSystemSection()`. Tools have the same opt-in:
+
+```php
+class Settings extends Tool
+{
+    public function __construct()
+    {
+        parent::__construct(name: __('Settings'), uriKey: 'settings');
+
+        $this->withIcon('sliders')
+            ->withComponent('tool:settings')
+            ->withSystemSection();
+    }
+}
+```
+
+Subclasses may override the getter instead (`public function belongsToSystemSection(): bool { return true; }`), exactly like a Resource.
+
+What changes for an opted-in Tool:
+
+- It renders inside the **single** bundled System section, after the System-section resources and before the "System cache" link. No section of its own is created, and `/api/navigation` carries one section labelled "System".
+- Its place in that section is a weight: `withSystemSection(order: 10)` lists it before every entry that keeps the default `100` (the resources included), a weight above `1000` after the cache link. Equal weights keep the natural order. See [Menus → Order inside the System section](/docs/core/menus#order-inside-the-system-section-v1380) (v1.38.0+).
+- `menuSection()` / `withMenuSection()` are ignored for it (the opt-in wins).
+- The command palette (⌘K) tags it "System", the same label the sidebar uses.
+- Its `menuCount()` badge keeps working, including the `/api/navigation/badges` poll (`tool:{uriKey}` key).
+- Per-tool authorisation is unchanged: a user who fails `authorizedToSee()` does not get the entry; the section still renders for the other items that user can see.
+- If you also build a custom `Martis::mainMenu(...)` and place the same Tool by hand with `MenuItem::tool(...)`, the System section does not repeat it (dedup by tool `uriKey`, mirroring the rule for System-section resources).
+
+The opt-in is explicit on purpose. A Tool that merely returns the translated "System" label from `menuSection()` is **not** merged: it still produces its own section with that label, next to the bundled one. Switch it to `withSystemSection()`.
+
+The generator scaffolds the call: `php artisan martis:tool Settings --system-section`.
 
 ### Customising the breadcrumb (v1.10.3+)
 
@@ -165,12 +203,41 @@ $this->canSee(fn (Request $request) =>
 |---|---|
 | `canSee(Closure)` | Fluent setter. Closure receives a `Request` and returns `bool`. |
 | `authorizedToSee(Request)` | Resolved boolean used by the controller and the menu builder. Useful in tests / dynamic menus that need to pre-filter. Defaults to `true` when no `canSee()` callback is set. |
+| `public static ?string $policy` | Declarative Laravel Policy (v1.11.0+): its `view($user)` decides before `canSee()` is consulted. Resolved like a Resource's policy (explicit `$policy`, then `{policy_namespace}\{BaseName}Policy` with the `Tool` suffix stripped, then a policy registered with the Gate for the Tool class) and registered with the Gate on the first check, so no `Gate::policy()` call is needed (v1.36.0). See [Soft-gates → Policy binding](/docs/core/gates#policy-binding-dashboard-tool). |
+
+### Menu count badge (v1.29.0+)
+
+A Tool can publish a numeric count badge on its sidebar entry — the same badge a Resource shows next to its label (`Users 1,284`). Override `menuCount()` to return the number; return `null` to hide it. This mirrors the Resource contract, so a full-canvas Tool that owns list data can surface a live "pending" / "unread" count without a Resource behind it.
+
+```php
+class FinanceImports extends Tool
+{
+    // Count of imports waiting for review — shown as the sidebar badge.
+    public function menuCount(Request $request): ?int
+    {
+        return Import::query()->where('status', 'pending')->count();
+    }
+
+    // Optional: hide the badge without dropping the count logic.
+    public function showMenuCount(): bool
+    {
+        return true; // default
+    }
+}
+```
+
+Behaviour:
+
+- The value serialises on the tool's nav item under the `count` key.
+- It is also included in the lightweight `GET /api/navigation/badges` payload, keyed by the tool's `uriKey`, so tool counts **live-poll** on the same interval as resource counts (`MARTIS_NAV_BADGES_POLL_MS`, default 5 min).
+- The badge respects `authorizedToSee()` — a user who can't see the Tool never receives its count, exactly like a resource count.
+- `menuCount()` runs per request; keep the query cheap (it also fires on every badge poll). Cache it if it's expensive.
 
 ### Lifecycle: `boot()`
 
 The most powerful per-tool hook. Runs **once per request lifecycle**, lazily on the first hit that needs the tools registry, **after** Martis has loaded its own routes / views / config — so tool-owned routes register on top of an initialised package.
 
-> **When to put setup in `Tool::boot()` vs `AppServiceProvider::boot()`?** Read [tool-boot-patterns.md](tool-boot-patterns.md) — it has a decision rubric and 4 worked examples (routes, gates, schedules, event listeners) with the trade-offs spelt out.
+> **When to put setup in `Tool::boot()` vs `AppServiceProvider::boot()`?** Read [tool-boot-patterns.md](/docs/customization/tool-boot-patterns) — it has a decision rubric and 4 worked examples (routes, gates, schedules, event listeners) with the trade-offs spelt out.
 
 ```php
 public function boot(): void
@@ -276,8 +343,9 @@ Two endpoints the package mounts automatically:
 
 | Method | Path | Returns |
 |---|---|---|
-| `GET` | `/martis/api/tools` | Array of every authorised tool — `[{ type, name, uriKey, icon, component, menuSection, meta }, ...]` |
+| `GET` | `/martis/api/tools` | Array of every authorised tool — `[{ type, name, uriKey, icon, component, menuSection, belongsToSystemSection, meta }, ...]` |
 | `GET` | `/martis/api/tools/{uriKey}` | Single tool metadata, or 404 |
+| `GET` | `/api/navigation/badges` | Lightweight badge poll — includes each tool's `count` keyed by `uriKey`, alongside resource counts. |
 
 The frontend hits these to build navigation entries and validate deep links. The actual page render is the SPA's job — the catch-all route delegates to React.
 
@@ -309,7 +377,7 @@ Bind a React component to the key your PHP tool declared:
 
 ```ts
 // resources/js/martis-extensions/index.ts
-import { componentRegistry } from '@/lib/componentRegistry'
+import { componentRegistry } from '@martis/runtime'
 import { FinanceImportsTool } from './tools/FinanceImportsTool'
 
 componentRegistry.register('tool:imports', FinanceImportsTool)
@@ -324,6 +392,8 @@ interface ToolDescriptor {
   icon: string | null
   component: string | null
   menuSection: string | null
+  belongsToSystemSection?: boolean // docked in the bundled "System" section (v1.35.0+)
+  count?: number | null           // sidebar badge from menuCount(), live-polled
   meta: Record<string, unknown>   // values you set via withMeta(...)
 }
 
@@ -337,7 +407,11 @@ export function FinanceImportsTool({ tool }: { tool: ToolDescriptor }) {
 
 The Martis `ToolPage` shell (route `/tools/:uriKey`) fetches `/api/tools/{uriKey}`, looks up the registered component by key, and mounts it inside the standard layout (topbar, sidebar, breadcrumbs, theme — all wired automatically).
 
+> **Reusing Martis Fields inside a Tool.** A Tool can host real Martis fields (`Slug`, `Text`, `BelongsTo`, …) with the exact behaviour they have in a Resource form — slug-from-source, `dependsOn`, validation display — via the shared `useMartisForm` + `FieldsForm` harness, optionally declaring the fields in PHP with `Tool::fields()`. See [tool-fields.md](/docs/customization/tool-fields).
+
 If your tool's `component()` returns a key that has no registration in `componentRegistry`, `ToolPage` renders a developer-friendly error UI (the tool name as the heading, then a translated message pointing you at the missing `componentRegistry.register(...)` call). The error is rendered to the DOM, not the console — it is hard to miss during local dev and is harmless in production beyond the visible message. To ship a config-only tool without a React body, simply do not call `withComponent()`; `ToolPage` then renders just the standard header and no content panel.
+
+> **Navigating between tools.** Switching from one Tool to another (`/tools/:uriKey` → `/tools/:otherUriKey`) fully unmounts and remounts `ToolPage`, so the outgoing tool's state and in-flight fetch are torn down cleanly instead of flashing stale data from the previous tool. A top progress bar (mounted once in the shell layout) reflects any in-flight navigation or query across the whole app, tool pages included.
 
 ## The `martis:tool` generator
 
@@ -348,19 +422,14 @@ php artisan martis:tool SystemStatus [flags]
 | Flag | Effect |
 |---|---|
 | `--with-component` | Also drop a TSX stub at `resources/js/martis-extensions/tools/{Name}.tsx` (no `Tool` filename suffix). The auto-discovery entry registers it against the derived key automatically; no manual `componentRegistry.register` call required. |
-| `--component-key=foo` | Use `foo` as the React component key instead of the auto-generated `tool:{kebab-name}`. |
+| `--component-key=foo` | Use `foo` as the React component key instead of the auto-generated `tool:{kebab-name}` (kebab case with an acronym kept whole: `SEOReport` is `tool:seo-report`). With `--with-component`, the entry still registers the TSX under `tool:{kebab-name}`, so the command prints the `register()` call that binds it to `foo` in `resources/js/martis-extensions/index.ts`. |
 | `--use-bundled` | Bind to the package-bundled `martis:tool:system-status-demo` component so the Tool renders out of the box without writing TSX. |
 | `--menu-section="Operations"` | Embed `withMenuSection('Operations')` in the generated stub. |
+| `--system-section` | Embed `withSystemSection()` in the generated stub so the Tool docks in the bundled "System" section. Wins over `--menu-section` (a warning is printed when both are given). v1.35.0+. |
 | `--icon=wrench` | Phosphor icon for the menu entry (default `wrench`). |
 | `--force` | Overwrite the file if it already exists. |
 
-After the command finishes, the CLI prints a "next steps" block with:
-
-1. The exact `Martis::tools([...])` registration snippet for your service provider.
-2. The `MenuItem::tool(...)` line to copy into your menu.
-3. The `componentRegistry.register('...', ...)` call to add under `resources/js/martis-extensions/` (auto-discovered) (or a note that you used `--use-bundled`).
-
-You should not need to alt-tab to the docs after running it.
+After the command finishes, the CLI prints the next step: with `--with-component`, the build reminder (`npm run build:extensions`), preceded by the `componentRegistry.register(...)` call to add to `resources/js/martis-extensions/index.ts` when `--component-key` names a key the file name does not derive; with `--use-bundled`, a note that no build is needed; otherwise the two ways to bind a component to the key. The Tool class itself is auto-registered (see [the five-minute Tool path](/docs/getting-started/installation#the-five-minute-tool-path)).
 
 ## Distribution patterns
 
@@ -433,7 +502,7 @@ Laravel auto-discovers the provider on `composer require`. The per-tool `boot()`
 Goal: render a page with the master cache health, queue depth, and Telescope link.
 
 ```bash
-php artisan martis:tool SystemStatus --with-component --menu-section="System" --icon=pulse
+php artisan martis:tool SystemStatus --with-component --system-section --icon=pulse
 ```
 
 The generator drops:
@@ -448,16 +517,13 @@ $this->canSee(fn ($request) => $request->user()?->is_admin);
 
 In the React component, fetch `/martis/api/cache/status` and `/horizon/api/stats` and render them.
 
-Register and add to the menu:
+Register (or rely on auto-discovery under `app/Martis/Tools/`):
 
 ```php
 Martis::tools([SystemStatus::class]);
-
-// in mainMenu(...):
-MenuSection::make('System', [
-    MenuItem::tool(SystemStatus::class),
-])->icon('gear');
 ```
+
+That is all: `--system-section` scaffolds `withSystemSection()`, so the Tool renders inside the bundled **System** section between the System-section resources and the "System cache" link, with no `Martis::mainMenu(...)` needed. (Before v1.35.0 this recipe used `--menu-section="System"` plus a hand-built `MenuSection::make('System', [...])`, which produced a second section with the same header.)
 
 ### Recipe 2 — Import wizard with custom routes
 
@@ -547,6 +613,22 @@ In `composer.json`:
 
 Consumer: `composer require your-vendor/martis-backups` and they get a working Backups page in their sidebar.
 
+## Making a headless resource findable through its Tool
+
+Pattern B in [Distribution patterns](#distribution-patterns) aside, the common in-app shape is: "a Tool owns the domain, and a Resource is kept around headless (`routable() === false`) purely as a relation target / data source" (see [`routable()`](/docs/core/resources#routable) in the Resources reference).
+
+That headless Resource can still be **findable in global search**, and every link to one of its records can still **deep-link to the Tool**, by declaring `recordUrl()`:
+
+```php
+class ProjectResource extends Resource
+{
+    public static function routable(): bool { return false; }
+    public static function recordUrl(): ?string { return '/tools/project-knowledge?id={id}'; }
+}
+```
+
+With that in place, projects surface in the ⌘K palette and any `BelongsTo`/breadcrumb/search-result link to a project opens `/tools/project-knowledge?id={id}` instead of a 404. See [`recordUrl()`](/docs/core/resources#recordurl) in the Resources reference for the full contract (the dual role, the `routable()`/`globallySearchable()` interaction table, and the authorization guarantee).
+
 ## Anti-patterns
 
 - **Don't use a Tool to render a Resource.** If you need a custom CRUD UI for a model, override the resource page or define a Lens.
@@ -577,3 +659,4 @@ Run the focused suites:
 vendor/bin/pest tests/Feature/ToolsControllerTest.php
 vendor/bin/pest tests/Feature/ParitySurfaceTest.php
 ```
+

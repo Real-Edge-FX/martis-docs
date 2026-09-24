@@ -1,14 +1,13 @@
 ---
 title: "Authentication"
-description: "Martis provides a complete authentication system with login, logout, two-factor authentication (2FA), and a user profile page — all configurable and overridable."
+description: "Martis provides a complete authentication system with login, logout, two-factor authentication (2FA), magic-link, browser-session management, and a user profile page — all configurable and overridable."
 sourcePath: "martis-package/docs/authentication.md"
 ---
 
 # Authentication
-
 Martis provides a complete authentication system with login, logout, two-factor authentication (2FA), magic-link, browser-session management, and a user profile page — all configurable and overridable.
 
-> See also: [SSO](sso.md) for OAuth/OIDC providers (Azure / Google / GitHub / custom), and [Impersonation](impersonation.md) for the login-as-another-user subsystem (admins surfacing a switch from the user menu and from the User Resource detail page).
+> See also: [SSO](/docs/auth/sso) for OAuth/OIDC providers (Azure / Google / GitHub / custom), and [Impersonation](/docs/auth/impersonation) for the login-as-another-user subsystem (admins surfacing a switch from the user menu and from the User Resource detail page).
 
 ## Login Flow
 
@@ -26,9 +25,12 @@ Content-Type: application/json
 
 {
     "email": "admin@example.com",
-    "password": "secret"
+    "password": "secret",
+    "keep_signed_in": true
 }
 ```
+
+`keep_signed_in` is optional (defaults to `false` when omitted). When `true`, the login issues Laravel's long-lived remember-me cookie (`remember_web_*`) so the session survives past `config('session.lifetime')`; the login page renders the "Keep me signed in on this device" toggle checked by default. Both the SPA endpoint above and the non-SPA `POST /{martis-path}/login` share the same handling (v1.31.1+).
 
 **Responses:**
 
@@ -153,7 +155,7 @@ All flags default to `false`. A fresh `composer require martis/martis` install s
 
 | Block | Shape | Purpose |
 |---|---|---|
-| `sso` | `enabled` + `providers` map | Renders one button per enabled provider. Martis owns the OAuth dance end-to-end. See [`sso.md`](sso.md). |
+| `sso` | `enabled` + `providers` map | Renders one button per enabled provider. Martis owns the OAuth dance end-to-end. See [`sso.md`](/docs/auth/sso). |
 | `passwordReset` | `enabled` + `url` + `broker` | Renders the "Forgot?" link, hosts `/forgot-password` and `/reset-password/{token}` pages, and POST endpoints. `url` redirects off-platform. `broker` selects the Laravel password broker. |
 | `registration` | `enabled` + `url` + `default_role` | Renders the "Create an account" link, hosts `/register` page and POST endpoint. `default_role` is auto-assigned via `assignRole()` when set. |
 | `controls` | `theme` + `locale` | Top-right widget visibility on every auth surface. |
@@ -306,6 +308,8 @@ class MyRegistrar implements RegistersUsers
 
 The Martis-shipped React form already understands the response shape (`201` on success, `422` with `errors.field` on validation failure), so the React side keeps working as long as the override returns an `Authenticatable` and throws `ValidationException` on invalid input.
 
+> **Building an invite-token check like the `invite` field above?** Consider `martis:invitations` instead of hand-rolling it against self-service registration. It ships a dedicated `InvitationManager` (hashed single-use tokens, TTL, enumeration-neutral accept flow), a public accept screen, and a generator that scaffolds the admin-side resource + actions — a closed, invite-only onboarding flow that composes with (rather than bolts onto) the registration pipeline above. See [invitations.md](/docs/auth/invitations).
+
 ### Layer-by-layer compatibility
 
 The three layers compose. Override the React page AND the backend AND keep the Martis-themed link visibility (Layer 1 staying empty). Or override only the React page and let the default backend keep working. Or do nothing and ship with the defaults.
@@ -365,6 +369,7 @@ The auth keys live in `auth.php`:
 | `register_title` / `register_sub` | Register page |
 | `forgot_password_title` / `forgot_password_sub` | Forgot-password page |
 | `reset_password_title` / `reset_password_sub` | Reset-password page |
+| `invitation_accept_title` / `invitation_accept_sub` | Invitation-accept page |
 
 Example — `resources/lang/vendor/martis/pt_BR/auth.php`:
 
@@ -403,6 +408,10 @@ When the consumer runs a single language and wants a quick brand override withou
         'reset_password' => [
             'title' => env('MARTIS_AUTH_RESET_TITLE'),
             'subtitle' => env('MARTIS_AUTH_RESET_SUBTITLE'),
+        ],
+        'invitation_accept' => [
+            'title' => env('MARTIS_AUTH_INVITATION_ACCEPT_TITLE'),
+            'subtitle' => env('MARTIS_AUTH_INVITATION_ACCEPT_SUBTITLE'),
         ],
     ],
 ],
@@ -504,7 +513,7 @@ Three steps:
    ```php
    use Illuminate\Contracts\Auth\MustVerifyEmail;
 
-   class User extends Authenticatable implements MustVerifyEmail { /* … */ }
+   class User extends Authenticatable implements MustVerifyEmail \{ /* … */ }
    ```
 
 2. **Set the master flag**:
@@ -652,7 +661,18 @@ Profile page gets a "Browser sessions" surface (`<BrowserSessionsSection />`) th
 
 The section is mounted by default when `martis.profile.sections` includes `'sessions'`. Since v1.8.8 the bundled default is `['avatar', 'account', 'password', 'security', 'sessions']`. Older installs that pinned the list to four entries need to add `'sessions'` to the published `config/martis.php` to see the panel.
 
-The host app must use Laravel's `database` session driver for the panel to populate. When the driver is `file` / `cookie` / `array` / unknown, the API returns `supported: false` and the React UI renders a one-line hint explaining how to switch (`php artisan session:table` + `php artisan migrate`) instead of a confusing empty list.
+#### Requirements
+
+The Browser sessions section has an external host dependency (unlike the other profile sections):
+
+| Requirement | Detail |
+|---|---|
+| **Session driver** | `SESSION_DRIVER=database`. On `file` / `cookie` / `array` / unknown the API returns `supported: false` and the UI renders a one-line hint instead of an empty list. |
+| **`sessions` table** | The standard Laravel session table must exist. |
+
+**Provisioning (since v1.30.0):** run `php artisan martis:install --with-sessions` to publish a **key-type-aware** sessions migration (published under the `martis-sessions-migration` tag, folded into `--with-profile` when the section is active). Its `user_id` column matches your `users.id` shape — a UUID/ULID-keyed host gets a `uuid`/`ulid` column instead of a `bigint`, avoiding the Postgres `invalid input syntax for type bigint` failure that Laravel's stock `php artisan session:table` (`foreignId('user_id')`) causes on non-integer-keyed users tables. The migration is idempotent (skipped when the table already exists) and carries no FK constraint, matching Laravel's own session table. You may still use `php artisan session:table` + `php artisan migrate` if your `users.id` is a `bigint`.
+
+**Install-time preflight:** when `'sessions'` is in `profile.sections` but `SESSION_DRIVER` isn't `database`, `martis:install` prints an actionable warning (it never fails the install) so the dependency surfaces at setup time rather than only at runtime. To hide the section entirely, remove `'sessions'` from `profile.sections`.
 
 ### Endpoints
 
@@ -748,9 +768,25 @@ The profile page is accessible at `/{martis-path}/profile` and provides:
         'enabled' => true,
         'recovery_codes' => 8,           // Number of one-time codes
     ],
+    'account' => [
+        // MARTIS_PROFILE_EMAIL_EDITABLE — when false, the Account section
+        // renders the e-mail field read-only. Default true.
+        'email_editable' => true,
+    ],
     'sections' => ['account', 'password', 'avatar', 'security', 'sessions'],
 ],
 ```
+
+#### Locking the e-mail field
+
+The e-mail is often the acting identity, so a deployment may want name, avatar,
+and password editable while the e-mail stays fixed. Set
+`profile.account.email_editable` to `false` (env `MARTIS_PROFILE_EMAIL_EDITABLE`)
+and the built-in Account section renders the e-mail field read-only.
+
+This flag is the **UI half only**. Pair it with a custom `ProfileResource` that
+also rejects e-mail changes server-side, so a hand-crafted `PATCH /martis/api/profile`
+request cannot bypass the locked field.
 
 ### Profile API Endpoints
 
@@ -849,12 +885,42 @@ The user dropdown menu in the topbar is configurable:
 'user_menu' => [
     'showThemeToggle' => true,      // Dark/light mode toggle
     'showProfile' => true,          // Profile page link
-    'showNotifications' => true,    // Notifications (placeholder)
     // 'customItems' => [
-    //     ['label' => 'Settings', 'icon' => 'pi pi-cog', 'url' => '/settings'],
+    //     ['label' => 'Settings', 'icon' => 'gear', 'url' => '/settings'],
     //     ['separator' => true],
-    //     ['label' => 'Docs', 'icon' => 'pi pi-book', 'url' => 'https://docs.example.com'],
+    //     ['label' => 'Docs', 'icon' => 'book-open', 'url' => 'https://docs.example.com'],
     // ],
+],
+```
+
+### Custom items
+
+Each entry in `customItems` accepts `label`, `icon`, `url`, and an optional
+`position`. Use `['separator' => true]` for a divider between groups.
+
+| Key | Description |
+|-----|-------------|
+| `label` | Menu text. Resolved through i18n: when the value matches a translation key it is translated (and follows the active locale); otherwise it renders verbatim. Config files can't call `__()`, so pass the key here and it behaves like every other Martis surface. |
+| `icon` | **Phosphor icon name** (the same names the sidebar uses, e.g. `key`, `gear`, `book-open`), rendered as an inline SVG through the shared icon path. |
+| `url` | Internal path (navigated via the SPA router, like Profile) or a full `https://…` URL (opens in a new tab). |
+| `position` | `'before'` (default) or `'after'`, relative to the built-in Profile entry. `'before'` keeps the item above Profile; `'after'` places it below. |
+
+> **Breaking change (v1.29.0):** `icon` is now a Phosphor icon name, not a
+> PrimeIcons class. Replace legacy values like `'pi pi-key'` with the bare
+> Phosphor name (`'key'`). This aligns the custom-item icons with the built-in
+> Profile / Sign-out entries and fixes the label misalignment caused by the
+> PrimeIcons font-glyph box metrics.
+
+```php
+'user_menu' => [
+    'customItems' => [
+        // Translation key → follows the active locale.
+        ['label' => 'menu.api_keys', 'icon' => 'key', 'url' => '/api-keys'],
+        // Literal label, placed below the Profile entry.
+        ['label' => 'Billing', 'icon' => 'credit-card', 'url' => '/billing', 'position' => 'after'],
+        ['separator' => true],
+        ['label' => 'Docs', 'icon' => 'book-open', 'url' => 'https://docs.example.com'],
+    ],
 ],
 ```
 
@@ -877,6 +943,7 @@ These are applied automatically by the Martis route definitions. You do not need
 
 ## Next Steps
 
-- [Resources](resources.md) — Define admin resources
-- [Authorization](resources.md#authorization) — Control access with policies
-- [Configuration](configuration.md) — Full config reference
+- [Resources](/docs/core/resources) — Define admin resources
+- [Authorization](/docs/core/resources#authorization) — Control access with policies
+- [Configuration](/docs/reference/configuration) — Full config reference
+

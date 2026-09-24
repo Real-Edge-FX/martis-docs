@@ -91,18 +91,22 @@ martis-docs/
 
 ## Deployment
 
-The site runs on the host at `192.168.50.21:3000`, served by Caddy out of `/home/martis/martis-docs/dist`. The external Nginx Proxy Manager terminates TLS for `martis-docs.realedgefx.com` and forwards to that port.
+The official production host is **getmartis.com**, on Hostinger shared hosting (Apache/LiteSpeed). The site is static, so deploy = build locally and `rsync` `dist/` into the domain docroot over SSH.
 
-`.github/workflows/deploy.yml` builds and rsyncs on every push to `main`:
+```bash
+bash scripts/deploy.sh
+```
 
-1. Activate Node 22 from nvm.
-2. `pnpm install --frozen-lockfile`.
-3. `pnpm build`.
-4. `cp dist/index.html dist/404.html` for SPA fallback.
-5. `rsync -a --delete dist/ /home/martis/martis-docs/dist/`.
-6. Smoke `curl` against `/`, `/docs`, `/docs/getting-started/installation`, and `/search-index.json`.
+`scripts/deploy.sh`:
 
-The runner is registered with label `martis-docs` and lives on the same host as Caddy, so deploy = atomic rsync.
+1. `pnpm build` (regenerates `dist/`, including `.htaccess` shipped from `public/`).
+2. `cp dist/index.html dist/404.html` as a SPA fallback safety net.
+3. `rsync -a --delete dist/` over SSH (host `147.79.113.74`, port `65002`, user `u498269178`) into `domains/getmartis.com/public_html/`.
+4. Smoke `curl` against `/`, `/docs`, and `/search-index.json` on `https://getmartis.com`.
+
+Hostinger allows SSH **password** auth only (no keys, no SFTP batch). The script reads the password at the prompt, or from `MARTIS_DOCS_SSH_PASS` for non-interactive runs; it is never written to disk. SPA deep links work via `public/.htaccess`, which rewrites unknown paths to `/index.html`.
+
+> The previous LAN setup (`192.168.50.21` + Caddy + Nginx Proxy Manager + `martis-docs.realedgefx.com`, driven by `.github/workflows/deploy.yml`) is retired. That workflow targets a self-hosted runner that no longer applies.
 
 ## Source of truth
 

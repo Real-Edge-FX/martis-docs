@@ -2,7 +2,13 @@ import { useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { motion, useReducedMotion, useScroll, useTransform } from 'motion/react'
 import { Icons } from '@/components/icons'
-import { VERSION, RELEASE_HEADLINE } from '@/data/landing'
+import {
+  VERSION,
+  RELEASE_HEADLINE,
+  TESTS_PASSING,
+  PHP_REQUIREMENT,
+  LARAVEL_REQUIREMENT,
+} from '@/data/landing'
 import { AuroraBackdrop } from '@/components/landing/AuroraBackdrop'
 
 const EASE = [0.22, 1, 0.36, 1] as const
@@ -139,12 +145,14 @@ export function Hero() {
           >
             <span className="flex items-center gap-1.5">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 pulse-soft" />
-              2,325 tests passing
+              {TESTS_PASSING} tests passing
             </span>
             <span className="hidden sm:inline">·</span>
             <span className="hidden sm:inline">MIT licensed</span>
             <span className="hidden sm:inline">·</span>
-            <span className="hidden sm:inline">PHP 8.2+ / Laravel 12+</span>
+            <span className="hidden sm:inline">
+              {PHP_REQUIREMENT} / {LARAVEL_REQUIREMENT}
+            </span>
           </motion.div>
         </motion.div>
 

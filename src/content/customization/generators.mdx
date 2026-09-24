@@ -1,16 +1,15 @@
 ---
 title: "Customising Martis Generators"
-description: "Every Martis make-command (e.g. `martis:resource`, `martis:action`, `martis:lens`, `martis:trend`, `martis:tool`) renders a class from a `.stub` template shipped inside the package. The defaults aim for \"drop-in\" with sane Laravel-style headers and docblocks. Once a project has i"
+description: "Every Martis make-command (e.g. martis:resource, martis:action, martis:lens, martis:trend, martis:tool) renders a class from a .stub template shipped inside the package. The defaults aim for \"drop-in\" with sane Laravel-style headers and docblocks. Once a project has its own conve"
 sourcePath: "martis-package/docs/customizing-generators.md"
 ---
 
 # Customising Martis Generators
-
 Every Martis make-command (e.g. `martis:resource`, `martis:action`, `martis:lens`, `martis:trend`, `martis:tool`) renders a class from a `.stub` template shipped inside the package. The defaults aim for "drop-in" with sane Laravel-style headers and docblocks. Once a project has its own conventions (custom file headers, opinionated docblocks, organisation imports, project-specific traits) the default stubs become a friction point.
 
 `martis:stubs` publishes every template into `stubs/martis/` so consumers can edit them in place.
 
-> **Stub overrides vs component overrides.** This page is about **scaffolding** — the source code emitted once when you run `php artisan martis:resource Foo`. It does not affect runtime rendering. To swap a React component the panel uses live, see the [Override System](overrides.md) (`componentRegistry`, `layoutRegistry`).
+> **Stub overrides vs component overrides.** This page is about **scaffolding** — the source code emitted once when you run `php artisan martis:resource Foo`. It does not affect runtime rendering. To swap a React component the panel uses live, see the [Override System](/docs/customization/overrides) (`componentRegistry`, `layoutRegistry`).
 
 ## Quick start
 
@@ -18,7 +17,7 @@ Every Martis make-command (e.g. `martis:resource`, `martis:action`, `martis:lens
 php artisan martis:stubs
 ```
 
-Output (truncated — the package ships ~45 stubs):
+Output (truncated; the package ships 60 stubs):
 
 ```
   resource.stub ............................................... PUBLISHED
@@ -27,7 +26,7 @@ Output (truncated — the package ships ~45 stubs):
   lens.stub ................................................... PUBLISHED
   ...
 
-  45 stubs published; 0 skipped. Edit them in stubs/martis/ to customise generator output.
+  60 stubs published; 0 skipped. Edit them in stubs/martis/ to customise generator output.
 ```
 
 When you re-run with `--force`, the status column reads `OVERWRITTEN` instead of `PUBLISHED` so the overwrite is visible in the log.
@@ -50,6 +49,7 @@ The folder is created at `base_path('stubs/martis/')`. From now on every `martis
 | `policy.stub` | `martis:policy` |
 | `theme.css.stub` | `martis:theme` |
 | `component-{type}.tsx.stub` (12 variants) | `martis:component --type={type}` (see table below) |
+| `agents/AGENTS.md.stub` | `martis:agents`: the guidelines primer for AI coding agents, published to `stubs/martis/agents/` (v1.38.1+; see [Agent guidelines → Customising the primer](/docs/customization/agent-guidelines#customising-the-primer)) |
 
 ### `martis:component` types
 
@@ -144,3 +144,4 @@ Drop the override file from `stubs/martis/` and the resolver falls back to the p
 rm -rf stubs/martis/                   # full reset
 rm stubs/martis/resource.stub          # revert just one
 ```
+
