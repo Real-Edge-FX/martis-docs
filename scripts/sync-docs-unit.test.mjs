@@ -135,8 +135,7 @@ test('rewriteLinks still rewrites a link whose text wraps onto the next line', (
 // --- transform --------------------------------------------------------
 
 test('transform writes sourcePath relative to the package docs folder, not just the basename', () => {
-  // Regression: api/overview.md previously became "overview.md" in the
-  // frontmatter (path.basename dropped the "api/" folder).
+  // A nested source keeps its folder ("api/") in the frontmatter.
   const md = '# Overview\n\nSome body text.\n'
   const out = transform(md, 'api/overview.md')
   assert.match(out, /sourcePath: "martis-package\/docs\/api\/overview\.md"/)
@@ -256,4 +255,30 @@ test('findRelativeLinkOffenders still catches a link whose text wraps onto the n
   const offenders = findRelativeLinkOffenders(content)
   assert.equal(offenders.length, 1)
   assert.equal(offenders[0].target, '../installation-guide.md#refreshing-the-extension-scaffold-after-an-upgrade')
+})
+
+// --- URL schemes ------------------------------------------------------
+
+test('findRelativeLinkOffenders reports a link with any scheme other than http(s) or mailto', () => {
+  const content = [
+    '[Run](javascript:void)',
+    '[Data](data:text/html,hi)',
+    '[Old](ftp://example.com/x)',
+    '<a href="vbscript:msgbox">x</a>',
+    "<img src='file:///etc/passwd'>",
+  ].join('\n')
+  assert.deepEqual(
+    findRelativeLinkOffenders(content).map(({ target }) => target),
+    ['javascript:void', 'data:text/html,hi', 'ftp://example.com/x', 'vbscript:msgbox', 'file:///etc/passwd'],
+  )
+})
+
+test('findRelativeLinkOffenders accepts http:, https: and mailto: in any case', () => {
+  const content = ['[A](http://example.com)', '[B](HTTPS://example.com)', '[C](MailTo:a@b.com)'].join('\n')
+  assert.deepEqual(findRelativeLinkOffenders(content), [])
+})
+
+test('rewriteLinks leaves a link with another scheme untouched, for the offender check to report', () => {
+  const md = '[Run](javascript:void)'
+  assert.equal(rewriteLinks(md, 'fields.md'), md)
 })

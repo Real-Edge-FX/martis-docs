@@ -131,10 +131,17 @@ const INVERSE = Object.fromEntries(
   Object.entries({ ...LINK_ONLY, ...MAP }).map(([slug, file]) => [file, slug]),
 )
 
-// A relative link target we never touch: an absolute URL (any scheme,
-// including mailto:), a site-absolute path, or a pure same-page anchor.
+// A URL with a scheme (`https:`, `mailto:`, `javascript:`, ...).
+function hasScheme(target) {
+  return /^[a-z][a-z0-9+.-]*:/i.test(target)
+}
+
+// A link target that is fine to ship as it is: an http(s) or mailto URL,
+// a site-absolute path, or a pure same-page anchor. Any other scheme
+// (`javascript:`, `data:`, `file:`, ...) is not, and is reported by
+// findRelativeLinkOffenders.
 function isSkippableTarget(target) {
-  return /^[a-z][a-z0-9+.-]*:/i.test(target) || target.startsWith('/') || target.startsWith('#')
+  return /^(?:https?|mailto):/i.test(target) || target.startsWith('/') || target.startsWith('#')
 }
 
 function splitAnchor(target) {
@@ -195,7 +202,10 @@ export function rewriteLinks(md, sourceFile) {
     const line = lineIndexAt(md, offset)
     if (fencedLines.has(line)) return whole
 
-    if (isSkippableTarget(target)) return whole
+    // Not a path to resolve: a URL with any scheme stays as written (one
+    // outside the allowlist then fails checkRelativeLinks), and so do a
+    // site-absolute path and an anchor.
+    if (hasScheme(target) || isSkippableTarget(target)) return whole
 
     const { targetPath, anchor } = splitAnchor(target)
     const packagePath = path.posix.normalize(path.posix.join('docs', sourceDir, targetPath))
@@ -307,12 +317,8 @@ function deriveTitleAndDescription(md) {
 // rewriteLinks (see there) and for the sourcePath frontmatter field below,
 // so this needs no access to where these docs were actually read from on
 // disk: `md` is the already-read file content, and the function is pure.
-//
-// sourcePath used to be `path.basename(sourceFile)`, which silently
-// dropped any subfolder: api/overview.md became "martis-package/docs/
-// overview.md" instead of ".../api/overview.md". relativeSource already
-// carries the full package-docs-relative path, so using it directly fixes
-// this for every nested source, not just api/overview.md.
+// The sourcePath frontmatter uses `relativeSource` whole, so a nested
+// source keeps its folder (".../docs/api/overview.md").
 export function transform(md, relativeSource) {
   const { title, description } = deriveTitleAndDescription(md)
   // Strip the duplicated H1 (we render the title from frontmatter).
@@ -476,7 +482,8 @@ function checkPortedPagesMapped() {
 // relative link into either `/docs/<slug>` or a GitHub URL for a synced
 // page — but a hand-authored page is never fed through rewriteLinks, so
 // this also has to catch a raw relative link written directly in an .mdx
-// file. Anything this returns is a 404 in waiting.
+// file. Anything this returns is a 404 in waiting, or a URL with a
+// scheme other than http(s)/mailto (`javascript:`, `data:`, ...).
 export function findRelativeLinkOffenders(content) {
   const offenders = []
   const linkRe = /!?\[[^\]]*\]\(([^)\s]+)\)/g
@@ -519,7 +526,9 @@ function checkRelativeLinks() {
   })(CONTENT_DIR)
 
   if (offenders.length) {
-    console.error(`\n${offenders.length} relative link/image target(s) or href/src that 404 on the site:`)
+    console.error(
+      `\n${offenders.length} link/image target(s) or href/src that 404 on the site or use a scheme other than http(s)/mailto:`,
+    )
     for (const o of offenders) console.error(`  ✗ ${o}`)
     return false
   }
