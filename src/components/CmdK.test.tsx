@@ -33,6 +33,16 @@ function hit(title: string): SearchHit {
   }
 }
 
+/** A promise whose resolution the test controls explicitly, so a mocked
+ * request can be held "in flight" for as long as a scenario needs. */
+function createDeferred<T>() {
+  let resolve!: (value: T) => void
+  const promise = new Promise<T>((res) => {
+    resolve = res
+  })
+  return { promise, resolve }
+}
+
 function renderPalette() {
   render(
     <MemoryRouter>
@@ -114,21 +124,41 @@ describe('CmdK full-text debounce', () => {
   })
 
   // A late-resolving request for an abandoned query must not clobber the
-  // state of the query the user has since moved on to.
+  // state of the query the user has since moved on to. Alpha's response
+  // is a manually controlled deferred promise so it can be resolved
+  // *after* beta's has already landed and rendered — an auto-resolving
+  // mock would let beta's write always land last regardless of whether
+  // the `cancelled` guard in CmdK.tsx exists, proving nothing.
   it('ignores a stale full-text response that resolves after the query changed again', async () => {
+    const alphaResponse = createDeferred<SearchHit[]>()
+    searchFullTextMock.mockImplementation(async (q: string) => {
+      if (q === 'alpha') return alphaResponse.promise
+      if (q === 'beta') return [hit('Beta result')]
+      return []
+    })
+
     const input = renderPalette()
 
     fireEvent.change(input, { target: { value: 'alpha' } })
-    // Let alpha's debounce fire and its request start, but do not let the
-    // mocked promise resolve yet.
-    await act(async () => {
-      vi.advanceTimersByTime(DEBOUNCE_MS)
-    })
+    // Let alpha's debounce fire, so its request is genuinely in flight —
+    // `searchFullText('alpha')` has been called and is awaiting
+    // `alphaResponse`, which nothing resolves yet.
+    await flushDebounce()
 
     fireEvent.change(input, { target: { value: 'beta' } })
     await flushDebounce()
-
     expect(screen.getByText('Beta result')).toBeInTheDocument()
+
+    // Alpha's request finally resolves, long after the query moved on.
+    // `advanceTimersByTimeAsync(0)` drains the microtask queue (the mock's
+    // own `async` wrapping plus the effect's `.then()`) so the resulting
+    // `setFullTextHits` call, if any, has already applied.
+    await act(async () => {
+      alphaResponse.resolve([hit('Alpha result')])
+      await vi.advanceTimersByTimeAsync(0)
+    })
+
     expect(screen.queryByText('Alpha result')).not.toBeInTheDocument()
+    expect(screen.getByText('Beta result')).toBeInTheDocument()
   })
 })
