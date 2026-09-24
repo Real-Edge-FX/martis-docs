@@ -167,3 +167,28 @@ it('rejects within the timeout when a lazy import never resolves, instead of han
     vi.resetModules()
   }
 })
+
+it("rejects within the timeout when a docs page's MDX import never settles, instead of hanging", async () => {
+  vi.resetModules()
+  // `render`'s *first* await — loadInitialDocument, before renderToHtml
+  // even starts — has its own path to a hang: mock one slug's MDX import
+  // to never settle. The test above only exercises the lazy-*page*-import
+  // path (`/missing` is a 404, so it never reaches loadMdx at all); this
+  // one proves the initial-document stage is inside the same budget.
+  vi.doMock('@/lib/mdx-loader', async (importOriginal) => {
+    const actual = await importOriginal<typeof import('@/lib/mdx-loader')>()
+    return {
+      ...actual,
+      loadMdx: (slug: string) => (slug === 'core/fields' ? new Promise<never>(() => {}) : actual.loadMdx(slug)),
+    }
+  })
+  try {
+    const { render: renderWithHangingMdx } = await import('./entry-server')
+    await expect(renderWithHangingMdx('/docs/core/fields', 50)).rejects.toThrow(
+      /loading the initial document did not complete within 50ms/,
+    )
+  } finally {
+    vi.doUnmock('@/lib/mdx-loader')
+    vi.resetModules()
+  }
+})

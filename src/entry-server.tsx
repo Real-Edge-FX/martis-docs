@@ -24,22 +24,33 @@ export interface RenderResult {
   status: number
 }
 
-/** Default time budget for one `render()` call (every Suspense boundary
- *  settling: lazy pages, MDX imports). Without it, a page or import that
- *  never resolves would hang the prerender build forever. Exported so a
- *  focused test can pass a much shorter budget instead of waiting it out. */
+/** Default time budget for one `render()` call — a single deadline for
+ *  every stage it awaits (loading the initial MDX document, then the
+ *  full SSR render), not a separate budget per stage. Without it, a page
+ *  or import that never resolves would hang the prerender build forever.
+ *  Exported so a focused test can pass a much shorter budget instead of
+ *  waiting it out. */
 export const RENDER_TIMEOUT_MS = 20_000
 
 /**
  * Renders one URL of the site to static HTML: the markup the client
  * hydrates, the route's head tags and its HTTP status. The query string
- * and hash reach the router but not the metadata lookup. Rejects if the
- * render has not settled after `timeoutMs`.
+ * and hash reach the router but not the metadata lookup. `timeoutMs` is
+ * one budget for the whole call: loading the initial document and then
+ * rendering both draw from the same deadline, so a stall in either one
+ * rejects with a clear error naming the URL and the stage, instead of
+ * only the second stage being guarded.
  */
 export async function render(url: string, timeoutMs = RENDER_TIMEOUT_MS): Promise<RenderResult> {
   const pathname = parsePath(url).pathname || '/'
   const meta = getRouteMeta(pathname)
-  const initialDocument = await loadInitialDocument(pathname)
+  const deadline = Date.now() + timeoutMs
+
+  const initialDocument = await withDeadline(
+    loadInitialDocument(pathname),
+    deadline,
+    `render(${JSON.stringify(url)}): loading the initial document did not complete within ${timeoutMs}ms`,
+  )
 
   const html = await renderToHtml(
     <StaticRouter location={url}>
@@ -47,10 +58,32 @@ export async function render(url: string, timeoutMs = RENDER_TIMEOUT_MS): Promis
         <App />
       </RenderProvider>
     </StaticRouter>,
-    timeoutMs,
+    deadline,
+    `render(${JSON.stringify(url)}): render did not complete within ${timeoutMs}ms`,
   )
 
   return { html, head: serializeMeta(meta), status: meta === NOT_FOUND_META ? 404 : 200 }
+}
+
+/** Rejects with `new Error(message)` if `promise` has not settled by
+ *  `deadline` (a `Date.now()`-style absolute timestamp); otherwise
+ *  settles the same way `promise` does. Generic on purpose: it is what
+ *  keeps every stage `render()` awaits inside one shared budget, rather
+ *  than each stage getting its own fresh `timeoutMs`. */
+function withDeadline<T>(promise: Promise<T>, deadline: number, message: string): Promise<T> {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error(message)), Math.max(0, deadline - Date.now()))
+    promise.then(
+      (value) => {
+        clearTimeout(timer)
+        resolve(value)
+      },
+      (error: unknown) => {
+        clearTimeout(timer)
+        reject(error)
+      },
+    )
+  })
 }
 
 /**
@@ -60,12 +93,14 @@ export async function render(url: string, timeoutMs = RENDER_TIMEOUT_MS): Promis
  * the client could fill in.
  *
  * Guards against a render that never settles (a lazy import stuck
- * forever): `timeoutMs` after the call starts, it aborts the stream and
- * rejects with a clear error instead of hanging. `abort()` re-invokes
- * `onError` for every boundary still pending, so `fail` must be (and is)
- * idempotent past the first call.
+ * forever): once `deadline` passes, it aborts the stream and rejects with
+ * `timeoutMessage` instead of hanging. `abort()` re-invokes `onError` for
+ * every boundary still pending, so `fail` must be (and is) idempotent
+ * past the first call — including the stream-read failure below, which
+ * is routed through the same `fail` rather than rejecting directly, so
+ * every failure path clears the timer and aborts exactly once.
  */
-function renderToHtml(element: ReactNode, timeoutMs: number): Promise<string> {
+function renderToHtml(element: ReactNode, deadline: number, timeoutMessage: string): Promise<string> {
   return new Promise((resolve, reject) => {
     let failed = false
     const fail = (error: unknown) => {
@@ -77,8 +112,8 @@ function renderToHtml(element: ReactNode, timeoutMs: number): Promise<string> {
     }
 
     const timer = setTimeout(() => {
-      fail(new Error(`renderToHtml: render did not complete within ${timeoutMs}ms, aborted`))
-    }, timeoutMs)
+      fail(new Error(timeoutMessage))
+    }, Math.max(0, deadline - Date.now()))
 
     const { pipe, abort } = renderToPipeableStream(element, {
       onShellError: fail,
@@ -87,7 +122,7 @@ function renderToHtml(element: ReactNode, timeoutMs: number): Promise<string> {
         if (failed) return
         clearTimeout(timer)
         const sink = new PassThrough()
-        text(sink).then((html) => resolve(stripNulPadding(html)), reject)
+        text(sink).then((html) => resolve(stripNulPadding(html)), fail)
         pipe(sink)
       },
     })
