@@ -3,6 +3,7 @@ import { MemoryRouter, useNavigate } from 'react-router-dom'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { serializeMeta } from '@/lib/seo'
 import { getRouteMeta } from '@/lib/site-routes'
+import { ROUTER_FUTURE } from '@/routes'
 import { DocumentMeta } from './DocumentMeta'
 
 /** Mounts `DocumentMeta` plus a button that navigates client-side, so the
@@ -30,7 +31,7 @@ function descriptionContent() {
 describe('DocumentMeta', () => {
   it('sets the head for the initial route and updates it after client-side navigation', () => {
     render(
-      <MemoryRouter initialEntries={['/product']}>
+      <MemoryRouter initialEntries={['/product']} future={ROUTER_FUTURE}>
         <Harness />
       </MemoryRouter>,
     )
@@ -53,7 +54,7 @@ describe('DocumentMeta', () => {
 
   it('adds a noindex robots tag only on the 404 route', () => {
     const first = render(
-      <MemoryRouter initialEntries={['/product']}>
+      <MemoryRouter initialEntries={['/product']} future={ROUTER_FUTURE}>
         <DocumentMeta />
       </MemoryRouter>,
     )
@@ -61,7 +62,7 @@ describe('DocumentMeta', () => {
     first.unmount()
 
     render(
-      <MemoryRouter initialEntries={['/this-route-does-not-exist']}>
+      <MemoryRouter initialEntries={['/this-route-does-not-exist']} future={ROUTER_FUTURE}>
         <DocumentMeta />
       </MemoryRouter>,
     )
@@ -124,7 +125,7 @@ describe('DocumentMeta matches the server-rendered head', () => {
     'renders the same tags in document.head as serializeMeta for %s',
     (route) => {
       render(
-        <MemoryRouter initialEntries={[route]}>
+        <MemoryRouter initialEntries={[route]} future={ROUTER_FUTURE}>
           <DocumentMeta />
         </MemoryRouter>,
       )

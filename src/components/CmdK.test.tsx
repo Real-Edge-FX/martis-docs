@@ -3,6 +3,7 @@ import { MemoryRouter } from 'react-router-dom'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { CmdK } from '@/components/CmdK'
 import { searchFullText, type SearchHit } from '@/lib/search'
+import { ROUTER_FUTURE } from '@/routes'
 
 // `STATIC_INDEX`/`searchStatic` are replaced with empty results so every
 // hit rendered in these tests comes from the mocked `searchFullText`
@@ -45,7 +46,7 @@ function createDeferred<T>() {
 
 function renderPalette() {
   render(
-    <MemoryRouter>
+    <MemoryRouter future={ROUTER_FUTURE}>
       <CmdK open onClose={() => {}} />
     </MemoryRouter>,
   )

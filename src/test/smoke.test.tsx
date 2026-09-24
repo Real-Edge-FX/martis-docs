@@ -1,9 +1,14 @@
 import { render, screen } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { App } from '@/App'
+import { ROUTER_FUTURE } from '@/routes'
 
 it('renders the home route', async () => {
-  render(<MemoryRouter initialEntries={['/']}><App /></MemoryRouter>)
+  render(
+    <MemoryRouter initialEntries={['/']} future={ROUTER_FUTURE}>
+      <App />
+    </MemoryRouter>,
+  )
   // The default findBy* timeout (1000ms) is tight for this suite: the
   // full run renders every public route through real SSR in
   // entry-server.test.tsx, and under that concurrent load the Landing

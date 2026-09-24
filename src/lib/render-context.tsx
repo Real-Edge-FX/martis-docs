@@ -1,6 +1,7 @@
 import { createContext, useContext, type PropsWithChildren } from 'react'
 import { matchPath } from 'react-router-dom'
 import { docSlugFromSplat, loadMdx, type MdxModule } from '@/lib/mdx-loader'
+import { DOCS_ROUTE_PATTERN } from '@/routes'
 
 /** The MDX module of the docs page a URL renders, resolved before the first render. */
 export interface InitialDocument {
@@ -36,7 +37,7 @@ export function useInitialDocument(slug: string): MdxModule | null {
  * with the URL being rendered, so their first renders match.
  */
 export async function loadInitialDocument(pathname: string): Promise<InitialDocument | null> {
-  const slug = docSlugFromSplat(matchPath('/docs/*', pathname)?.params['*'])
+  const slug = docSlugFromSplat(matchPath(DOCS_ROUTE_PATTERN, pathname)?.params['*'])
   const load = slug ? loadMdx(slug) : null
   return load ? { slug, module: await load } : null
 }

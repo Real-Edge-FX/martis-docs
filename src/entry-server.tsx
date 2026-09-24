@@ -8,6 +8,7 @@ import { App } from '@/App'
 import { loadInitialDocument, RenderProvider } from '@/lib/render-context'
 import { serializeMeta } from '@/lib/seo'
 import { getRouteMeta, NOT_FOUND_META } from '@/lib/site-routes'
+import { ROUTER_FUTURE } from '@/routes'
 
 // The static prerender script (scripts/prerender.mjs) drives the whole
 // build from the compiled SSR bundle, so it needs more than `render`:
@@ -53,7 +54,7 @@ export async function render(url: string, timeoutMs = RENDER_TIMEOUT_MS): Promis
   )
 
   const html = await renderToHtml(
-    <StaticRouter location={url}>
+    <StaticRouter location={url} future={ROUTER_FUTURE}>
       <RenderProvider initialDocument={initialDocument}>
         <App />
       </RenderProvider>

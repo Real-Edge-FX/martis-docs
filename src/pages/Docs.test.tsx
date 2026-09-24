@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi, type MockInstance } fr
 import { App } from '@/App'
 import { loadMdx } from '@/lib/mdx-loader'
 import { loadInitialDocument, RenderProvider } from '@/lib/render-context'
+import { ROUTER_FUTURE } from '@/routes'
 
 vi.mock('@/lib/mdx-loader', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@/lib/mdx-loader')>()
@@ -46,7 +47,7 @@ describe('DocPage', () => {
     vi.mocked(loadMdx).mockClear()
 
     render(
-      <MemoryRouter initialEntries={['/docs/getting-started/installation']}>
+      <MemoryRouter initialEntries={['/docs/getting-started/installation']} future={ROUTER_FUTURE}>
         <RenderProvider initialDocument={initialDocument}>
           <App />
           <Navigator />
@@ -54,12 +55,21 @@ describe('DocPage', () => {
       </MemoryRouter>,
     )
 
-    expect(await screen.findByRole('heading', { level: 1, name: 'Installation Guide' })).toBeInTheDocument()
+    // The default findBy* timeout (1000ms) is tight for this suite: the
+    // full run also renders every public route through real SSR
+    // (entry-server.test.tsx), and under concurrent load a dynamic import
+    // here can take longer than 1000ms to settle even though nothing is
+    // actually stuck (see the same reasoning in src/test/smoke.test.tsx).
+    expect(
+      await screen.findByRole('heading', { level: 1, name: 'Installation Guide' }, { timeout: 5000 }),
+    ).toBeInTheDocument()
     await waitForToc('Requirements')
     expect(loadMdx).not.toHaveBeenCalled()
 
     fireEvent.click(screen.getByRole('button', { name: 'Open Quick Start' }))
-    expect(await screen.findByRole('heading', { level: 1, name: 'Quick Start' })).toBeInTheDocument()
+    expect(
+      await screen.findByRole('heading', { level: 1, name: 'Quick Start' }, { timeout: 5000 }),
+    ).toBeInTheDocument()
     await waitForToc('1. Generate the model and migration')
     expect(loadMdx).toHaveBeenCalledWith('getting-started/quick-start')
 
