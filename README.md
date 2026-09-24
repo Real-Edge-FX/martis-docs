@@ -118,10 +118,11 @@ bash scripts/deploy.sh
 
 `scripts/deploy.sh`:
 
-1. `pnpm build` (regenerates `dist/`: prerendered HTML per route, `sitemap.xml`, `robots.txt`, and `.htaccess` copied from `public/`).
-2. Asserts `dist/.htaccess` and `dist/404.html` both exist. `dist/404.html` is written by `scripts/prerender.mjs`, not copied here anymore — copying `index.html` over it (the old SPA-fallback safety net) would ship the wrong `<title>`, canonical and `noindex` for every 404.
-3. `rsync -a --delete dist/` over SSH (host `147.79.113.74`, port `65002`, user `u498269178`) into `domains/getmartis.com/public_html/`.
-4. Smoke `curl` against `https://getmartis.com`: `/`, `/docs`, `/docs/getting-started/installation`, `/product` and `/search-index.json` (expect HTTP 200), plus a made-up path (expects HTTP 404).
+1. Refuses to run when `git status --porcelain` is not empty, so only committed code is published.
+2. `pnpm build` (regenerates `dist/`: prerendered HTML per route, `sitemap.xml`, `robots.txt`, and both `.htaccess` files copied from `public/`), then `pnpm smoke:dist`, the same artifact gate CI runs.
+3. Asserts `dist/.htaccess` and `dist/404.html` both exist. `dist/404.html` is written by `scripts/prerender.mjs`, not copied here anymore — copying `index.html` over it (the old SPA-fallback safety net) would ship the wrong `<title>`, canonical and `noindex` for every 404.
+4. `rsync -a --delete dist/` over SSH (host `147.79.113.74`, port `65002`, user `u498269178`) into `domains/getmartis.com/public_html/`.
+5. Smoke `curl` against `https://getmartis.com`: `/`, `/docs`, `/docs/getting-started/installation`, `/product` and `/search-index.json` (expect HTTP 200), a made-up path and `/docs/core` (expect HTTP 404), and `/product/` and `/docs/index.html` (expect HTTP 301).
 
 Hostinger allows SSH **password** auth only (no keys, no SFTP batch). The script reads the password at the prompt, or from `MARTIS_DOCS_SSH_PASS` for non-interactive runs; it is never written to disk.
 

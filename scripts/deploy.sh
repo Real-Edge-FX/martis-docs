@@ -36,8 +36,22 @@ else
   PNPM=(npx -y pnpm@9.15.9)
 fi
 
+# --- Clean tree -------------------------------------------------------
+# Publish only what is committed: a build from uncommitted changes would
+# put code on getmartis.com that no commit (and no review) describes.
+if [ -n "$(git status --porcelain)" ]; then
+  echo "ERROR: the working tree has uncommitted changes; commit or stash them before deploying:" >&2
+  git status --short >&2
+  exit 1
+fi
+
 echo "==> Building docs site"
 "${PNPM[@]}" build
+
+echo "==> Smoke-checking dist/"
+# The same artifact gate CI runs: every route's HTML and head, assets,
+# social images, sitemap, robots.txt and both .htaccess files.
+"${PNPM[@]}" smoke:dist
 
 echo "==> Verifying prerendered build output"
 # .htaccess ships from public/ via Vite; assert it landed in the build.
@@ -113,13 +127,19 @@ for path in / /docs /docs/getting-started/installation /product /search-index.js
   [ "$code" = "200" ] || fail=1
 done
 
-# A path that cannot exist must come back as a real 404 (not a 200
-# SPA-fallback page) — proves .htaccess's ErrorDocument is live on the
-# real host, not just correct on paper.
+# A path that cannot exist, and a directory with no page of its own,
+# must come back as a real 404 (not a 200 SPA-fallback page, not a 403
+# directory refusal): proves .htaccess's rewrites and ErrorDocument are
+# live on the real host, not just correct on paper. A trailing-slash URL
+# and an /index.html URL must redirect to the clean one.
 not_found_path="/this-page-does-not-exist-$(date +%s)"
-code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 25 "${SITE_URL}${not_found_path}" || echo 000)
-printf '  %-45s HTTP %s (expect 404)\n' "$not_found_path" "$code"
-[ "$code" = "404" ] || fail=1
+for probe in "${not_found_path} 404" "/docs/core 404" "/product/ 301" "/docs/index.html 301"; do
+  path="${probe% *}"
+  expected="${probe##* }"
+  code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 25 "${SITE_URL}${path}" || echo 000)
+  printf '  %-45s HTTP %s (expect %s)\n' "$path" "$code" "$expected"
+  [ "$code" = "$expected" ] || fail=1
+done
 
 [ "$fail" -eq 0 ] && echo "✅ Deployed and verified: ${SITE_URL}" \
   || { echo "⚠️  Deploy uploaded but a smoke check did not return the expected status." >&2; exit 1; }
