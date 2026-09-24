@@ -1,4 +1,6 @@
 import { fireEvent, render, screen } from '@testing-library/react'
+import { readFileSync } from 'node:fs'
+import path from 'node:path'
 import { MemoryRouter, useNavigate } from 'react-router-dom'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { serializeMeta } from '@/lib/seo'
@@ -100,14 +102,23 @@ describe('DocumentMeta matches the server-rendered head', () => {
   }
 
   /** Same normalized shape, read from the live `document.head` after
-   *  `DocumentMeta` has run for the current route. */
-  function readHeadTags(): string[] {
+   *  `DocumentMeta` has run for the current route. `exclude` (e.g. the
+   *  real static tags from index.html, seeded by `seedStaticHeadTags`)
+   *  is left out of the result — DocumentMeta must never touch them, so
+   *  a correct render never has anything to exclude, but a regression
+   *  that duplicates a tag instead of adopting it would otherwise hide
+   *  the duplicate: `readManagedHeadTags` below only sees elements that
+   *  carry the marker, so an orphaned *unmarked* duplicate is invisible
+   *  to it, but not to this. */
+  function readHeadTags(exclude: ReadonlySet<Element> = new Set()): string[] {
     const tags: string[] = [`title:::${document.title}`]
     for (const el of document.head.querySelectorAll('meta[name], meta[property]')) {
+      if (exclude.has(el)) continue
       const attr = el.hasAttribute('name') ? 'name' : 'property'
       tags.push(`meta:${attr}:${el.getAttribute(attr)}:${el.getAttribute('content') ?? ''}`)
     }
     for (const el of document.head.querySelectorAll('link[rel]')) {
+      if (exclude.has(el)) continue
       tags.push(`link::${el.getAttribute('rel')}:${el.getAttribute('href') ?? ''}`)
     }
     return tags.sort()
@@ -135,25 +146,39 @@ describe('DocumentMeta matches the server-rendered head', () => {
   // marker (see index.html at the repo root): DocumentMeta must never
   // create, adopt or remove any of these, regardless of route, because
   // upsertMeta/upsertLink only ever look up tags by the name/property/rel
-  // headTags() itself asks for — none of which match these.
-  const STATIC_HEAD_HTML = `
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <link rel="icon" type="image/png" href="/brand/martis-icon.png" />
-    <link rel="apple-touch-icon" href="/brand/martis-icon.png" />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500;600&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet" />
-  `
-  const STATIC_HEAD_SELECTORS = [
-    'meta[charset="UTF-8"]',
-    'meta[name="viewport"]',
-    'link[rel="icon"]',
-    'link[rel="apple-touch-icon"]',
-    'link[rel="preconnect"][href="https://fonts.googleapis.com"]',
-    'link[rel="preconnect"][href="https://fonts.gstatic.com"]',
-    'link[rel="stylesheet"]',
-  ]
+  // headTags() itself asks for — none of which match these. Read from
+  // the real file rather than a hand-copied string, so a future static
+  // tag added there can't silently drift out of this test.
+  const STATIC_HEAD_HTML = (() => {
+    // path.join(import.meta.dirname, ...), not `new URL(..., import.meta.url)`:
+    // in this jsdom-environment file, the global `URL` constructor is
+    // jsdom's own (not Node's), which resolves a relative URL against
+    // `window.location` instead of a `file:` base — readFileSync then
+    // rejects the result ("The URL must be of scheme file").
+    const indexHtmlPath = path.join(import.meta.dirname, '../../../index.html')
+    const indexHtml = readFileSync(indexHtmlPath, 'utf8')
+    const head = /<head[^>]*>([\s\S]*?)<\/head>/.exec(indexHtml)?.[1]
+    if (!head) throw new Error(`${indexHtmlPath}: could not find <head>...</head>`)
+    // <!--app-head--> is the SSR placeholder serializeMeta's own output
+    // fills in; everything else in <head> is a real static tag.
+    return head.replace('<!--app-head-->', '')
+  })()
+
+  /** Injects a clone of every real static `<head>` tag from `index.html`
+   *  (`STATIC_HEAD_HTML`) into `document.head`, returning the set of
+   *  elements actually injected — so a later check can tell them apart
+   *  from whatever DocumentMeta puts there by identity, not by
+   *  re-deriving a selector list that could itself drift from the real
+   *  markup. */
+  function seedStaticHeadTags(): Set<Element> {
+    const template = document.createElement('template')
+    template.innerHTML = STATIC_HEAD_HTML
+    const injected = new Set<Element>()
+    for (const el of Array.from(template.content.children)) {
+      injected.add(document.head.appendChild(el))
+    }
+    return injected
+  }
 
   // Establishes a clean baseline so a tag left over from an earlier test
   // in this file (or file run order) cannot leak into this describe
@@ -223,33 +248,62 @@ describe('DocumentMeta matches the server-rendered head', () => {
     // the same element must not diverge.
     //
     // Also surrounds that with the real static tags index.html ships
-    // (STATIC_HEAD_HTML) and plants one extra *marked* stale tag, as if
-    // a previous render had created it for a route whose tags no longer
-    // include it. Without both of these, this test (and the one above)
-    // cannot tell a sweep correctly scoped to `[data-document-meta]`
-    // apart from an over-broad one like `querySelectorAll('meta, link')`:
-    // with nothing unmanaged present, an over-broad sweep would remove
-    // exactly the same elements a correct one does, and pass just the
-    // same. In production, that over-broad version would strip
-    // index.html's favicon, preconnect and font stylesheet links on the
-    // very first client-side navigation.
-    document.head.innerHTML =
-      STATIC_HEAD_HTML +
-      serializeMeta(getRouteMeta('/404')) +
-      '<meta name="x-stale" content="1" data-document-meta="" />'
+    // (STATIC_HEAD_HTML, read from the file itself) and plants one extra
+    // *marked* stale tag, as if a previous render had created it for a
+    // route whose tags no longer include it. Without both of these, this
+    // test (and the one above) cannot tell a sweep correctly scoped to
+    // `[data-document-meta]` apart from an over-broad one like
+    // `querySelectorAll('meta, link')`: with nothing unmanaged present,
+    // an over-broad sweep would remove exactly the same elements a
+    // correct one does, and pass just the same. In production, that
+    // over-broad version would strip index.html's favicon, preconnect
+    // and font stylesheet links on the very first client-side navigation.
+    const staticTags = seedStaticHeadTags()
+    document.head.insertAdjacentHTML(
+      'beforeend',
+      serializeMeta(getRouteMeta('/404')) + '<meta name="x-stale" content="1" data-document-meta="" />',
+    )
+
+    /** Checked after mounting *and* after navigating, not just once at
+     *  the end: `readHeadTags` (everything except the static tags) and
+     *  `readManagedHeadTags` (only what carries the marker) must both
+     *  agree with `serializeMeta`, and no static tag may ever end up
+     *  marked or removed. Checking both readers, at every step, is what
+     *  actually catches a lookup restricted to already-marked elements
+     *  (e.g. `meta[name="x"][data-document-meta]` instead of
+     *  `meta[name="x"]`): that regression duplicates every real tag on
+     *  the very first mount instead of adopting it, which
+     *  `readManagedHeadTags` alone cannot see — the original,
+     *  server-rendered tag stays unmarked and invisible to it, so it
+     *  would keep reporting a match — but `readHeadTags` reports it
+     *  immediately, as an unexpected extra entry alongside the marked
+     *  duplicate. */
+    function expectHeadMatchesServerRender(route: string) {
+      const expected = parseSerializedTags(serializeMeta(getRouteMeta(route)))
+      expect(readHeadTags(staticTags), 'head minus the static tags must match serializeMeta').toEqual(expected)
+      expect(readManagedHeadTags(), 'the tags DocumentMeta marked must match serializeMeta').toEqual(expected)
+      for (const el of staticTags) {
+        expect(document.head.contains(el), `static tag must survive untouched: ${el.outerHTML}`).toBe(true)
+        expect(el.hasAttribute('data-document-meta'), `static tag must never be marked: ${el.outerHTML}`).toBe(false)
+      }
+    }
 
     render(
       <MemoryRouter initialEntries={['/404']} future={ROUTER_FUTURE}>
         <NavigationHarness />
       </MemoryRouter>,
     )
+    expectHeadMatchesServerRender('/404')
 
     fireEvent.click(screen.getByRole('button', { name: 'To /product' }))
 
     expect(document.head.querySelector('meta[name="x-stale"]'), 'stale marked tag must be removed').toBeNull()
-    for (const selector of STATIC_HEAD_SELECTORS) {
-      expect(document.head.querySelector(selector), `static tag "${selector}" must survive`).not.toBeNull()
-    }
-    expect(readManagedHeadTags()).toEqual(parseSerializedTags(serializeMeta(getRouteMeta('/product'))))
+    // Whole-document, not readManagedHeadTags: this is the concrete
+    // production symptom of the restricted-lookup regression — the
+    // server-rendered robots=noindex tag from /404 orphaned, unmarked,
+    // and never swept, surviving the navigation to a route that must
+    // not be noindex.
+    expect(document.head.querySelector('meta[name="robots"]'), 'robots must not survive leaving /404').toBeNull()
+    expectHeadMatchesServerRender('/product')
   })
 })
