@@ -4,11 +4,25 @@
 
 import type { IconName } from '@/components/icons'
 
+/**
+ * Passing-test total (Pest + Vitest) of the release CI run. The hero
+ * status line (components/landing/Hero.tsx) and the stat strip both
+ * read it, so a count bump lands everywhere the landing page shows it.
+ */
+export const TESTS_PASSING = '3,990'
+
+/**
+ * Runtime requirements from martis-package's composer.json, shown in the
+ * hero status line and the stack table.
+ */
+export const PHP_REQUIREMENT = 'PHP 8.3+'
+export const LARAVEL_REQUIREMENT = 'Laravel 12/13'
+
 export const STATS: { n: string; l: string }[] = [
-  { n: '50',    l: 'Field types' },
-  { n: '12',    l: 'Relationship kinds' },
-  { n: '94',    l: 'Theme tokens' },
-  { n: '3,990', l: 'Tests passing' },
+  { n: '50',          l: 'Field types' },
+  { n: '12',          l: 'Relationship kinds' },
+  { n: '94',          l: 'Theme tokens' },
+  { n: TESTS_PASSING, l: 'Tests passing' },
 ]
 
 export interface FeatureCard {
@@ -46,7 +60,7 @@ export const NAV_LINKS: NavLink[] = [
 ]
 
 export const STACK_ROWS: { k: string; v: string }[] = [
-  { k: 'Backend',  v: 'PHP 8.3+ · Laravel 12/13' },
+  { k: 'Backend',  v: `${PHP_REQUIREMENT} · ${LARAVEL_REQUIREMENT}` },
   { k: 'Frontend', v: 'React 18 · TypeScript · PrimeReact · Tailwind' },
   { k: 'Data',     v: 'TanStack Query · React Router' },
   { k: 'Icons',    v: 'Phosphor Icons' },
