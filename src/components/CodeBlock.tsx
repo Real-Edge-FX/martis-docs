@@ -1,5 +1,6 @@
-import { useEffect, useRef, useState } from 'react'
+import { useState } from 'react'
 import { Icons } from '@/components/icons'
+import { useOverflowFocusable } from '@/hooks/useOverflowFocusable'
 
 interface CodeBlockProps {
   code: string
@@ -22,27 +23,10 @@ interface CodeBlockProps {
  */
 export function CodeBlock({ code, lang = 'php', filename, lineNumbers = false }: CodeBlockProps) {
   const [copied, setCopied] = useState(false)
-  const preRef = useRef<HTMLPreElement>(null)
   // Whether the block actually overflows and needs a keyboard-reachable
-  // scroller. Server and the first client render both render `false`
-  // (there is no layout yet), so hydration never mismatches; this effect
-  // measures the real, laid-out element after mount and keeps watching
-  // it, so a block that starts short but later overflows (a resize, a
-  // font swap) still becomes reachable, and one that never overflows
-  // never gets an extra tab stop.
-  const [overflowing, setOverflowing] = useState(false)
-
-  useEffect(() => {
-    const el = preRef.current
-    if (!el) return
-
-    const measure = () => setOverflowing(el.scrollWidth > el.clientWidth)
-    measure()
-
-    const observer = new ResizeObserver(measure)
-    observer.observe(el)
-    return () => observer.disconnect()
-  }, [code, lang])
+  // scroller (see useOverflowFocusable). Re-measures whenever `code` or
+  // `lang` change under the same instance, not just at mount.
+  const { ref: preRef, overflowing } = useOverflowFocusable<HTMLPreElement>(`${lang}:${code}`)
 
   function copy() {
     navigator.clipboard?.writeText(code).then(() => {

@@ -54,7 +54,13 @@ const CONTENT_TYPES = {
  */
 export function resolveRequest(root, pathname) {
   let file = path.join(root, pathname)
-  if (!file.startsWith(root)) {
+  // `file.startsWith(root)` is not enough: a sibling directory that merely
+  // shares `root`'s name as a *prefix* (`<root>-secret`) also starts with
+  // the string `root`, so `/../<root-basename>-secret/x` walked straight
+  // past it. `path.relative` instead answers "how do you get from root to
+  // file": escaping the tree always starts that answer with `..`.
+  const relative = path.relative(root, file)
+  if (relative === '..' || relative.startsWith(`..${path.sep}`) || path.isAbsolute(relative)) {
     return { status: 403, file: null, location: null }
   }
 
@@ -83,7 +89,22 @@ export function resolveRequest(root, pathname) {
 export function createRequestListener(root) {
   return (req, res) => {
     const url = new URL(req.url ?? '/', 'http://localhost')
-    const pathname = decodeURIComponent(url.pathname)
+
+    let pathname
+    try {
+      pathname = decodeURIComponent(url.pathname)
+    } catch {
+      // Malformed percent-encoding (e.g. `GET /%E0%A4%A`, a cut-off
+      // multi-byte escape) makes `decodeURIComponent` throw a `URIError`
+      // synchronously. Uncaught, that escapes this request listener and
+      // crashes the whole process — which is also the Playwright
+      // `webServer`, so one bad request takes the entire E2E run down
+      // with it. It is a client protocol error, not ours: answer 400.
+      res.writeHead(400, { 'Content-Type': 'text/plain' })
+      res.end('Bad request')
+      return
+    }
+
     const resolved = resolveRequest(root, pathname)
 
     if (resolved.status === 301) {
@@ -101,18 +122,42 @@ export function createRequestListener(root) {
       res.end('Not found')
       return
     }
+
     const ext = path.extname(resolved.file)
     const acceptsGzip = (req.headers['accept-encoding'] ?? '').includes('gzip')
     const shouldCompress = acceptsGzip && COMPRESSIBLE_EXTENSIONS.has(ext)
 
-    res.writeHead(resolved.status, {
-      'Content-Type': CONTENT_TYPES[ext] ?? 'application/octet-stream',
-      ...(shouldCompress ? { 'Content-Encoding': 'gzip', Vary: 'Accept-Encoding' } : {}),
-    })
+    // A stream can still fail after `resolveRequest` found the file (it
+    // was removed or became unreadable between the `existsSync` check and
+    // the actual open, a bad symlink, a disk error): left unhandled, the
+    // stream's 'error' event throws and crashes the process the same way
+    // a bad decode would. Headers are deferred to the stream's 'open'
+    // event instead of written eagerly, so on error (which fires instead
+    // of 'open' when the file cannot be opened) nothing has been sent yet
+    // and this can still answer 500; once headers are sent, the best this
+    // can do is end the response without a body.
+    const failResponse = () => {
+      if (!res.headersSent) {
+        res.writeHead(500, { 'Content-Type': 'text/plain' })
+        res.end('Internal server error')
+      } else {
+        res.destroy()
+      }
+    }
 
     const source = fs.createReadStream(resolved.file)
+    source.on('error', failResponse)
+    source.once('open', () => {
+      res.writeHead(resolved.status, {
+        'Content-Type': CONTENT_TYPES[ext] ?? 'application/octet-stream',
+        ...(shouldCompress ? { 'Content-Encoding': 'gzip', Vary: 'Accept-Encoding' } : {}),
+      })
+    })
+
     if (shouldCompress) {
-      source.pipe(zlib.createGzip()).pipe(res)
+      const gzip = zlib.createGzip()
+      gzip.on('error', failResponse)
+      source.pipe(gzip).pipe(res)
     } else {
       source.pipe(res)
     }

@@ -8,6 +8,7 @@ import http from 'node:http'
 import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
+import { PassThrough } from 'node:stream'
 import test, { after } from 'node:test'
 import { createRequestListener, resolveRequest } from './serve-dist.mjs'
 
@@ -18,6 +19,14 @@ fs.writeFileSync(path.join(root, 'for-agencies', 'index.html'), '<!doctype html>
 fs.writeFileSync(path.join(root, '404.html'), '<!doctype html><title>Not found</title>')
 fs.mkdirSync(path.join(root, 'assets'))
 fs.writeFileSync(path.join(root, 'assets', 'app.css'), 'body{color:red}')
+
+// A sibling directory that merely shares `root`'s basename as a string
+// *prefix* (`<root>-secret` starts with `<root>`), to reproduce the
+// `file.startsWith(root)` escape: `/../<root-basename>-secret/secret.txt`
+// resolves outside `root` but used to pass the old, string-only check.
+const siblingRoot = `${root}-secret`
+fs.mkdirSync(siblingRoot)
+fs.writeFileSync(path.join(siblingRoot, 'secret.txt'), 'top secret')
 
 test('resolveRequest serves a route directory’s index.html for its slash-less URL', () => {
   const resolved = resolveRequest(root, '/for-agencies')
@@ -48,6 +57,20 @@ test('resolveRequest refuses a path that escapes the root', () => {
   assert.equal(resolved.status, 403)
 })
 
+test('resolveRequest refuses a sibling directory that only shares root as a string prefix', () => {
+  // Reproduces the reported escape directly against resolveRequest, the
+  // way it must be reproduced: through createRequestListener, the
+  // `new URL(req.url, 'http://localhost')` call already collapses a
+  // leading `/../` in the path (there's nothing above `/` to go to), so
+  // an actual HTTP request never reaches resolveRequest with a raw `..`
+  // segment in the first place. The bug (and the fix) live entirely in
+  // resolveRequest's own handling of whatever pathname it is given.
+  const pathname = `/../${path.basename(siblingRoot)}/secret.txt`
+  const resolved = resolveRequest(root, pathname)
+  assert.equal(resolved.status, 403)
+  assert.equal(resolved.file, null)
+})
+
 test('the live server never SPA-falls-back an unknown route to index.html', async () => {
   const server = http.createServer(createRequestListener(root))
   await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve))
@@ -74,7 +97,58 @@ test('the live server never SPA-falls-back an unknown route to index.html', asyn
   }
 })
 
+test('a malformed percent-encoded path answers 400 instead of crashing the server', async () => {
+  const server = http.createServer(createRequestListener(root))
+  await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve))
+  const { port } = server.address()
+
+  try {
+    // A truncated multi-byte escape (`%E0%A4%A` is missing its last
+    // hex digit): `decodeURIComponent` throws a `URIError` on it.
+    const malformed = await fetch(`http://127.0.0.1:${port}/%E0%A4%A`)
+    assert.equal(malformed.status, 400)
+
+    // The server (and the process it runs in) must still be alive and
+    // answering normal requests after that.
+    const home = await fetch(`http://127.0.0.1:${port}/`)
+    assert.equal(home.status, 200)
+    assert.match(await home.text(), /Home/)
+  } finally {
+    await new Promise((resolve) => server.close(resolve))
+  }
+})
+
+test('a read error on the underlying file stream answers 500 instead of crashing the server', async () => {
+  const server = http.createServer(createRequestListener(root))
+  await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve))
+  const { port } = server.address()
+
+  const originalCreateReadStream = fs.createReadStream
+  fs.createReadStream = () => {
+    // Stands in for a file removed, made unreadable, or otherwise
+    // failing between resolveRequest's existsSync check and the actual
+    // open: a stream that errors instead of opening.
+    const stream = new PassThrough()
+    queueMicrotask(() => stream.destroy(new Error('simulated read failure')))
+    return stream
+  }
+
+  try {
+    const response = await fetch(`http://127.0.0.1:${port}/`)
+    assert.equal(response.status, 500)
+
+    // The process (and this server) must still be alive afterwards.
+    fs.createReadStream = originalCreateReadStream
+    const home = await fetch(`http://127.0.0.1:${port}/`)
+    assert.equal(home.status, 200)
+  } finally {
+    fs.createReadStream = originalCreateReadStream
+    await new Promise((resolve) => server.close(resolve))
+  }
+})
+
 after(() => {
+  fs.rmSync(siblingRoot, { recursive: true, force: true })
   fs.rmSync(root, { recursive: true, force: true })
   console.log('serve-dist.mjs validated.')
 })

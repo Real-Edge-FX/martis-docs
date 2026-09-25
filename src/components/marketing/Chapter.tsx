@@ -2,6 +2,7 @@ import { createElement } from 'react'
 import { Link } from 'react-router-dom'
 import type { ProductChapterData } from '@/data/product'
 import { PRODUCT_MEDIA } from '@/data/product'
+import { useOverflowFocusable } from '@/hooks/useOverflowFocusable'
 import { MediaFigure } from './MediaFigure'
 
 interface ChapterProps {
@@ -24,6 +25,12 @@ interface ChapterProps {
  */
 export function Chapter({ chapter, headingLevel = 2, priorityMedia = false, className }: ChapterProps) {
   const media = PRODUCT_MEDIA[chapter.mediaId]
+  // Whether the code sample actually overflows and needs a
+  // keyboard-reachable scroller (see useOverflowFocusable, shared with
+  // CodeBlock). Each chapter mounts a fresh instance (keyed per chapter
+  // id by the caller), so no remeasure key is needed beyond mount +
+  // resize.
+  const { ref: codeRef, overflowing: codeOverflowing } = useOverflowFocusable<HTMLPreElement>()
 
   return (
     <article className={['chapter', className].filter(Boolean).join(' ')} id={chapter.id} data-chapter={chapter.id}>
@@ -37,20 +44,25 @@ export function Chapter({ chapter, headingLevel = 2, priorityMedia = false, clas
       </div>
 
       <div className="chapter__demo">
-        {/* `overflow-x: auto` (marketing.css) makes this a scrollable region on
-         *  narrow viewports; without a focusable, labelled element a keyboard
-         *  user has no way to reach that horizontal scroll (axe
-         *  "scrollable-region-focusable", serious impact). `tabIndex={0}` plus
-         *  `role="region"` with a per-sample label fixes both: the element is
-         *  deliberately non-interactive otherwise, so the linter's default
-         *  "no-noninteractive-tabindex" guidance does not apply here. */}
+        {/* `overflow-x: auto` (marketing.css) can make this a scrollable region
+         *  on narrow viewports; without a focusable, labelled element a
+         *  keyboard user would have no way to reach that horizontal scroll
+         *  (axe "scrollable-region-focusable", serious impact). Only a sample
+         *  that actually overflows takes a tab stop (useOverflowFocusable,
+         *  shared with CodeBlock), so a short sample never gets an extra stop
+         *  it does not need. Server and the first client render both start
+         *  non-overflowing (no layout yet), so hydration never mismatches. */}
         <pre
+          ref={codeRef}
           className="chapter__code"
           data-language={chapter.code.language}
-          // eslint-disable-next-line jsx-a11y/no-noninteractive-tabindex -- see comment above
-          tabIndex={0}
-          role="region"
-          aria-label={`${chapter.code.filename} code sample`}
+          {...(codeOverflowing
+            ? {
+                tabIndex: 0,
+                role: 'region',
+                'aria-label': `${chapter.code.filename} code sample`,
+              }
+            : {})}
         >
           <span className="chapter__code-filename">{chapter.code.filename}</span>
           <code>{chapter.code.source}</code>
