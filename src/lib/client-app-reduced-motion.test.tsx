@@ -4,9 +4,11 @@ import { afterEach, beforeAll, beforeEach, expect, inject, it, vi, type MockInst
 import { hasReactFiber, hydrateServerHtml } from '@/test/hydrate-server-html'
 
 // Same hydration proof as client-app.test.tsx, for a visitor with
-// `prefers-reduced-motion: reduce`. Its own file because `motion` caches
-// the preference module-wide on first read: it has to be set before any
-// component in this worker asks for it.
+// `prefers-reduced-motion: reduce`, on every redesigned marketing page.
+// Its own file because the preference has to be in place before any
+// component in this worker reads it (usePrefersReducedMotion reads
+// `matchMedia` once React has hydrated): stubbing it here, before the first render,
+// keeps the other hydration tests on the default preference.
 
 const serverResults = inject('hydrationFixture')
 
@@ -37,21 +39,23 @@ afterEach(() => {
   document.body.innerHTML = ''
 })
 
-it('hydrates / under reduced motion without discarding the server-rendered <main>', async () => {
-  expect(window.matchMedia('(prefers-reduced-motion: reduce)').matches).toBe(true)
+for (const url of ['/', '/product', '/for-agencies'] as const) {
+  it(`hydrates ${url} under reduced motion without discarding the server-rendered <main>`, async () => {
+    expect(window.matchMedia('(prefers-reduced-motion: reduce)').matches).toBe(true)
 
-  const { root, container, serverMain, onRecoverableError } = await hydrateServerHtml('/', serverResults['/'].html)
-  hydratedRoot = root
+    const { root, container, serverMain, onRecoverableError } = await hydrateServerHtml(url, serverResults[url].html)
+    hydratedRoot = root
 
-  expect(onRecoverableError).not.toHaveBeenCalled()
-  expect(consoleError).not.toHaveBeenCalled()
-  expect(container.querySelector('main')).toBe(serverMain)
-  expect(hasReactFiber(serverMain!)).toBe(true)
-  // Nothing on the homepage waits on motion: after hydration under
-  // reduced motion no element in <main> may be transparent or hidden.
-  await act(async () => {})
-  const hidden = [...container.querySelectorAll('main [style]')].filter((el) =>
-    /opacity:\s*0(?![.\d])|visibility:\s*hidden/.test(el.getAttribute('style') ?? ''),
-  )
-  expect(hidden).toEqual([])
-})
+    expect(onRecoverableError).not.toHaveBeenCalled()
+    expect(consoleError).not.toHaveBeenCalled()
+    expect(container.querySelector('main')).toBe(serverMain)
+    expect(hasReactFiber(serverMain!)).toBe(true)
+    // Nothing on these pages waits on motion: after hydration under
+    // reduced motion no element in <main> may be transparent or hidden.
+    await act(async () => {})
+    const hidden = [...container.querySelectorAll('main [style]')].filter((el) =>
+      /opacity:\s*0(?![.\d])|visibility:\s*hidden/.test(el.getAttribute('style') ?? ''),
+    )
+    expect(hidden).toEqual([])
+  })
+}

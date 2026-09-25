@@ -21,9 +21,10 @@ function getServerSnapshot(): boolean {
  * prerendered component. The server and the hydrating render both see
  * `false` (the server cannot know the preference), so hydration reuses
  * the server markup; React then re-renders with the real preference.
- * `motion`'s own `useReducedMotion` reads it during the first render
- * instead, so under reduced motion its hydrating render disagrees with
- * the server HTML and the server's hidden `initial` styles stay on
+ * A hook that reads it during the first render instead (as the `motion`
+ * library's `useReducedMotion` did, before this site dropped that
+ * dependency) makes the hydrating render disagree with the server HTML
+ * under reduced motion, and leaves the server's hidden initial styles on
  * elements that no longer animate.
  */
 export function usePrefersReducedMotion(): boolean {
