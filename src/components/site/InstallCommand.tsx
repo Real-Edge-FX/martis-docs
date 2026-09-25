@@ -1,4 +1,4 @@
-import { useRef, useState, type MouseEvent } from 'react'
+import { useEffect, useRef, useState, type MouseEvent } from 'react'
 import { Icons } from '@/components/icons'
 
 type CopyStatus = 'idle' | 'copied' | 'fallback'
@@ -6,6 +6,8 @@ type CopyStatus = 'idle' | 'copied' | 'fallback'
 const COPY_LABEL = 'Copy install command'
 const COPIED_STATUS = 'Copied'
 const FALLBACK_STATUS = 'Select and copy the command'
+/** How long the "Copied" confirmation stays before the button returns to idle. */
+export const COPIED_RESET_MS = 2000
 
 const STATUS_TEXT: Record<CopyStatus, string> = {
   idle: '',
@@ -34,6 +36,10 @@ interface InstallCommandProps {
 export function InstallCommand({ command, className }: InstallCommandProps) {
   const codeRef = useRef<HTMLElement>(null)
   const [status, setStatus] = useState<CopyStatus>('idle')
+  const resetTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
+
+  // Never leave a pending reset behind after the component unmounts.
+  useEffect(() => () => clearTimeout(resetTimer.current), [])
 
   const selectCommand = () => {
     const node = codeRef.current
@@ -50,7 +56,13 @@ export function InstallCommand({ command, className }: InstallCommandProps) {
     try {
       await navigator.clipboard.writeText(command)
       setStatus('copied')
+      // The confirmation is transient: after a moment the button offers
+      // to copy again. The manual-copy fallback below stays, because the
+      // reader still has to act on it.
+      clearTimeout(resetTimer.current)
+      resetTimer.current = setTimeout(() => setStatus('idle'), COPIED_RESET_MS)
     } catch {
+      clearTimeout(resetTimer.current)
       selectCommand()
       setStatus('fallback')
     }

@@ -50,7 +50,19 @@ export function CodeBlock({ code, lang = 'php', filename, lineNumbers = false }:
           </button>
         </div>
       )}
-      <pre className="p-5 overflow-x-auto text-[12.5px] leading-[1.65] font-mono">
+      {/* Long lines scroll horizontally: the scroller takes keyboard focus
+       *  (arrow keys scroll it) and is named, so it is reachable without a
+       *  pointer (WCAG 2.1.1). */}
+      <pre
+        // A scrollable region must be focusable to be scrolled by keyboard
+        // (axe scrollable-region-focusable); this is the case the rule's
+        // "non-interactive" heuristic does not cover.
+        // eslint-disable-next-line jsx-a11y/no-noninteractive-tabindex
+        tabIndex={0}
+        role="group"
+        aria-label={filename ? `Code: ${filename}` : `Code sample (${lang})`}
+        className="p-5 overflow-x-auto text-[12.5px] leading-[1.65] font-mono"
+      >
         <code>
           {lines.map((line, i) => (
             <div key={i} className="flex gap-4">

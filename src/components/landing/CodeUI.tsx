@@ -5,19 +5,20 @@ import { PRODUCT_MEDIA } from '@/data/product'
 const HEADING_ID = 'home-code-ui-heading'
 const RESULT = PRODUCT_MEDIA['resource-index']
 
-// A shortened, compilable excerpt of the Playground's
+// A short, compilable excerpt of the Playground's
 // app/Martis/Resources/ClientResource.php, the resource behind the
-// "Clients" screenshot beside it (resource-index.png): the same fields,
-// with the translated labels and the index-only Stack/Icon columns left
-// out. Every method is Martis API at v1.39.1 (`Badge::map`/`addTypes`,
-// `Country::withFlags`, `Currency`).
+// "Clients" screenshot beside it (resource-index.png): its index columns
+// with the same field calls, minus the translated labels, the Stack/Icon
+// identity column and part of each badge map (spec 6.4 asks for a short
+// sample). Every method is Martis API at v1.39.1 (`Badge::map`,
+// `Country::withFlags`, `Currency`, `sortable`/`searchable`).
 const CLIENT_RESOURCE = `<?php
 
 namespace App\\Martis\\Resources;
 
 use App\\Models\\Client;
 use Illuminate\\Http\\Request;
-use Martis\\Fields\\{Badge, Country, Currency, Email, Text};
+use Martis\\Fields\\{Badge, Country, Currency, Text};
 use Martis\\Resource;
 
 class ClientResource extends Resource
@@ -30,21 +31,13 @@ class ClientResource extends Resource
     public function fields(Request $request): array
     {
         return [
-            Text::make('name')->sortable()->searchable()->required(),
-            Email::make('email')->sortable()->searchable()->required(),
+            Text::make('name')->sortable()->searchable(),
             Text::make('company')->sortable()->searchable(),
-            Badge::make('plan')->sortable()->map([
-                'free' => 'info',
-                'pro' => 'success',
-                'enterprise' => 'pink',
-            ])->addTypes(['pink' => '#ec4899']),
+            Badge::make('plan')
+                ->map(['free' => 'info', 'pro' => 'success']),
             Currency::make('monthly_revenue')->sortable(),
-            Badge::make('status')->sortable()->map([
-                'active' => 'success',
-                'inactive' => 'warning',
-                'churned' => 'danger',
-            ]),
-            Country::make('country')->withFlags()->nullable(),
+            Badge::make('status')->map(['active' => 'success']),
+            Country::make('country')->withFlags(),
         ];
     }
 }`

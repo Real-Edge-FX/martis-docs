@@ -1,5 +1,6 @@
 import { render, screen } from '@testing-library/react'
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, onTestFinished, vi } from 'vitest'
+import { assertConsoleSilent } from '@/test/assert-console-silent'
 import { MediaFigure } from './MediaFigure'
 
 describe('MediaFigure', () => {
@@ -25,6 +26,8 @@ describe('MediaFigure', () => {
     // React 18 warns on the camelCase `fetchPriority` prop; the attribute
     // must be set without any console error (SSR and hydration fail on one).
     const consoleError = vi.spyOn(console, 'error')
+    // Restored even when an assertion below fails first.
+    onTestFinished(() => consoleError.mockRestore())
     render(
       <MediaFigure
         src="/screenshots/dashboard.png"
@@ -37,8 +40,7 @@ describe('MediaFigure', () => {
     )
     const img = screen.getByRole('img', { name: 'Dashboard overview' })
     expect(img).toHaveAttribute('loading', 'eager')
-    expect(consoleError).not.toHaveBeenCalled()
-    consoleError.mockRestore()
     expect(img).toHaveAttribute('fetchpriority', 'high')
+    assertConsoleSilent([consoleError])
   })
 })

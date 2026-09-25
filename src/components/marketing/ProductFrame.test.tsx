@@ -1,5 +1,6 @@
 import { render, screen } from '@testing-library/react'
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, onTestFinished, vi } from 'vitest'
+import { assertConsoleSilent } from '@/test/assert-console-silent'
 import { ProductFrame } from './ProductFrame'
 
 describe('ProductFrame', () => {
@@ -7,6 +8,8 @@ describe('ProductFrame', () => {
     // React 18 warns on the camelCase `fetchPriority` prop; the attribute
     // must be set without any console error (SSR and hydration fail on one).
     const consoleError = vi.spyOn(console, 'error')
+    // Restored even when an assertion below fails first.
+    onTestFinished(() => consoleError.mockRestore())
     render(
       <ProductFrame
         src="/screenshots/dashboard.png"
@@ -19,10 +22,9 @@ describe('ProductFrame', () => {
     )
     const img = screen.getByRole('img', { name: 'Martis dashboard' })
     expect(img).toHaveAttribute('loading', 'eager')
-    expect(consoleError).not.toHaveBeenCalled()
-    consoleError.mockRestore()
     expect(img).toHaveAttribute('fetchpriority', 'high')
     expect(screen.getByText('v1.39.1')).toBeInTheDocument()
+    assertConsoleSilent([consoleError])
   })
 
   it('lazy-loads when not marked as the priority hero frame', () => {

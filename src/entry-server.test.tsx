@@ -164,7 +164,14 @@ describe('the homepage without JavaScript', () => {
   it('carries the approved headline and licence seal in the server HTML', async () => {
     const { html } = await render('/')
     expect(firstHeading(html)).toBe('The admin foundation your agency can ship again.')
-    expect(html.match(/MIT licensed · No paid tier/g)?.length).toBeGreaterThanOrEqual(2)
+    // The footer carries the seal too: count only inside <main>, and
+    // require it in the hero and in the final CTA specifically.
+    const main = /<main\b[\s\S]*<\/main>/.exec(html)?.[0] ?? ''
+    const section = (headingId: string) =>
+      new RegExp(`<section[^>]*aria-labelledby="${headingId}"[^>]*>[\\s\\S]*?</section>`).exec(main)?.[0] ?? ''
+    expect(main.match(/MIT licensed · No paid tier/g)).toHaveLength(2)
+    expect(section('home-hero-heading')).toContain('<p class="home-seal">MIT licensed · No paid tier</p>')
+    expect(section('home-cta-heading')).toContain('<p class="home-seal">MIT licensed · No paid tier</p>')
   })
 })
 

@@ -227,20 +227,27 @@
 
 /* ---- Install command placement ---------------------------------------- */
 
-/* The command block never outgrows its column. Its copy status stays
- * out of the layout until there is something to say, then takes its own
- * line under the command: that only happens right after a click, which
- * layout-shift metrics exclude, and it keeps the empty block compact and
- * centred instead of reserving a blank status column beside the button. */
+/* The command block never outgrows its column, and never scrolls: on a
+ * narrow column the command wraps at its spaces instead of overflowing
+ * (it stays one selectable, copyable string).
+ *
+ * The copy status is the role="status" live region, so it is never
+ * `display: none` (that drops it from the accessibility tree and its
+ * announcement can be lost). While empty it collapses to zero height on
+ * its own line; when it has text it takes that line under the command.
+ * That only happens right after a click, which layout-shift metrics
+ * exclude, and it keeps the idle block compact instead of reserving a
+ * blank status column beside the button. */
 .home .install-command {
   max-width: 100%;
   flex-wrap: wrap;
-  row-gap: var(--space-2);
+  row-gap: 0;
 }
 
 .home .install-command__code {
   min-width: 0;
-  overflow-x: auto;
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 
 .home .install-command__status {
@@ -251,7 +258,12 @@
 }
 
 .home .install-command__status:empty {
-  display: none;
+  height: 0;
+  overflow: hidden;
+}
+
+.home .install-command__status:not(:empty) {
+  margin-top: var(--space-2);
 }
 
 /* ---- Proof strip ------------------------------------------------------- */
@@ -435,11 +447,10 @@
 .home-chapter__excerpt {
   margin: var(--space-5) 0 0;
   padding: var(--space-3) var(--space-4);
-  overflow-x: auto;
   border: 1px solid var(--border-subtle);
   border-radius: var(--site-radius-md);
   background: var(--surface-page);
-  color: #D5D9E6;
+  color: var(--fg-primary);
   font-family: var(--font-mono);
   font-size: 12px;
   line-height: 1.6;

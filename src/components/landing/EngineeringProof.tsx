@@ -73,7 +73,7 @@ export function EngineeringProof() {
 
         <ul className="home-engineering__links">
           <li>
-            <a href={SOURCE_URL} className="home-link" rel="noopener noreferrer">
+            <a href={SOURCE_URL} className="home-link">
               Read the {VERSION} source on GitHub
             </a>
           </li>
@@ -88,7 +88,7 @@ export function EngineeringProof() {
             </Link>
           </li>
           <li>
-            <a href={LICENSE_URL} className="home-link home-link--muted" rel="noopener noreferrer">
+            <a href={LICENSE_URL} className="home-link home-link--muted">
               MIT license
             </a>
           </li>
