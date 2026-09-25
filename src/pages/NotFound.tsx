@@ -1,13 +1,11 @@
 import { Link } from 'react-router-dom'
-import { TopBar } from '@/components/landing/TopBar'
-import { Footer } from '@/components/landing/Footer'
 import { Icons } from '@/components/icons'
+import { SiteShell } from '@/components/site/SiteShell'
 
 export default function NotFound() {
   return (
-    <div className="min-h-screen bg-ink-900 text-ink-100 flex flex-col">
-      <TopBar />
-      <main className="flex-1 grid place-items-center px-6 py-24">
+    <SiteShell>
+      <main id="main-content" className="site-not-found">
         <div className="text-center max-w-[44ch]">
           <div className="text-[120px] font-medium gradient-text leading-none">404</div>
           <h1 className="mt-6 text-2xl font-medium text-white tracking-tight">
@@ -33,7 +31,6 @@ export default function NotFound() {
           </div>
         </div>
       </main>
-      <Footer />
-    </div>
+    </SiteShell>
   )
 }

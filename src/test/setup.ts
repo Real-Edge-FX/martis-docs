@@ -2,7 +2,11 @@ import '@testing-library/jest-dom/vitest'
 import { cleanup } from '@testing-library/react'
 import { afterEach, vi } from 'vitest'
 
-afterEach(() => cleanup())
+afterEach(() => {
+  cleanup()
+  localStorage.clear()
+  document.documentElement.dataset.theme = 'dark'
+})
 
 Object.defineProperty(window, 'matchMedia', {
   writable: true,

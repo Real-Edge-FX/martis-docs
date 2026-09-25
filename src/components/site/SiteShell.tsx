@@ -3,6 +3,7 @@ import { Link, NavLink } from 'react-router-dom'
 import { Logo } from '@/components/Logo'
 import { Icons } from '@/components/icons'
 import { RELEASE } from '@/data/site'
+import { ThemeToggle } from '@/lib/theme'
 
 const nav = [
   { label: 'Product', to: '/product' },
@@ -49,6 +50,7 @@ function SiteHeader({ surface }: { surface: 'marketing' | 'docs' }) {
           {nav.map((item) => <NavLink key={item.to} to={item.to}>{item.label}</NavLink>)}
         </nav>
         <div className="site-header__actions">
+          {surface === 'docs' && <ThemeToggle />}
           <a className="icon-link" href="https://github.com/Real-Edge-FX/martis-package" target="_blank" rel="noreferrer" aria-label="Martis on GitHub"><Icons.GitHub size={17} /></a>
           <Link className="button button--small button--primary" to="/docs/getting-started/installation">Install Martis</Link>
           <button ref={toggleRef} className="mobile-menu-button" type="button" aria-label="Toggle navigation" aria-expanded={open} onClick={() => setOpen((value) => !value)}>

@@ -2,6 +2,8 @@ import { lazy, Suspense } from 'react'
 import { Routes, Route } from 'react-router-dom'
 import { LoadingScreen } from '@/components/LoadingScreen'
 import { CmdKProvider } from '@/lib/cmdk-context'
+import { ThemeProvider } from '@/lib/theme'
+import { DocumentMeta } from '@/components/site/DocumentMeta'
 
 // Lazy-load the two top-level surfaces so the landing's CSS / JS
 // budget does not pay for the docs renderer (and vice-versa). Both
@@ -17,19 +19,22 @@ const NotFound = lazy(() => import('@/pages/NotFound'))
 
 export function App() {
   return (
-    <CmdKProvider>
-      <Suspense fallback={<LoadingScreen />}>
-        <Routes>
-          <Route path="/" element={<Landing />} />
-          <Route path="/product" element={<Product />} />
-          <Route path="/for-agencies" element={<ForAgencies />} />
-          <Route path="/compare" element={<Compare />} />
-          <Route path="/compare/:product" element={<CompareProduct />} />
-          <Route path="/changelog" element={<Changelog />} />
-          <Route path="/docs/*" element={<Docs />} />
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </Suspense>
-    </CmdKProvider>
+    <ThemeProvider>
+      <CmdKProvider>
+        <DocumentMeta />
+        <Suspense fallback={<LoadingScreen />}>
+          <Routes>
+            <Route path="/" element={<Landing />} />
+            <Route path="/product" element={<Product />} />
+            <Route path="/for-agencies" element={<ForAgencies />} />
+            <Route path="/compare" element={<Compare />} />
+            <Route path="/compare/:product" element={<CompareProduct />} />
+            <Route path="/changelog" element={<Changelog />} />
+            <Route path="/docs/*" element={<Docs />} />
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </Suspense>
+      </CmdKProvider>
+    </ThemeProvider>
   )
 }
