@@ -1,11 +1,13 @@
 ---
 title: "User Preferences"
-description: "| Preference | Values | Default | |------------|--------|---------| | theme | dark · light · system | dark | | accent | martis · blue · teal · violet · amber · custom | martis | | brandColor | #RGB · #RGBA · #RRGGBB · #RRGGBBAA · null | null (off by default — opt-in via allowBran"
+description: "Each admin user keeps their own interface preferences: theme, accent (or, when allowed, a brand colour), density, locale and reduced motion. The topbar overlay edits them, the server keeps them per user across devices, and a URL preset can override them for a shared link."
 sourcePath: "martis-package/docs/preferences.md"
 ---
 
 # User Preferences
 > Per-user UI preferences (theme, accent, density, locale, reduced-motion) persisted server-side so they travel across devices and sessions. URL presets compose over the user row for shareable, link-driven layouts. Exposed through a compact overlay in the topbar.
+
+Each admin user keeps their own interface preferences: theme, accent (or, when allowed, a brand colour), density, locale and reduced motion. The topbar overlay edits them, the server keeps them per user across devices, and a URL preset can override them for a shared link.
 
 ---
 
@@ -209,5 +211,5 @@ php artisan migrate
 ## Related
 
 - [i18n.md](/docs/customization/i18n) — adding new locales.
-- [theming.md](/docs/customization/theming) — the 94-token design system that preferences drive.
+- [theming.md](/docs/customization/theming) — the 162-token design system that preferences drive.
 
