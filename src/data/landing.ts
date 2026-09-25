@@ -9,7 +9,7 @@ import type { IconName } from '@/components/icons'
  * status line (components/landing/Hero.tsx) and the stat strip both
  * read it, so a count bump lands everywhere the landing page shows it.
  */
-export const TESTS_PASSING = '4,945'
+export const TESTS_PASSING = '5,141'
 
 /**
  * Runtime requirements from martis-package's composer.json, shown in the
@@ -168,7 +168,7 @@ class SendInvoice extends Action
 
 export type CodeSampleKey = keyof typeof CODE_SAMPLES
 
-export const VERSION = 'v2.0.0'
+export const VERSION = 'v2.0.1'
 
 /**
  * One-line headline shown alongside VERSION in the landing-page
@@ -177,4 +177,4 @@ export const VERSION = 'v2.0.0'
  * the tag actually ships. Keep under ~60 chars so the badge stays on
  * one line on common desktop widths.
  */
-export const RELEASE_HEADLINE = 'Martis 2.0: Nova-order options, safer panels and guards'
+export const RELEASE_HEADLINE = 'Relatable writes, a closed audit log, Nova panels'

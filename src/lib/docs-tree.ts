@@ -33,6 +33,7 @@ export const DOC_NAV: DocGroup[] = [
       { slug: 'getting-started/installation',    label: 'Installation',     icon: 'Bolt' },
       { slug: 'getting-started/quick-start',     label: 'Quick Start',      icon: 'ArrowRight' },
       { slug: 'getting-started/troubleshooting', label: 'Troubleshooting',  icon: 'Shield' },
+      { slug: 'getting-started/upgrading',       label: 'Upgrading',        icon: 'Layers' },
     ],
   },
   {

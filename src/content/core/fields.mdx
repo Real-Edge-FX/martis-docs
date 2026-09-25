@@ -1029,7 +1029,7 @@ A custom component that reads the payload paints `var(--martis-avatar-{palette})
 - **Empty-seed glyph** — when the record has no name/initials, the field renders a muted user icon inside `.martis-avatar-fallback` instead of a bare em-dash.
 - Per-row Closure-aware `fallback()` when you *do* want a custom URL.
 - Typed `AvatarShape` enum instead of a boolean `rounded()`.
-- Initials and palette shared with `UiAvatar`, the Topbar and the profile page through `Martis\Support\Initials` (the fields reach it via the [`ResolvesInitialsPayload`](../src/Fields/Concerns/ResolvesInitialsPayload.php) trait).
+- Initials and palette shared with `UiAvatar`, the Topbar and the profile page through `Martis\Support\Initials` (the fields reach it via the [`ResolvesInitialsPayload`](https://github.com/Real-Edge-FX/martis-package/blob/main/src/Fields/Concerns/ResolvesInitialsPayload.php) trait).
 
 ---
 
@@ -1107,7 +1107,7 @@ Audio::make('intro_audio_path')
 **Extends:** `Field`
 **File:** `src/Fields/Select.php`
 
-> **Version note.** Martis v2.0 and later read `options()` as `[value => label]`, Nova's order; Martis v1.x read `[label => value]`. On v1.x, flip the arrays in the examples below, or upgrade: see [Upgrading](upgrading.md).
+> **Version note.** Martis v2.0 and later read `options()` as `[value => label]`, Nova's order; Martis v1.x read `[label => value]`. On v1.x, flip the arrays in the examples below, or upgrade: see [Upgrading](/docs/getting-started/upgrading).
 
 Dropdown select with predefined options.
 
@@ -1166,7 +1166,7 @@ Select::make('country_code')
 
 #### Option order
 
-`options()` reads `[value => label]`, the order Nova uses for `Select`, `MultiSelect` and `BooleanGroup`: the key is what the field stores, the value is what the user sees. So `pluck('name', 'id')` stores the id, and two records with the same name stay two options. Before v2.0.0 Martis read the array label first; see [Upgrading](upgrading.md).
+`options()` reads `[value => label]`, the order Nova uses for `Select`, `MultiSelect` and `BooleanGroup`: the key is what the field stores, the value is what the user sees. So `pluck('name', 'id')` stores the id, and two records with the same name stay two options. Before v2.0.0 Martis read the array label first; see [Upgrading](/docs/getting-started/upgrading).
 
 - **A list is a map keyed 0, 1, 2…**, so `options(['Small', 'Large'])` stores `0` and `1`, as in Nova. When each value is its own label, pass `array_combine($values, $values)`. A list of numbers is the trap: `options([1, 2, 3])` stores `0`, `1` and `2`, so `options(range(1, 12))` for months stores 0 for January.
 - **Grouped options** map a value to `['label' => ..., 'group' => ...]`. Any other array value throws an `InvalidArgumentException` that names the field and the option (the pre-v2 `['Group' => ['Label' => 'value']]` format included). The `Select` dropdown shows each group under its heading, in the order the groups first appear, with ungrouped options on top; the `MultiSelect` list keeps groups and ungrouped options in the order they first appear.
@@ -1259,7 +1259,7 @@ The list is fetched lazily at schema-render time so `config()` is read after the
 **Extends:** `Field`
 **File:** `src/Fields/MultiSelect.php`
 
-> **Version note.** Martis v2.0 and later read `options()` as `[value => label]`, Nova's order; Martis v1.x read `[label => value]`. On v1.x, flip the arrays in the examples below, or upgrade: see [Upgrading](upgrading.md).
+> **Version note.** Martis v2.0 and later read `options()` as `[value => label]`, Nova's order; Martis v1.x read `[label => value]`. On v1.x, flip the arrays in the examples below, or upgrade: see [Upgrading](/docs/getting-started/upgrading).
 
 Multi-value select with chips/tags UI. Stores as JSON array.
 
@@ -1767,6 +1767,7 @@ BelongsTo::make('category_id', 'Category')
 | `hideCreateRelationButton` | `hideCreateRelationButton(): static` | `$this` | Explicitly hide the inline create button. | — |
 | `modalSize` | `modalSize(ModalSize $size): static` | `$this` | Set the inline create modal size. Pass any `Martis\Enums\ModalSize` case (`Small`, `Medium`, `Large`, `ExtraLarge`, `TwoExtraLarge` through `SevenExtraLarge`). | `ModalSize::TwoExtraLarge` |
 | `iconColor` | `iconColor(string $color): static` | `$this` | Color for the resource icon in the inline create modal header. Any CSS color. | accent color |
+| `inverse` | `inverse(string $relationship): static` | `$this` | The related resource's `HasOne` / `MorphOne` relationship that is the inverse of this one (Nova's `inverse()`): a write fails with 422 when that relationship of the picked record already holds another record. Without it, the first `HasOne` / `MorphOne` of the related resource pointing back at this resource is used. See [Relationships → Writes follow the pickers](/docs/core/relationships#writes-follow-the-pickers). | `null` |
 
 #### Where the picker loads its options
 
