@@ -37,7 +37,7 @@ export function DocsSidebar() {
                     {item.badge && (
                       <span
                         aria-label={item.tooltip}
-                        className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-ink-800 text-ink-300"
+                        className="docs-nav-badge text-[10px] font-mono px-1.5 py-0.5 rounded bg-ink-800 text-ink-300"
                       >
                         {item.badge}
                       </span>
