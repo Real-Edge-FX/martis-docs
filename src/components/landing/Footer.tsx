@@ -38,7 +38,7 @@ export function Footer() {
         <div>
           <Logo size={24} withWordmark />
           <p className="mt-3 text-[13px] text-ink-300 max-w-[34ch]">
-            A modern, open-source admin engine for Laravel. React-first.
+            A modern, open-source admin foundation for Laravel. React-first.
             Context-aware. Built for developers who ship.
           </p>
           <div className="mt-4 flex items-center gap-2">

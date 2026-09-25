@@ -12,7 +12,7 @@ const HERO_MEDIA = PRODUCT_MEDIA.dashboard
 
 /**
  * The homepage hero (design spec 6.1): eyebrow, headline, one supporting
- * sentence, the two actions, the licence seal, the install command and a
+ * sentence, the two actions, the license seal, the install command and a
  * real Playground screenshot labelled with the release it was captured
  * at. Everything is in its final state in the server HTML: no entrance
  * animation, parallax or ambient effect, so the page reads the same
@@ -29,7 +29,7 @@ export function Hero() {
           </h1>
           <p className="home-hero__lede">
             Start every client backoffice from the same tested Laravel and React baseline, keep control of every
-            override, and deliver without a licence fee per project.
+            override, and deliver without a license fee per project.
           </p>
           <div className="home-actions">
             <Link to={INSTALL_PATH} className="site-button site-button--primary home-actions__button">

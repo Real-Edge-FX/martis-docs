@@ -8,7 +8,7 @@ const HEADING_ID = 'home-cta-heading'
 
 /**
  * The closing call to action (design spec 6.9): the install command
- * again, the licence seal, and two paths, start installing or evaluate
+ * again, the license seal, and two paths, start installing or evaluate
  * the documentation. Its labels differ from the hero's "Install Martis"
  * so every link on the page keeps a distinct accessible name.
  */

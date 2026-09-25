@@ -49,10 +49,11 @@ export default function Product() {
             </h2>
             <p className="product-extension__copy">
               Resources, actions, policies, themes and the install flow above are the baseline every client project
-              starts from. Past that baseline, Martis resolves fields, layouts and views through a four-tier
-              override registry (see Extend) instead of forking its own source: your application code, registered
-              through that registry, decides the rest. Martis does not generate business logic, does not own your
-              database schema, and does not ship a design system beyond its own component set. What you build with
+              starts from. Past that baseline, Martis resolves field components through a four-tier override
+              registry and replaces layouts and views by key (see Extend) instead of forking its own source: your
+              application code, registered through that registry, decides the rest. Martis does not generate business
+              logic, does not own your database schema, and its design tokens style the panel only, not the rest of
+              your application. What you build with
               those extension points, and how you deploy the Laravel application around them, stays yours to run and
               maintain.
             </p>

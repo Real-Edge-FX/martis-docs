@@ -48,7 +48,7 @@ const EXTRAS: SearchHit[] = [
   { group: 'Field Types', title: 'File',     desc: 'Upload with preview',            href: '/docs/core/fields#file',     icon: 'Hash',         source: 'static' },
   { group: 'Field Types', title: 'Markdown', desc: 'WYSIWYG editor',                 href: '/docs/core/fields#markdown', icon: 'Hash',         source: 'static' },
   { group: 'Field Types', title: 'Currency', desc: 'Money input with formatting',    href: '/docs/core/fields#currency', icon: 'Hash',         source: 'static' },
-  { group: 'Field Types', title: 'Badge',    desc: 'Status pill with colour map',    href: '/docs/core/fields#badge',    icon: 'Hash',         source: 'static' },
+  { group: 'Field Types', title: 'Badge',    desc: 'Status pill with color map',    href: '/docs/core/fields#badge',    icon: 'Hash',         source: 'static' },
 ]
 
 function fromDoc(item: DocItem, group: string): SearchHit {

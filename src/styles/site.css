@@ -281,7 +281,7 @@
   line-height: 1.55;
 }
 
-.site-footer__licence {
+.site-footer__license {
   margin: var(--space-2) 0 0;
   color: var(--fg-primary);
   font-family: var(--font-mono);

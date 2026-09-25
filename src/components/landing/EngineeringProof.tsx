@@ -36,7 +36,7 @@ const POINTS: ProofPoint[] = [
   },
   {
     title: 'Open source',
-    body: 'MIT licensed, with no paid tier, no licence keys and the full source in a public repository.',
+    body: 'MIT licensed, with no paid tier, no license keys and the full source in a public repository.',
   },
 ]
 
@@ -44,7 +44,7 @@ const POINTS: ProofPoint[] = [
  * "Technical depth" (design spec 6.8): architecture, tests,
  * compatibility and the open-source model, each checkable at its source:
  * the tagged code on GitHub, the changelog and the docs. No logos or
- * testimonials (none are authorised and verifiable yet).
+ * testimonials (none are authorized and verifiable yet).
  */
 export function EngineeringProof() {
   return (

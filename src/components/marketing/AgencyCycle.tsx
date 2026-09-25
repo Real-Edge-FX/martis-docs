@@ -14,7 +14,7 @@ const STEP_COPY: Record<string, string> = {
   baseline: 'Install the shared Martis baseline once, before the first client engagement.',
   customize: "Adapt brand, fields, layouts and workflows to this client's project.",
   deliver: 'Ship the client project running on that baseline.',
-  maintain: 'Maintain the baseline: upgrades and fixes land once, not per client.',
+  maintain: 'Maintain the baseline: every client upgrades through the same Composer and publish steps.',
   reuse: 'Carry the baseline, and everything learned customizing it, into the next client.',
 }
 

@@ -16,7 +16,7 @@ const ADOPTION_STEPS: AdoptionStep[] = [
     id: 'install',
     label: 'Install the baseline',
     description:
-      'Run the installer once per project: authentication, resources and the admin shell are wired from the first commit.',
+      'Run the installer once per project: authentication and the admin shell are wired from the first commit, ready for your first resource.',
     href: '/docs/getting-started/installation',
   },
   {
@@ -29,13 +29,14 @@ const ADOPTION_STEPS: AdoptionStep[] = [
     id: 'overrides',
     label: 'Register your own overrides',
     description:
-      'Point the four-tier override registry at your application code for anything the baseline should not decide.',
+      'Register your own field components, layouts and views with the override registry for anything the baseline should not decide.',
     href: '/docs/customization/overrides',
   },
   {
     id: 'roles',
     label: "Set up the client team's roles",
-    description: 'Turn on roles and permissions for the people who will actually use the panel.',
+    description:
+      'Run martis:roles to scaffold users, roles and permissions on spatie/laravel-permission for the people who will use the panel.',
     href: '/docs/auth/roles',
   },
   {

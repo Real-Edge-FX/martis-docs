@@ -3,6 +3,7 @@ import { AdoptionChecklist } from '@/components/marketing/AdoptionChecklist'
 import { AgencyCycle } from '@/components/marketing/AgencyCycle'
 import { InstallCommand } from '@/components/site/InstallCommand'
 import { SiteShell } from '@/components/site/SiteShell'
+import { INSTALL_COMMAND } from '@/data/landing'
 
 const CYCLE_STEPS = ['baseline', 'customize', 'deliver', 'maintain', 'reuse']
 
@@ -19,7 +20,7 @@ const AGENCY_VALUE_ITEMS: AgencyValueItem[] = [
   {
     id: 'win',
     title: 'Win the next project',
-    copy: 'Bring a working, browsable prototype to the pitch: resources, roles and workflows already running, not a slide deck.',
+    copy: 'Bring a working, browsable prototype to the pitch, built on the same baseline you will deliver with, not a slide deck.',
   },
   {
     id: 'build',
@@ -34,7 +35,7 @@ const AGENCY_VALUE_ITEMS: AgencyValueItem[] = [
   {
     id: 'maintain',
     title: 'Maintain across clients',
-    copy: 'A Martis upgrade or a fix you make once flows into every client running the baseline, instead of being patched project by project.',
+    copy: 'Every client upgrades through the same steps, a Composer update and one publish command, instead of a custom patch per project.',
   },
   {
     id: 'margin',
@@ -108,7 +109,7 @@ export default function ForAgencies() {
             <p className="agencies-page__lede">
               Evaluate it against your own delivery checklist, or install it straight into the next client project.
             </p>
-            <InstallCommand command="composer require martis/martis" className="agencies-install__command" />
+            <InstallCommand command={INSTALL_COMMAND} className="agencies-install__command" />
           </div>
         </section>
 

@@ -25,7 +25,7 @@ const BLOCKS: AgencyBlock[] = [
     label: '03 / Ownership',
     title: 'Own the outcome',
     body: 'Martis is MIT licensed with no paid tier. Fields, pages and layouts are overridden in your application code, not forked from the package.',
-    consequence: 'The licence cost of the tenth project is the same as the first: nothing.',
+    consequence: 'The license cost of the tenth project is the same as the first: nothing.',
   },
 ]
 
@@ -47,7 +47,7 @@ export function AgencyValue() {
             </h2>
           </div>
           <p className="home-section__copy">
-            Standardise the work clients should never pay you to rebuild, and keep the details that make each product
+            Standardize the work clients should never pay you to rebuild, and keep the details that make each product
             theirs.
           </p>
         </header>

@@ -3,7 +3,13 @@
 // and agency scenarios stay out of JSX so editorial edits never touch
 // layout code (decision 6). Code samples are copied or adapted, with a
 // named source, from the package docs at tag v1.39.1 (decision 5): they
-// are real, current Martis API, not invented for marketing.
+// are real, current Martis API, not invented for marketing. Every
+// outcome, caption and prerequisite is a claim checked against those same
+// docs; version requirements come from the validated release manifest.
+
+import { formatLaravelRequirement, formatPhpRequirement, loadReleaseManifest } from '@/lib/generated-data'
+
+const RELEASE = loadReleaseManifest()
 
 export type ProductChapterId = 'model' | 'operate' | 'secure' | 'adapt' | 'extend' | 'ship'
 
@@ -70,14 +76,14 @@ export const PRODUCT_MEDIA: Record<ProductMediaId, ProductMediaEntry> = {
   'resource-index': {
     src: '/screenshots/resource-index.webp',
     alt: 'A Martis resource index table with filters and bulk actions',
-    caption: 'Sortable, searchable tables with filters and bulk actions out of the box.',
+    caption: 'Sortable, searchable tables with filters and bulk actions, each declared in the resource.',
     width: 1280,
     height: 800,
   },
   profile: {
     src: '/screenshots/profile.webp',
     alt: 'A Martis user profile page with two-factor authentication settings',
-    caption: 'Login, 2FA and SSO ship enabled; policies gate every write.',
+    caption: 'Login is built in; two-factor auth and SSO switch on when a client needs them.',
     width: 1280,
     height: 800,
   },
@@ -143,7 +149,7 @@ class PostResource extends Resource
     }
 }`,
     },
-    prerequisite: 'Requires an existing Eloquent model; Martis reads its fields and relationships, it does not generate the migration.',
+    prerequisite: 'Requires an existing Eloquent model; you declare its fields in the resource\'s fields() method, and Martis does not generate the model or its migration.',
   },
   {
     id: 'operate',
@@ -185,7 +191,7 @@ class PublishPosts extends Action
   {
     id: 'secure',
     title: 'Secure',
-    outcome: 'Every write is re-authorized server-side through a standard Laravel policy, whatever the UI already hid.',
+    outcome: 'Every write is re-authorized server-side through the model\'s Laravel policy, whatever the UI already hid.',
     agencyScenario:
       'A client needs authors to edit only their own posts, and admins to delete any post, enforced even if someone bypasses the UI.',
     docsHref: '/docs/auth/authorization',
@@ -219,14 +225,14 @@ class PostPolicy
     }
 }`,
     },
-    prerequisite: 'Policies are plain Laravel; Martis calls them on every write, but each one still has to be registered and written per model.',
+    prerequisite: 'Policies are plain, auto-discovered Laravel classes, but a model with no policy allows every ability: write one per model before going live.',
   },
   {
     id: 'adapt',
     title: 'Adapt',
     outcome: 'A theme is a CSS file that overrides design tokens; no rebuild, and the change is visible on refresh.',
     agencyScenario:
-      'Each client backoffice needs its own brand colours and dark/light default, without diverging from the shared component set.',
+      'Each client backoffice needs its own brand colors and dark/light default, without diverging from the shared component set.',
     docsHref: '/docs/customization/theming',
     mediaId: 'dashboard',
     code: {
@@ -239,14 +245,14 @@ class PostPolicy
     'name' => 'mytheme',           // Theme CSS file name (null = default)
 ],`,
     },
-    prerequisite: 'A new theme file still needs `martis:publish-assets` republished after it changes; the config edit alone does not recompile it.',
+    prerequisite: 'The theme Martis serves is the plain CSS copy in public/vendor/martis/themes/. martis:publish-assets empties public/vendor/martis/ before copying, so copy the theme back after republishing assets.',
   },
   {
     id: 'extend',
     title: 'Extend',
-    outcome: 'Field components, layouts and views resolve through a four-tier registry, so custom code overrides without forking.',
+    outcome: 'Field components resolve through a four-tier registry, and layouts and views are replaced by key, so custom code overrides without forking.',
     agencyScenario:
-      'A client wants a custom star-rating input on one field, without touching the fields Martis already ships everywhere else.',
+      'A client wants a custom status badge on one field, without touching the fields Martis already ships everywhere else.',
     docsHref: '/docs/customization/overrides',
     mediaId: 'tool-system-status',
     code: {
@@ -277,6 +283,6 @@ componentRegistry.registerResourceFieldDisplay('posts', 'status', StatusBadgeDis
 php artisan martis:install
 php artisan martis:user`,
     },
-    prerequisite: 'Requires PHP 8.3+ and an existing Laravel 12 or 13 application; end users consume precompiled assets, no Node toolchain required.',
+    prerequisite: `Requires ${formatPhpRequirement(RELEASE.phpRequirement)} and an existing ${formatLaravelRequirement(RELEASE.laravelRequirement)} application; the panel ships precompiled assets, so no Node toolchain is needed unless you build custom extensions.`,
   },
 ]

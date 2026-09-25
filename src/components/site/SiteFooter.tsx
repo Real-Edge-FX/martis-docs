@@ -6,7 +6,7 @@ import { FOOTER_LINKS } from './site-links'
 // From the validated release snapshot, never hand-written.
 const VERSION = formatVersion(loadReleaseManifest().version)
 
-/** The site footer: what Martis is, its licence terms and the links a
+/** The site footer: what Martis is, its license terms and the links a
  *  reader needs after the page content. */
 export function SiteFooter() {
   return (
@@ -16,8 +16,8 @@ export function SiteFooter() {
           <Link to="/" className="site-footer__logo">
             <Logo withWordmark size={24} />
           </Link>
-          <p className="site-footer__tagline">The open-source admin engine for Laravel.</p>
-          <p className="site-footer__licence">MIT licensed · No paid tier</p>
+          <p className="site-footer__tagline">The open-source admin foundation for Laravel.</p>
+          <p className="site-footer__license">MIT licensed · No paid tier</p>
         </div>
 
         <nav aria-label="Footer" className="site-footer__nav">

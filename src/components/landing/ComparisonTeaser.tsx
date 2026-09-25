@@ -13,9 +13,9 @@ interface Criterion {
 // teaser names the questions only: every per-product value belongs to
 // the sourced, date-stamped comparison pages, never to this page.
 const CRITERIA: Criterion[] = [
-  { name: 'Licence and cost', question: 'What does the core cost on each new client project?' },
+  { name: 'License and cost', question: 'What does the core cost on each new client project?' },
   { name: 'Frontend stack', question: 'Which frontend model does your team already build and maintain?' },
-  { name: 'Customisation', question: 'How far can each client’s backoffice move away from the defaults?' },
+  { name: 'Customization', question: 'How far can each client’s backoffice move away from the defaults?' },
   { name: 'Extension', question: 'Where does custom code live, and who owns it after handover?' },
   { name: 'Operation', question: 'How are upgrades, permissions and day-to-day workflows handled?' },
 ]
