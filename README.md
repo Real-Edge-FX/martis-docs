@@ -1,15 +1,15 @@
 # Martis Docs
 
-Official documentation site for the [Martis](https://github.com/Real-Edge-FX/martis-package) Laravel admin engine.
+Official documentation site for the [Martis](https://github.com/Real-Edge-FX/martis-package) Laravel admin foundation.
 
 Live at **https://getmartis.com**.
 
 ## Stack
 
 - **Vite 6** + **React 18** + **TypeScript** — single-page app, lazy routes per surface.
-- **Tailwind CSS v4** — design tokens defined in `src/styles/globals.css`.
+- **Tailwind CSS v4** — the site design system's tokens (fonts, palette, semantic and motion tokens) live in `src/styles/tokens.css` and `src/styles/motion.css`; `src/styles/globals.css` imports them and keeps the legacy docs-surface palette.
 - **MDX** (`@mdx-js/rollup`) — every doc page is an MDX module under `src/content/`.
-- **react-router-dom v6** — `/` (landing) and `/docs/*` (docs shell with sidebar/TOC).
+- **react-router-dom v6** — the marketing pages `/` (home), `/product` and `/for-agencies`, the comparison pages `/compare`, `/compare/nova` and `/compare/filament`, `/changelog`, and `/docs/*` (docs shell with sidebar/TOC). The route registry is `src/lib/site-routes.ts`.
 - **Cmd+K palette** — static index built from `DOC_NAV` plus a JSON full-text index over the MDX bodies, generated at build time.
 
 No Astro, no server runtime at request time. `pnpm build` prerenders every public route to static HTML (see Build below), so each page ships real markup, `<title>`, description, canonical and Open Graph tags without running JavaScript first. Apache/LiteSpeed serves `dist/` as static files; every page then hydrates the same SPA shell and lazy-loads its own JS chunk.
@@ -38,7 +38,7 @@ Outputs to `dist/`. The build chains four steps:
 
 Type-checking is a separate gate, not part of `build`: run `pnpm typecheck` (`tsc -b`) yourself, or let CI run it.
 
-`pnpm test:prerender` runs the Node test scripts under `scripts/`: the unit tests for `prerender.mjs`, `smoke-dist.mjs`, `sync-docs.mjs` and `build-search-index.mjs`, the static checks over `deploy.sh` (`deploy-script.test.mjs`), and `prerender.test.mjs`, which checks the files a `pnpm build` just produced (every expected file exists, a sample page carries real content and its canonical tag, and `dist-ssr/` holds no `public/` files). Run it after `pnpm build`.
+`pnpm test:prerender` runs the Node test scripts under `scripts/`: the unit tests for `prerender.mjs`, `smoke-dist.mjs`, `sync-docs.mjs`, `build-search-index.mjs` and `serve-dist.mjs`, the static checks over `deploy.sh` (`deploy-script.test.mjs`) and `lighthouserc.cjs` (`lighthouserc.test.mjs`), and `prerender.test.mjs`, which checks the files a `pnpm build` just produced (every expected file exists, a sample page carries real content and its canonical tag, and `dist-ssr/` holds no `public/` files). Run it after `pnpm build`.
 
 `pnpm preview` serves the built site at <http://localhost:4173>, but it falls back to the root `index.html` for any unmatched path (Vite's SPA default) — visiting a deep route without a trailing slash (`/docs`, not `/docs/`) serves the wrong prerendered page there and can show hydration warnings that do not reflect a real bug. Apache does not have this quirk (it resolves a directory request to its `index.html`, per `public/.htaccess`). To verify a specific route's own prerendered HTML locally, request it with a trailing slash, or serve `dist/` with a plain static file server instead.
 
@@ -79,31 +79,46 @@ A few pages (`getting-started/quick-start.mdx`, `getting-started/troubleshooting
 ```
 martis-docs/
 ├── public/
-│   ├── icon.svg
+│   ├── brand/                # logo, icon, Open Graph cover, backdrops
+│   ├── fonts/                # self-hosted Geist, Geist Mono, Instrument Serif (OFL)
+│   ├── screenshots/          # product screenshots (captured at PRODUCT_MEDIA_VERSION)
 │   └── search-index.json     # generated, gitignored
 ├── scripts/
 │   ├── sync-docs.mjs         # martis-package/docs -> src/content
-│   └── build-search-index.mjs
+│   ├── build-search-index.mjs
+│   ├── prerender.mjs         # static HTML per route, sitemap, robots
+│   ├── serve-dist.mjs        # production-faithful static server for E2E/Lighthouse
+│   └── smoke-dist.mjs        # artifact gate over dist/
 ├── src/
 │   ├── components/
+│   │   ├── site/             # site shell: header, mobile menu, footer, install command, document meta
+│   │   ├── marketing/        # product chapters, chapter nav, media, proof strip, agency cycle, adoption checklist
+│   │   ├── landing/          # homepage sections (hero, chapters, showcase, proof, CTA) + legacy docs top bar/footer
 │   │   ├── docs/             # sidebar, TOC, breadcrumbs, pagination
-│   │   ├── icons/            # 22 stroke icons
-│   │   ├── landing/          # hero, features, code panel, footer, top bar
+│   │   ├── icons/            # stroke icons
 │   │   ├── CmdK.tsx          # cmd+K palette
 │   │   ├── CodeBlock.tsx     # filename chrome + naive PHP highlighter
 │   │   ├── LoadingScreen.tsx
 │   │   └── Logo.tsx          # cube SVG with optional wordmark
 │   ├── content/              # MDX docs (synced + hand-authored)
-│   ├── data/landing.ts       # marketing copy, stats, code samples, version
+│   ├── data/
+│   │   ├── landing.ts        # shared marketing copy: INSTALL_COMMAND, legacy top-bar links
+│   │   ├── product.ts        # the six product chapters, their code samples and screenshots
+│   │   └── generated/        # validated release + Packagist snapshots (every number on the site)
 │   ├── lib/
+│   │   ├── site-routes.ts    # public route registry + per-route metadata
+│   │   ├── generated-data.ts # snapshot parsers + formatters
 │   │   ├── docs-tree.ts      # /docs nav + prev/next helpers
 │   │   ├── mdx-loader.ts     # glob import of src/content/**/*.mdx
 │   │   ├── search.ts         # static + full-text index
 │   │   └── cmdk-context.tsx
-│   ├── pages/                # Landing, Docs, NotFound
-│   ├── styles/               # globals.css, prose.css
-│   └── types/mdx.d.ts
+│   ├── pages/                # Landing, Product, ForAgencies, Docs, NotFound, ProvisionalPage
+│   ├── styles/               # tokens.css, motion.css, site.css, marketing.css, home.css, globals.css, prose.css
+│   └── types/
+├── tests/e2e/                # Playwright: marketing.spec.ts (E2E + axe), visual.spec.ts (pixel baselines)
 ├── index.html
+├── lighthouserc.cjs          # Lighthouse CI budgets
+├── playwright.config.ts
 ├── vite.config.ts
 └── tsconfig.json
 ```
@@ -156,11 +171,11 @@ Validated against a local Apache 2.4 with `mod_rewrite`, `mod_dir` and `mod_head
 
 Three Playwright-driven suites cover the three redesigned marketing pages (`/`, `/product`, `/for-agencies`), all served through `scripts/serve-dist.mjs` against a real `pnpm build` output (not `vite preview`; see that script's and `playwright.config.ts`'s own comments for why: preview's SPA fallback would hide a slash-less route resolving to its own prerendered file).
 
-- **`pnpm test:e2e`** (`tests/e2e/marketing.spec.ts`, the `chromium` Playwright project): at the four validation breakpoints (375, 768, 1024, 1440 px) checks no horizontal overflow, the primary CTA is visible, zero critical/serious axe violations, no console errors, and that the mobile navigation menu opens, exposes every primary link and closes on Escape. This is the suite CI runs.
-- **`pnpm test:visual`** (`tests/e2e/visual.spec.ts`, the `visual` Playwright project): one full-page pixel snapshot per route per validation breakpoint (12 total), with reduced motion and `animations: 'disabled'`, `maxDiffPixelRatio: 0.005`. Before each capture, every `<img>`'s `loading` attribute is stripped and awaited via `decode()`, and `document.fonts.ready` is awaited, so a screenshot never captures a still-loading lazy image or an unswapped fallback font. The home page's proof strip (`.proof-strip`) is masked: it reads live Packagist download counts and a fetch timestamp (`src/components/marketing/ProofStrip.tsx`), which change on every data refresh independently of any real visual change. **Local-only, not run in CI**: Playwright's screenshots are platform-specific (font rendering and anti-aliasing differ per OS), so a baseline captured on macOS never byte-matches a Linux CI runner. Baselines live in `tests/e2e/visual.spec.ts-snapshots/`; regenerate an approved change with `pnpm exec playwright test tests/e2e/visual.spec.ts --project=visual --update-snapshots` and review every changed image against the approved mockups before committing.
-- **`pnpm test:performance`** (`lighthouserc.cjs`, Lighthouse CI): budgets `largest-contentful-paint` ≤ 2500 ms, `cumulative-layout-shift` ≤ 0.1, `interactive` ≤ 3500 ms, `categories:accessibility` ≥ 0.95 and `categories:seo` ≥ 0.95, for `/`, `/product` and `/for-agencies`, 5 runs per URL (LHCI asserts against the median run, for ordinary machine-to-machine timing variance). Uses `settings.throttlingMethod: 'devtools'` (mobile profile: 150 ms RTT, 1.6 Mbps, 4x CPU, replayed through real Chrome DevTools Protocol throttling), not Lighthouse's `simulate` default: against a loopback static server, `simulate` estimates a throttled timeline from every request the page *started* before the observed paint, which on this site counts the JS entry, every route chunk and every font as if they contended for bandwidth on the LCP critical path even though none of them gate it (the LCP element is the prerendered lede paragraph already in the static HTML — `Load Delay`/`Load Time` are 0, the observed LCP *is* FCP). That inflated `/` and `/product` to 3.4-4.1 s under `simulate` on an otherwise-fast page; `devtools` measures the real, throttled timeline instead (~1.6 s on every route). See `lighthouserc.cjs`'s own comment for the full explanation. Uses `startServerCommand`/`scripts/serve-dist.mjs` rather than Lighthouse CI's built-in `staticDistDir`, for the same routing-fidelity reason `test:e2e` does.
+- **`pnpm test:e2e`** (`tests/e2e/marketing.spec.ts`, the `chromium` Playwright project): at the four validation breakpoints (375, 768, 1024, 1440 px) checks no horizontal overflow, the primary CTA is visible, zero critical/serious axe violations, no console errors, and that the mobile navigation menu opens, exposes every primary link and closes on Escape with focus back on its toggle (and, with JavaScript disabled, still opens natively and exposes its links). It also walks `/` and `/product` backwards with Shift+Tab at 375 and 1440 px and asserts no focused element sits under the sticky header or ChapterNav (WCAG 2.2 2.4.11), and measures every install command against the viewport at 320 and 375 px (WCAG 1.4.10; the page's `overflow-x: clip` would otherwise hide an overflowing row from the page-level check). This is the suite CI runs.
+- **`pnpm test:visual`** (`tests/e2e/visual.spec.ts`, the `visual` Playwright project): one full-page pixel snapshot per route per validation breakpoint (12 total), with reduced motion and `animations: 'disabled'`, `maxDiffPixelRatio: 0.005`. Before each capture, every `<img>`'s `loading` attribute is stripped and awaited via `decode()`, and `document.fonts.ready` is awaited, so a screenshot never captures a still-loading lazy image or an unswapped fallback font. Every region that renders generated data is masked, because it changes on a data refresh or a Martis release independently of any real visual change: the home page's proof strip (`.proof-strip`, live Packagist download counts and a fetch timestamp) and engineering section (`.home-engineering`, the release's version and test counts), and the footer's version line (`.site-footer__meta`, every page). A release that changes only the version and test counts therefore needs no new baselines; a copy change, or a change to the PHP or Laravel requirement the /product Ship chapter reads from the manifest, does. **Local-only, not run in CI**: Playwright's screenshots are platform-specific (font rendering and anti-aliasing differ per OS), so a baseline captured on macOS never byte-matches a Linux CI runner. Baselines live in `tests/e2e/visual.spec.ts-snapshots/`; regenerate an approved change with `pnpm exec playwright test tests/e2e/visual.spec.ts --project=visual --update-snapshots` and review every changed image against the approved mockups before committing.
+- **`pnpm test:performance`** (`lighthouserc.cjs`, Lighthouse CI): budgets `largest-contentful-paint` ≤ 2500 ms, `cumulative-layout-shift` ≤ 0.1, `categories:accessibility` ≥ 0.95 and `categories:seo` ≥ 0.95, for `/`, `/product` and `/for-agencies`, 5 runs per URL. Every assertion sets `aggregationMethod: 'median-run'`, so it is checked against the median run; LHCI's default (`optimistic`) would check the most favorable run instead, letting one fast run out of five pass a page whose typical load misses the budget. There is no time-to-interactive assertion: the spec's budgets are LCP, CLS and INP. Uses `settings.throttlingMethod: 'devtools'` (mobile profile: 150 ms RTT, 1.6 Mbps, 4x CPU, replayed through real Chrome DevTools Protocol throttling), not Lighthouse's `simulate` default: against a loopback static server, `simulate` estimates a throttled timeline from every request the page *started* before the observed paint, which on this site counts the JS entry, every route chunk and every font as if they contended for bandwidth on the LCP critical path even though none of them gate it (the LCP element is the prerendered lede paragraph already in the static HTML — `Load Delay`/`Load Time` are 0, the observed LCP *is* FCP). That inflated `/` and `/product` to 3.4-4.1 s under `simulate` on an otherwise-fast page; `devtools` measures the real, throttled timeline instead (~1.6 s on every route). See `lighthouserc.cjs`'s own comment for the full explanation. Uses `startServerCommand`/`scripts/serve-dist.mjs` rather than Lighthouse CI's built-in `staticDistDir`, for the same routing-fidelity reason `test:e2e` does.
 
-  INP (Interaction to Next Paint) is a field metric — real users' interaction latency — and cannot be measured by a lab tool like Lighthouse, so it is out of scope for `lighthouserc.cjs`. It is measured in production only by Real User Monitoring (RUM), once an analytics provider is authorised; the 200 ms threshold is then configured on that provider, without introducing cookies by default.
+  INP (Interaction to Next Paint) is a field metric — real users' interaction latency — and cannot be measured by a lab tool like Lighthouse, so it is out of scope for `lighthouserc.cjs`. It is measured in production only by Real User Monitoring (RUM), once an analytics provider is authorized; the 200 ms threshold is then configured on that provider, without introducing cookies by default.
 
 ## Source of truth
 

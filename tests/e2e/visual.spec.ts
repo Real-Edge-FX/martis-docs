@@ -1,4 +1,4 @@
-import { expect, test, type Page } from '@playwright/test'
+import { expect, test, type Locator, type Page } from '@playwright/test'
 
 // Pixel regression gate for the three redesigned marketing pages, one
 // baseline per route per validation breakpoint (design spec 17,
@@ -57,18 +57,26 @@ for (const route of PAGES) {
           await expect(page.getByRole('heading', { level: 1 })).toBeVisible()
           await waitForImagesAndFonts(page)
 
-          // The proof strip (home only) reads live Packagist download
-          // counts and a "fetched at" timestamp (src/components/marketing/
-          // ProofStrip.tsx), which change on every data refresh
-          // independently of any visual change to the page — masked so a
-          // routine data update never fails this gate.
-          const proofStrip = page.locator('.proof-strip')
+          // Masked: every region that renders generated data, which
+          // changes on a data refresh or a Martis release independently of
+          // any visual change to the page, so neither ever fails this gate.
+          // - `.proof-strip` (home): live Packagist download counts and a
+          //   "fetched at" timestamp (src/components/marketing/ProofStrip.tsx).
+          // - `.home-engineering` (home): the release's version and test
+          //   counts (src/components/landing/EngineeringProof.tsx).
+          // - `.site-footer__meta` (every page): the release version
+          //   (src/components/site/SiteFooter.tsx).
+          const mask: Locator[] = []
+          for (const selector of ['.proof-strip', '.home-engineering', '.site-footer__meta']) {
+            const region = page.locator(selector)
+            if ((await region.count()) > 0) mask.push(region)
+          }
 
           await expect(page).toHaveScreenshot(`${routeSlug}-${viewport.label}.png`, {
             fullPage: true,
             animations: 'disabled',
             maxDiffPixelRatio: 0.005,
-            mask: (await proofStrip.count()) > 0 ? [proofStrip] : [],
+            mask,
           })
         })
       })
