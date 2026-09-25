@@ -21,8 +21,13 @@ afterEach(() => {
   Reflect.deleteProperty(HTMLPreElement.prototype, 'clientWidth')
 })
 
+// The default before any measurement (server HTML and the first client
+// render both keep the tab stop, per useOverflowFocusable's "focusable
+// until measured otherwise" contract, WCAG 2.1.1) is covered by
+// src/entry-server.test.tsx, not here: these tests only ever observe the
+// post-effect state (see that hook's own test file for why).
 describe('CodeBlock', () => {
-  it('keeps a short block, which does not overflow, out of the tab order', async () => {
+  it('loses the tab stop, post-mount, once measured as not overflowing', async () => {
     mockOverflow(false)
     await act(async () => {
       render(<CodeBlock code="echo 1;" lang="php" filename="short.php" />)

@@ -34,14 +34,12 @@ for (const route of PAGES) {
 
         await page.goto(route)
         await expect(page.getByRole('heading', { level: 1 })).toBeVisible()
-        // Chapter's code sample only takes a tab stop once it has actually
-        // measured as overflowing (useOverflowFocusable), which happens in
-        // an effect after hydration and layout, not in the server-rendered
-        // HTML. Wait for hydration to complete (the mobile menu toggle only
-        // gets `aria-expanded` once SiteHeader's own effect runs) before the
-        // overflow/CTA/axe checks below, or they can race a page that has
-        // not finished settling into its final, accessible state yet.
-        await expect(page.locator('summary', { hasText: 'Menu' })).toHaveAttribute('aria-expanded', /^(true|false)$/)
+        // No hydration wait needed here: a Chapter/CodeBlock code sample's
+        // tab stop (useOverflowFocusable) is present in the server-rendered
+        // HTML itself (assumed focusable until measured otherwise, WCAG
+        // 2.1.1 — see that hook and src/entry-server.test.tsx), so the axe
+        // scrollable-region-focusable check below already passes on the
+        // static markup, before any JavaScript runs.
 
         const hasHorizontalOverflow = await page.evaluate(
           () => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1,
@@ -66,6 +64,33 @@ for (const route of PAGES) {
     })
   }
 }
+
+test.describe('no JavaScript (static markup)', () => {
+  for (const route of ['/', '/product']) {
+    test(`gives an overflowing code sample a keyboard-reachable tab stop without any JS running at ${route}`, async ({
+      page,
+    }) => {
+      // Blocks every script, so nothing hydrates and useOverflowFocusable's
+      // measurement effect never runs: this is exactly the reader WCAG
+      // 2.1.1 is for, whose only chance to reach a scrollable code sample
+      // is whatever the server actually sent.
+      await page.route('**/*.js', (route) => route.abort())
+      await page.goto(route)
+      await expect(page.getByRole('heading', { level: 1 })).toBeVisible()
+
+      const results = await new AxeBuilder({ page }).analyze()
+      const scrollableRegionViolations = results.violations.filter(
+        (violation) => violation.id === 'scrollable-region-focusable',
+      )
+      expect(scrollableRegionViolations, JSON.stringify(scrollableRegionViolations, null, 2)).toEqual([])
+
+      const criticalOrSerious = results.violations.filter(
+        (violation) => violation.impact === 'critical' || violation.impact === 'serious',
+      )
+      expect(criticalOrSerious, JSON.stringify(criticalOrSerious, null, 2)).toEqual([])
+    })
+  }
+})
 
 test.describe('mobile navigation menu', () => {
   test.use({ viewport: { width: 375, height: 844 } })

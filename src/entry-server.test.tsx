@@ -62,6 +62,37 @@ it('renders a docs page from its MDX module, not the loading screen', async () =
   expect(html).not.toContain('Loading…')
 })
 
+// WCAG 2.1.1: a horizontally-scrollable code sample must be reachable by
+// keyboard. Server rendering has no layout, so there is no way to know
+// here whether a given sample will actually overflow once painted — the
+// static markup a no-JS reader gets (and the very first client render,
+// before hydration's own measurement effect runs) must assume it does
+// and stay a focusable, named region, per useOverflowFocusable's
+// "focusable until measured otherwise" contract. Losing the attribute
+// only happens after mount, client-side (see CodeBlock.test.tsx and
+// Chapter.test.tsx).
+it('gives every Chapter code sample a tab stop and a name in the static HTML, unmeasured', async () => {
+  const { html } = await render('/product')
+  const preTags = [...html.matchAll(/<pre\b[^>]*class="chapter__code"[^>]*>/g)].map((match) => match[0])
+  expect(preTags.length).toBeGreaterThan(0)
+  for (const tag of preTags) {
+    expect(tag).toContain('tabindex="0"')
+    expect(tag).toContain('role="region"')
+    expect(tag).toMatch(/aria-label="[^"]+ code sample"/)
+  }
+})
+
+it('gives every CodeBlock sample a tab stop and a name in the static HTML, unmeasured', async () => {
+  const { html } = await render('/')
+  const preTags = [...html.matchAll(/<pre\b[^>]*data-testid="code-block-pre"[^>]*>/g)].map((match) => match[0])
+  expect(preTags.length).toBeGreaterThan(0)
+  for (const tag of preTags) {
+    expect(tag).toContain('tabindex="0"')
+    expect(tag).toContain('role="group"')
+    expect(tag).toMatch(/aria-label="[^"]+"/)
+  }
+})
+
 describe('status and head', () => {
   it('serializes the metadata of the rendered route into the head', async () => {
     expect((await render('/product')).head).toBe(serializeMeta(getRouteMeta('/product')))

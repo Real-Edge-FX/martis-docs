@@ -60,7 +60,13 @@ describe('Chapter', () => {
     expect(screen.getByRole('img')).toBeInTheDocument()
   })
 
-  it('keeps a code sample that does not overflow out of the tab order', async () => {
+  // The default before any measurement (server HTML and the first client
+  // render both keep the tab stop, per useOverflowFocusable's "focusable
+  // until measured otherwise" contract, WCAG 2.1.1) is covered by
+  // src/entry-server.test.tsx, not here: `act` flushes the measurement
+  // effect synchronously, so these tests only ever observe the
+  // post-effect state.
+  it('loses the tab stop, post-mount, once measured as not overflowing', async () => {
     mockOverflow(false)
     await act(async () => {
       renderChapter()
@@ -70,7 +76,7 @@ describe('Chapter', () => {
     expect(pre).not.toHaveAttribute('role')
   })
 
-  it('gives an overflowing code sample a tab stop and an accessible name, after measuring it post-mount', async () => {
+  it('keeps the tab stop and accessible name, post-mount, when measured as overflowing', async () => {
     mockOverflow(true)
     await act(async () => {
       renderChapter()

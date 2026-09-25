@@ -23,10 +23,11 @@ interface CodeBlockProps {
  */
 export function CodeBlock({ code, lang = 'php', filename, lineNumbers = false }: CodeBlockProps) {
   const [copied, setCopied] = useState(false)
-  // Whether the block actually overflows and needs a keyboard-reachable
-  // scroller (see useOverflowFocusable). Re-measures whenever `code` or
+  // Whether the block currently needs a keyboard-reachable scroller (see
+  // useOverflowFocusable): true until measured otherwise, so the tab stop
+  // is present without JavaScript too. Re-measures whenever `code` or
   // `lang` change under the same instance, not just at mount.
-  const { ref: preRef, overflowing } = useOverflowFocusable<HTMLPreElement>(`${lang}:${code}`)
+  const { ref: preRef, focusable } = useOverflowFocusable<HTMLPreElement>(`${lang}:${code}`)
 
   function copy() {
     navigator.clipboard?.writeText(code).then(() => {
@@ -55,19 +56,19 @@ export function CodeBlock({ code, lang = 'php', filename, lineNumbers = false }:
           </button>
         </div>
       )}
-      {/* Long lines scroll horizontally. Only a block that actually
-       *  overflows takes a tab stop (arrow keys then scroll it) and gets
-       *  a name, so it is reachable without a pointer (WCAG 2.1.1)
-       *  without adding a stop to every short block on a docs page. */}
+      {/* Long lines scroll horizontally. A scrollable region must be
+       *  focusable to be scrolled by keyboard (WCAG 2.1.1 / axe
+       *  scrollable-region-focusable), and there is no way to know
+       *  without JavaScript whether this block actually overflows — so it
+       *  starts (server HTML and first client render) as a tab stop with
+       *  a name, and only loses that, post-mount, once measured as not
+       *  needing it (useOverflowFocusable). Spread so the attributes are
+       *  absent entirely (not just falsy) once dropped. */}
       <pre
         ref={preRef}
         data-testid="code-block-pre"
-        {...(overflowing
+        {...(focusable
           ? {
-              // A scrollable region must be focusable to be scrolled by
-              // keyboard (axe scrollable-region-focusable). Spread so the
-              // attribute is absent entirely (not just falsy) when the
-              // block does not overflow.
               tabIndex: 0,
               role: 'group',
               'aria-label': filename ? `Code: ${filename}` : `Code sample (${lang})`,

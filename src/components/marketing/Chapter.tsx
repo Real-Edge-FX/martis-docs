@@ -25,12 +25,13 @@ interface ChapterProps {
  */
 export function Chapter({ chapter, headingLevel = 2, priorityMedia = false, className }: ChapterProps) {
   const media = PRODUCT_MEDIA[chapter.mediaId]
-  // Whether the code sample actually overflows and needs a
-  // keyboard-reachable scroller (see useOverflowFocusable, shared with
-  // CodeBlock). Each chapter mounts a fresh instance (keyed per chapter
-  // id by the caller), so no remeasure key is needed beyond mount +
-  // resize.
-  const { ref: codeRef, overflowing: codeOverflowing } = useOverflowFocusable<HTMLPreElement>()
+  // Whether the code sample currently needs a keyboard-reachable scroller
+  // (see useOverflowFocusable, shared with CodeBlock): true until
+  // measured otherwise, so the server HTML and the first client render
+  // both carry the tab stop too. Each chapter mounts a fresh instance
+  // (keyed per chapter id by the caller), so no remeasure key is needed
+  // beyond mount + resize.
+  const { ref: codeRef, focusable: codeFocusable } = useOverflowFocusable<HTMLPreElement>()
 
   return (
     <article className={['chapter', className].filter(Boolean).join(' ')} id={chapter.id} data-chapter={chapter.id}>
@@ -47,16 +48,18 @@ export function Chapter({ chapter, headingLevel = 2, priorityMedia = false, clas
         {/* `overflow-x: auto` (marketing.css) can make this a scrollable region
          *  on narrow viewports; without a focusable, labelled element a
          *  keyboard user would have no way to reach that horizontal scroll
-         *  (axe "scrollable-region-focusable", serious impact). Only a sample
-         *  that actually overflows takes a tab stop (useOverflowFocusable,
-         *  shared with CodeBlock), so a short sample never gets an extra stop
-         *  it does not need. Server and the first client render both start
-         *  non-overflowing (no layout yet), so hydration never mismatches. */}
+         *  (WCAG 2.1.1 / axe "scrollable-region-focusable", serious impact).
+         *  There is no way to know without JavaScript whether a sample
+         *  actually overflows, so it starts (server HTML and first client
+         *  render) as a tab stop with a name, and only loses that, post-mount,
+         *  once measured as not needing it (useOverflowFocusable, shared with
+         *  CodeBlock). Spread so the attributes are absent entirely (not just
+         *  falsy) once dropped. */}
         <pre
           ref={codeRef}
           className="chapter__code"
           data-language={chapter.code.language}
-          {...(codeOverflowing
+          {...(codeFocusable
             ? {
                 tabIndex: 0,
                 role: 'region',
