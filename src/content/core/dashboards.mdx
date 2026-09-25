@@ -1,14 +1,13 @@
 ---
 title: "Dashboards"
-description: "Dashboards are containers for metric cards. Martis supports multiple dashboards, each with its own set of cards, filters, and authorization."
+description: "Dashboards are the pages that group metric cards, and Martis supports as many as you need. Each has its own set of cards, filters, and authorization."
 sourcePath: "martis-package/docs/dashboards.md"
 ---
 
 # Dashboards
+Dashboards are the pages that group metric cards, and Martis supports as many as you need. Each has its own set of cards, filters, and authorization.
 
-Dashboards are containers for metric cards. Martis supports multiple dashboards, each with its own set of cards, filters, and authorization.
-
-> See [Metrics](metrics.md) for the metric types (`ValueMetric`, `TrendMetric`, `PartitionMetric`, `ProgressMetric`, `ActivityFeedMetric`, `EndpointTableMetric`) you mount on a dashboard.
+> See [Metrics](/docs/core/metrics) for the metric types (`ValueMetric`, `TrendMetric`, `PartitionMetric`, `ProgressMetric`, `ActivityFeedMetric`, `EndpointTableMetric`) you mount on a dashboard.
 
 ## Creating a Dashboard
 
@@ -35,6 +34,8 @@ class SalesDashboard extends Dashboard
 }
 ```
 
+Cards sit on a 12-column grid that collapses to a single column below 768px; `width()` applies from there, with `widthMd()` / `widthLg()` for per-breakpoint spans. See [Metrics → Card Width](/docs/core/metrics#card-width).
+
 ## Registering Dashboards
 
 Register dashboards in `app/Providers/MartisServiceProvider.php` (published by `martis:install`):
@@ -53,7 +54,7 @@ protected function registerDashboards(): void
 When multiple dashboards are registered, the host decides per dashboard whether it sits in the sidebar or nests inside another dashboard (v1.10.5+).
 
 - **Root dashboards** (default; `parent()` returns `null`) appear in the sidebar's `DASHBOARDS` group, one entry each. The first registered root doubles as the panel root link (`/`) so deep-link bookmarks and the sidebar stay in sync.
-- **Nested dashboards** (declared via `Dashboard::under('parent-uri-key')`) are hidden from the sidebar and surface as a tab strip inside their parent's view. Switching tabs flips the URL between `/dashboards/parent-uri-key` and `/dashboards/child-uri-key` so each tab is bookmarkable individually.
+- **Nested dashboards** (declared via `Dashboard::under('parent-uri-key')`) are hidden from the sidebar and surface as a tab strip inside their parent's view. Each tab is a link to that dashboard's own address (`/dashboards/child-uri-key`, or `/` for the first registered dashboard), so switching tabs flips the URL, every tab is bookmarkable individually, Back returns to the previous tab, and middle-click / open-in-new-tab work. The dashboard's filters start empty after a switch.
 
 ```php
 class HomeDashboard extends Dashboard
@@ -83,7 +84,9 @@ class ProLabDashboard extends Dashboard
 }
 ```
 
-Result: sidebar lists `Home` and `Pro Lab` only. The Home page renders a tab strip with `Home` and `Regime history`; flipping to Regime history changes the URL to `/dashboards/regime-history` while the user stays on the Home group's tab strip.
+Result: sidebar lists `Home` and `Pro Lab` only. The Home page renders a tab strip with `Home` and `Regime history`; flipping to Regime history changes the URL to `/dashboards/regime-history` while the user stays on the Home group's tab strip, and the `Home` tab leads back to `/` (Home is the first registered dashboard, so `/` is its address).
+
+Before v1.37.3 the tabs wrote a local selection that the route parameter shadowed, so on a `/dashboards/{uriKey}` page a click changed nothing and children were reachable only by URL.
 
 Both surfaces share the same `/api/dashboards` payload and respect `canSee()` per dashboard. Children inherit nothing from their parent — they declare their own `cards()`, `filters()`, `name()`, etc. The relationship is purely a navigation shortcut.
 
@@ -120,9 +123,9 @@ class ProLabDashboard extends Dashboard
 }
 ```
 
-Auto-discovery follows `martis.policy_namespace` — `ProLabDashboard` resolves to `App\Martis\Policies\ProLabPolicy`.
+Auto-discovery follows `martis.policy_namespace` — `ProLabDashboard` resolves to `App\Martis\Policies\ProLabPolicy`. No `Gate::policy()` call is needed: the check runs through Laravel's Gate and Martis registers the resolved policy for the dashboard class on the first check (v1.36.0; earlier versions hid the dashboard unless the host registered the policy by hand). A policy the host registered for the dashboard class is used when neither `$policy` nor the convention apply. See [Authorization → How policy instances are resolved](/docs/auth/authorization#how-policy-instances-are-resolved).
 
-**Soft-gate** with upsell modal (v1.11.0+) — keep the dashboard visible (with a badge), intercept the click, show a customisable modal. Useful for plan-gated features where hiding the entry kills the upsell. See [Soft-gates and badges](./gates) for the full API.
+**Soft-gate** with upsell modal (v1.11.0+) — keep the dashboard visible (with a badge), intercept the click, show a customisable modal. Useful for plan-gated features where hiding the entry kills the upsell. See [Soft-gates and badges](/docs/core/gates) for the full API.
 
 ```php
 $this->withBadge('Pro', 'accent')
@@ -150,7 +153,7 @@ class SalesDashboard extends Dashboard
 }
 ```
 
-Filters support `->span()` for layout control (1-12 column grid). Default spans: select = 3, date-range = 6.
+Filters support `->span()` for layout control (1-12 column grid, from 768px; below it every filter takes the full row). Default spans: select = 3, date-range = 6. See [Filters → Filter Grid Layout](/docs/core/filters#filter-grid-layout-span).
 
 Filter values are passed to each card's compute endpoint and automatically applied to all built-in query helpers (count, sum, average, etc.).
 
@@ -174,6 +177,38 @@ SalesDashboard::make('Sales')->componentKey('custom-sales-dashboard');
 ```
 
 Use `component(): ?string` to read the configured key back.
+
+## Custom cards (filter-reactive)
+
+A single card can render a bespoke React component instead of a native metric shape. There are two patterns, depending on where the data comes from:
+
+**1. A component-keyed metric — server-computed, filter-scoped (recommended).** A `Metric` that declares a component (fluent `->componentKey('…')`, or by overriding `component()`) renders its `calculate($request)` **result** through your component. The metric's `calculate()` already receives the dashboard's active filters (`?filters=…`), so the card is filter-reactive with **zero** client-side filter code. Your component receives `{ metric, result }`:
+
+```php
+// PHP: a metric whose calculate() reads the active filters and returns rows.
+class TopMissedQueries extends Metric
+{
+    public function component(): ?string { return 'card:top-missed-queries'; }
+    public function calculate(Request $request) { /* filter-scoped rows */ }
+}
+```
+
+```tsx
+// resources/js/martis-extensions/cards/TopMissedQueries.tsx
+export default function TopMissedQueries({ metric, result }: { metric: MetricDefinition; result: Record<string, unknown> }) {
+  return <MyTable rows={result.rows as Row[]} />   // already filter-scoped
+}
+```
+
+**2. A plain `Card` — client-fetched.** A `Card` (which has no compute endpoint) receives the dashboard's active filters as a prop so it can fetch its own filter-scoped data:
+
+```tsx
+export default function MyCard({ card, filters }: { card: MetricDefinition; filters: ActiveFilters }) {
+  // re-fetch whenever `filters` changes
+}
+```
+
+> Since **v1.30.0**: a component-keyed metric's computed result is fed into the component (previously the custom component received only the static card descriptor and never the result), and plain custom cards receive `filters`.
 
 ## Metadata
 
@@ -249,13 +284,13 @@ Cache defaults live under the `cache` block of `config/martis.php`. Each subsyst
     ],
     'dashboards' => [
         'enabled' => env('MARTIS_CACHE_DASHBOARDS_ENABLED', true),
-        'ttl'     => env('MARTIS_CACHE_DASHBOARDS_TTL', env('MARTIS_CACHE_DASHBOARDS', null)),
+        'ttl'     => env('MARTIS_CACHE_DASHBOARDS_TTL', env('MARTIS_CACHE_DASHBOARDS', 5)),
     ],
     // navigation / schema follow the same shape
 ],
 ```
 
-`ttl` is in minutes; `null` disables caching for that subsystem. Individual metrics override the global value via `cacheFor()`. Runtime overrides set with `php artisan martis:cache:disable {type}` survive restarts and take precedence over both layers. See [metrics.md — Cache Configuration](metrics.md#cache-configuration-martis-extension) for the full block.
+`ttl` is in minutes; `null` means "until cleared" (the dashboards layer defaults to 5 minutes, and the list entry is additionally keyed by a fingerprint of the dashboards the user is authorized to see, so registering, removing or re-gating a dashboard is visible on the next request; see [cache.md](/docs/reference/cache#the-four-built-in-layers)). Individual metrics override the global value via `cacheFor()`. Runtime overrides set with `php artisan martis:cache:disable {type}` survive restarts and take precedence over both layers. See [metrics.md — Cache Configuration](/docs/core/metrics#cache-configuration-martis-extension) for the full block.
 
 ## Default Dashboard
 

@@ -1,12 +1,11 @@
 ---
 title: "Configuration"
-description: "Every Martis config option grouped by subsystem, plus an auto-generated env-var index (130 vars)."
+description: "Martis is configured through config/martis.php, which the installer publishes; most of its options also read an environment variable. Publish it with the bundled wrapper (or the standard vendor:publish if you prefer):"
 sourcePath: "martis-package/docs/configuration.md"
 ---
 
 # Configuration
-
-Martis is configured through `config/martis.php`. Publish it with the bundled wrapper (or the standard `vendor:publish` if you prefer):
+Martis is configured through `config/martis.php`, which the installer publishes; most of its options also read an environment variable. Publish it with the bundled wrapper (or the standard `vendor:publish` if you prefer):
 
 ```bash
 php artisan martis:vendor-publish --config
@@ -24,7 +23,7 @@ This page documents every configuration option grouped by subsystem. The full en
 'path' => env('MARTIS_PATH', 'martis'),
 ```
 
-The URL prefix for the admin panel. The panel will be accessible at `/{path}` (e.g., `http://yourdomain.com/martis`).
+The URL prefix for the admin panel. The panel will be accessible at `/{path}` (e.g., `http://yourdomain.com/martis`), its API at `/{path}/api`, and the routes a Tool loads with `loadRoutes()` at `/{path}/api/tools/{uriKey}` (v2.0; they stayed under `/martis` before, whatever the path). See [Tools → Tool routes and their middleware](/docs/customization/tools#tool-routes-and-their-middleware).
 
 ## Authentication
 
@@ -36,9 +35,13 @@ The URL prefix for the admin panel. The panel will be accessible at `/{path}` (e
 
 | Key | Type | Default | Description |
 |-----|------|---------|-------------|
-| `guard` | `?string` | `null` | Authentication guard. `null` uses Laravel's default guard. |
+| `guard` | `?string` | `null` | Authentication guard. `null` uses Laravel's default guard. The panel's requests run as that guard (it becomes the request's guard), and the auth flows, the Martis migrations and `martis:user` use its provider: see [Upgrading → A custom Martis guard](https://github.com/Real-Edge-FX/martis-package/blob/main/docs/upgrading.md#a-custom-martis-guard). |
 | `middleware` | `array` | `['web']` | Applied to all Martis routes (public and protected). |
-| `auth_middleware` | `array` | `['martis.auth']` | Applied to protected routes only. |
+| `auth_middleware` | `array` | `['martis.auth']` | Applied to protected routes only. `martis.auth` implements Laravel's `AuthenticatesRequests`, so the router's middleware priority runs it where it runs Laravel's `auth`: before the throttle, the route bindings and any middleware outside the priority list (v2.0.0+). |
+
+| `guard` | `?string` | `null` | Authentication guard. `null` uses Laravel's default guard. |
+| `middleware` | `array` | `['web']` | Applied to all Martis routes (public and protected) and to a Tool's routes. |
+| `auth_middleware` | `array` | `['martis.auth']` | Applied to protected routes only, a Tool's routes included (v2.0). A middleware name is accepted in place of a list; `null` means the default; any other value throws an `InvalidArgumentException` naming the key. |
 
 ## Brand
 
@@ -50,7 +53,7 @@ The URL prefix for the admin panel. The panel will be accessible at `/{path}` (e
     'icon' => env('MARTIS_BRAND_ICON'),
     'icon_dark' => env('MARTIS_BRAND_ICON_DARK'),       // v1.7.0
     'favicon' => env('MARTIS_FAVICON', null),
-    'page_title' => env('MARTIS_PAGE_TITLE'),           // null | string | callable
+    'page_title' => env('MARTIS_PAGE_TITLE'),           // null | title | resolver class
     'version' => env('MARTIS_BRAND_VERSION'),
     'docs_url' => env('MARTIS_BRAND_DOCS_URL'),
     'logo_height' => [                                  // v1.7.0
@@ -66,7 +69,7 @@ The URL prefix for the admin panel. The panel will be accessible at `/{path}` (e
 | `logo` | `?string` | `null` | **Full horizontal lockup** (icon + wordmark in one asset). When set, the SPA renders the lockup alone — the separate `brand.name` text next to it is hidden in the sidebar / topbar / auth frame to avoid a duplicated wordmark. Relative paths resolve against `public/` (`/img/logo.svg`); full URLs pass through unchanged. |
 | `icon` | `?string` | `null` | **Small square brand icon** (replaces just the bundled cube next to `brand.name`). Use this when you want to keep the brand text rendered by Martis but swap the mark. Independent from `logo` — Martis prefers `logo` when both are set. |
 | `favicon` | `?string` | `null` | Path to a custom favicon (relative to `public/`). When `null`, Martis serves its own default favicon from the package — no `vendor:publish` step required. |
-| `page_title` | `string \| callable \| null` | `null` | Browser tab title shown in `<title>`. `null` uses the bundled translation (e.g. "Acme — Admin Control"). A plain string overrides it. A callable (invokable class or array callable) receives the current `Request` and returns the title. |
+| `page_title` | `string \| array \| null` | `null` | Browser tab title shown in `<title>`. `null` uses the bundled translation (e.g. "Acme — Admin Control"). A string is the title itself, unless it names an invokable class: that class, or a `[Class::class, 'staticMethod']` array, receives the current `Request` and returns the title. See [Config keys that take a callable](#config-keys-that-take-a-callable). |
 | `version` | `?string` | `null` | Optional version string printed in the sidebar footer (e.g. `v1.5.2`, `2026.04.29`). |
 | `docs_url` | `?string` | `null` | Optional docs link rendered on the right-hand side of the sidebar footer. |
 
@@ -204,7 +207,7 @@ When the sidebar collapses (240 px → 64 px rail) **and** `brand.icon` is set, 
 
 ### Customising the page title
 
-Three levels of control:
+Four levels of control:
 
 **1. Bundled translation (no configuration).** The default title uses `martis::navigation.page_title_default` interpolated with `brand.name`:
 
@@ -226,6 +229,16 @@ MARTIS_PAGE_TITLE="Acme Back Office"
 ],
 ```
 
+The same key also takes a resolver: the name of an invokable class or a `[Class::class, 'staticMethod']` array. Both survive `php artisan config:cache`. The resolver receives the current `Request` and returns the title; an empty string or `null` falls through to the inference below.
+
+```php
+'brand' => [
+    'page_title' => \App\Martis\PageTitle::class, // __invoke(Request $request): ?string
+],
+```
+
+A string that names no invokable class is always the literal title. Martis never calls it, even when it names a PHP function (`Mail`, `Date`, `Link`). See [Config keys that take a callable](#config-keys-that-take-a-callable).
+
 **3. Dynamic per-route title** — register a closure in your `AppServiceProvider::boot()`:
 
 ```php
@@ -244,7 +257,7 @@ public function boot(): void
 }
 ```
 
-> Closures cannot live directly in `config/martis.php` because `php artisan config:cache` fails to serialise them. Use the facade/manager from a service provider instead.
+> A closure cannot live in `config/martis.php`: `php artisan config:cache` fails to serialise it, even when a service provider sets it with `config()->set()`. Register it with `Martis::pageTitleUsing()` as above, or put a resolver class in the config.
 
 **4. Automatic per-route inference (no configuration)** — Martis looks at the current request path and inserts the matching resource label, dashboard name, or section, e.g.:
 
@@ -259,12 +272,12 @@ public function boot(): void
 
 Resource labels honour the authenticated user's locale preference, so the first paint is already in the right language.
 
-For **client-side navigation** inside the SPA (react-router), each page uses the [`usePageTitle`](overrides.md#page-title-hook) hook to keep `document.title` in sync without a full reload.
+For **client-side navigation** inside the SPA (react-router), each page uses the [`usePageTitle`](/docs/customization/overrides#page-title-hook) hook to keep `document.title` in sync without a full reload.
 
 Resolution precedence (highest first):
 
 1. `Martis::pageTitleUsing(Closure)` — registered at runtime.
-2. `config('martis.brand.page_title')` — string or `is_callable`.
+2. `config('martis.brand.page_title')` — literal string, invokable class name or `[Class::class, 'staticMethod']` array.
 3. Automatic inference from the request path (resource label, dashboard name, profile).
 4. `__('martis::navigation.page_title_default', ['brand' => config('martis.brand.name')])` — bundled fallback.
 
@@ -390,7 +403,7 @@ No code changes, no `vendor:publish`. The SPA picks all of this up at boot via `
 
 | Preset | What it renders | When to pick it |
 |--------|-----------------|-----------------|
-| `sidebar` (default) | Left nav column, topbar, content, in-flow footer. The collapsible shell described in [theming.md](theming.md) and [overrides.md](overrides.md). | Most admin apps. Handles mobile drawer, collapsed rail, accent pill, density tokens. |
+| `sidebar` (default) | Left nav column, topbar, content, in-flow footer. The collapsible shell described in [theming.md](/docs/customization/theming) and [overrides.md](/docs/customization/overrides). | Most admin apps. Handles mobile drawer, collapsed rail, accent pill, density tokens. |
 | `topnav` | Horizontal top navigation (no sidebar). Topbar renders the full menu inline. | Apps with ≤ 8 top-level resources or a focus-mode where the left column wastes space. |
 | `minimal` | No chrome — just the route outlet. No topbar, no sidebar, no footer. | Embedded dashboards, marketing screens, print-friendly surfaces. |
 | `custom` | Strict registry-only mode: requires a component registered under `layout:shell` (or referenced by `layout.components.shell`). If none is registered, Martis renders a red error panel instead of silently falling back to `sidebar` — so a missing registration fails loudly during development. | Apps shipping their own shell that want to guarantee the bundled fallback is never used. |
@@ -415,7 +428,7 @@ Pick the preset via `MARTIS_LAYOUT` env or `config('martis.layout.preset')`. The
 
 Resolution order per piece: `config.layout.components.<piece>` → `layout:<piece>` (default registry key) → bundled component.
 
-Full wiring examples, prop contracts, and the rationale for piece-by-piece vs full-shell overrides live in [overrides.md](overrides.md#shell-piece-by-piece-overrides).
+Full wiring examples, prop contracts, and the rationale for piece-by-piece vs full-shell overrides live in [overrides.md](/docs/customization/overrides#shell-piece-by-piece-overrides).
 
 ## Navigation
 
@@ -423,6 +436,7 @@ Full wiring examples, prop contracts, and the rationale for piece-by-piece vs fu
 'navigation' => [
     'counts' => [
         'enabled' => env('MARTIS_NAV_COUNTS', true),
+        'report_failures' => env('MARTIS_NAV_COUNTS_REPORT_FAILURES', true),  // v1.32.4
         'compact_threshold' => env('MARTIS_NAV_COUNT_COMPACT_THRESHOLD', 10000),  // v1.8.0
     ],
     'badges_poll_interval' => (int) env('MARTIS_NAV_BADGES_POLL_MS', 300000),  // v1.8.8
@@ -430,6 +444,7 @@ Full wiring examples, prop contracts, and the rationale for piece-by-piece vs fu
 ```
 
 - `counts.enabled` — master switch for the resource count badge (`Users 1,284`) rendered in the sidebar and top-nav dropdowns. When true, every resource publishes a count by default; per-resource opt-out via `showMenuCount(): bool` on the `Resource` class.
+- `counts.report_failures` (v1.32.4) — a `menuCount()` that throws never breaks the sidebar or the badges endpoint (that badge is skipped). When true, the failure is also sent through `report()` as a `Martis\Exceptions\MenuCountFailedException` (naming the Resource / Tool class, original exception as `previous`) so it reaches your exception handler instead of vanishing. Set to false to go back to silent skipping. With `dev.tools_enabled` on, the badges payload additionally lists failed counters under a reserved `_failed` key. See [Menus → When a badge is missing](/docs/core/menus#when-a-badge-is-missing).
 - `counts.compact_threshold` (v1.8.0) — value at or above which the badge switches from full digits to compact notation:
   - Below threshold: `1,284` (locale-aware separators).
   - At or above: `Intl.NumberFormat` compact notation — `10K`, `123.5K`, `1.2M`, `25M`.
@@ -438,15 +453,17 @@ Full wiring examples, prop contracts, and the rationale for piece-by-piece vs fu
 
 > **Breaking change in v1.8.8.** The previous `MARTIS_NAV_POLL_MS` (which auto-polled `/api/navigation`) was removed. The full navigation tree is no longer auto-polled at all — only `/api/navigation/badges` is, on the new `badges_poll_interval`. Apps that still set `MARTIS_NAV_POLL_MS` will see the value silently ignored; rename to `MARTIS_NAV_BADGES_POLL_MS` (and pick a longer cadence — the default jumped from 60 s to 5 min because badges-only is cheap and menu structure rarely changes mid-session).
 
-See [menus.md](menus.md#count-badges) for the badge API (including `menuCount()` for custom values) and [menus.md](menus.md#sections) for the section heading API.
+See [menus.md](/docs/core/menus#count-badges) for the badge API (including `menuCount()` for custom values) and [menus.md](/docs/core/menus#sections) for the section heading API.
 
 ## Localization
 
 ```php
-'locale' => env('MARTIS_LOCALE', 'en'),
+'locale' => env('MARTIS_LOCALE', env('APP_LOCALE', 'en')),
 ```
 
-Default locale for the admin panel. Translations are loaded from `resources/lang/{locale}/` files. Publish translations with:
+Locale the blade shell uses **only when preferences are disabled** (`preferences.enabled = false`). With preferences enabled (the default), the panel language comes from the preferences resolver: the user's saved preference, else `preferences.defaults.locale` (`MARTIS_DEFAULT_LOCALE`, default `en`, which must be listed in `preferences.locales`). The `martis.locale` middleware applies that value on every authenticated Martis route, so set `MARTIS_DEFAULT_LOCALE`, not `APP_LOCALE` / `MARTIS_LOCALE`, to change the default panel language.
+
+Martis UI strings come from the package's `resources/lang/{locale}/` files, overridden by the published copies in `lang/vendor/martis/{locale}/` (see [i18n](/docs/customization/i18n)). Publish translations with:
 
 ```bash
 php artisan vendor:publish --tag=martis-lang
@@ -467,7 +484,9 @@ Shipped locales: `en` (English), `pt_BR` (Brazilian Portuguese), `pt_PT` (Europe
 | Key | Type | Default | Description |
 |-----|------|---------|-------------|
 | `enabled` | `bool` | `true` | Set `false` to disable API rate limiting. |
-| `max_attempts` | `int` | `120` | Maximum requests per window. |
+| `max_attempts` | `int` | `120` | Maximum requests per window, per signed-in user of the Martis guard. |
+
+| `max_attempts` | `int` | `120` | Maximum requests per window, per user, counted across the Martis API and every Tool's routes (v2.0). |
 | `decay_minutes` | `int` | `1` | Rate limit window in minutes. |
 
 ## Theme
@@ -484,9 +503,9 @@ Shipped locales: `en` (English), `pt_BR` (Brazilian Portuguese), `pt_PT` (Europe
 |-----|------|---------|-------------|
 | `default` | `string` | `'dark'` | Default theme: `'dark'` or `'light'`. |
 | `allowToggle` | `bool` | `true` | When `false`, the theme picker is hidden everywhere — the Theme section disappears from the preferences overlay and the theme cycle button is suppressed on every pre-login surface (login, register, 2FA, password reset). Use this to lock the entire shell to a single theme without removing the rest of the preferences. |
-| `name` | `?string` | `null` | Custom theme name for the `martis:theme` artisan command. |
+| `name` | `?string` | `null` | Active custom theme. The panel loads `public/vendor/martis/themes/<name>.css`, which `martis:publish-assets` publishes from `resources/css/martis/<name>.css`. `null` keeps the built-in theme. |
 
-Custom themes are scaffolded via `php artisan martis:theme`. See [Theming](components.md#theming).
+Custom themes are scaffolded via `php artisan martis:theme`, which writes the source and sets `name`. See [Theming → Theme files](/docs/customization/theming#theme-files).
 
 ## Keyboard Shortcuts
 
@@ -502,7 +521,7 @@ Custom themes are scaffolded via `php artisan martis:theme`. See [Theming](compo
 | `enabled` | `bool` | `true` | Master switch for the entire keyboard-shortcuts registry. When `false`, every `addShortcut()` call returns a no-op disposer; no event listener is bound and the bundled `mod+k`, `/`, and `shift+?` combos do nothing. Use it when the host app ships a custom keyboard layer. |
 | `helpOverlay` | `bool` | `true` | When `false`, the bundled `Shift+?` help overlay is not registered. `addShortcut()` itself stays live for every other combo, so this is the right knob if the host app wants to expose its own help UI instead of the dialog. |
 
-Both flags are read live, so mid-session toggles via `window.MartisConfig` take effect on the next registration. See [Keyboard Shortcuts](keyboard-shortcuts.md) for the full API.
+Both flags are read live, so mid-session toggles via `window.MartisConfig` take effect on the next registration. See [Keyboard Shortcuts](/docs/reference/keyboard-shortcuts) for the full API.
 
 ## User Menu
 
@@ -524,11 +543,13 @@ Both flags are read live, so mid-session toggles via `window.MartisConfig` take 
 
 ### Custom Menu Items
 
+Each item accepts `label` (i18n key or literal), `icon` (**Phosphor icon name** — as of v1.29.0, not a PrimeIcons class), `url` (internal path or external URL), and an optional `position` (`'before'` / `'after'` the built-in Profile entry). Full reference in [Authentication → User Menu](/docs/auth/authentication#user-menu).
+
 ```php
 'customItems' => [
-    ['label' => 'Settings', 'icon' => 'pi pi-cog', 'url' => '/settings'],
+    ['label' => 'Settings', 'icon' => 'gear', 'url' => '/settings'],
     ['separator' => true],
-    ['label' => 'Documentation', 'icon' => 'pi pi-book', 'url' => 'https://docs.example.com'],
+    ['label' => 'Documentation', 'icon' => 'book-open', 'url' => 'https://docs.example.com'],
 ],
 ```
 
@@ -602,7 +623,7 @@ Options: `'top-right'`, `'top-left'`, `'bottom-right'`, `'bottom-left'`, `'top-c
 | `default_row_actions.edit` | `bool` | `true` | Per-action global kill-switch for the Edit icon. `MARTIS_DEFAULT_ROW_ACTION_EDIT`. |
 | `default_row_actions.delete` | `bool` | `true` | Per-action global kill-switch for the Delete icon. `MARTIS_DEFAULT_ROW_ACTION_DELETE`. |
 | `row_click_opens_detail` | `bool` | `true` | When default row actions expose a "view" icon, clicking the row body becomes redundant. Set to `false` to disable row-click and keep the row informational. Override per resource with `rowClickOpensDetail(Request $request): ?bool`. |
-| `default_trashed_filter` | `string` | `'active'` | Initial state of the trashed-filter dropdown on soft-delete resources (main index **and** relationship panels). One of `'active'` (hide deleted), `'with'` (include deleted alongside live), `'only'` (only deleted). Visibility of the dropdown itself is gated by [`Resource::canViewTrashed()`](resources.md#restricting-trashed-visibility-by-role). |
+| `default_trashed_filter` | `string` | `'active'` | Initial state of the trashed-filter dropdown on soft-delete resources (main index **and** relationship panels). One of `'active'` (hide deleted), `'with'` (include deleted alongside live), `'only'` (only deleted). Visibility of the dropdown itself is gated by [`Resource::canViewTrashed()`](/docs/core/resources#restricting-trashed-visibility-by-role). |
 
 The three per-action sub-keys are global kill-switches. A resource-level `Resource::defaultRowActions(Request $request): bool|array` can subtract further but never force a globally-disabled action back on. It can return:
 
@@ -611,7 +632,7 @@ The three per-action sub-keys are global kill-switches. A resource-level `Resour
 - a subset array — e.g. `['view', 'edit']` to hide the destructive actions
 - a closure-aware decision per request
 
-See [Default Row Actions](default_row_actions.md) for the full guide.
+See [Default Row Actions](/docs/core/default-row-actions) for the full guide.
 
 ## Pagination
 
@@ -627,7 +648,7 @@ See [Default Row Actions](default_row_actions.md) for the full guide.
 | `default_per_page` | `int` | `25` | Fallback for `Resource::perPage()` and `Lens::perPage()` when the resource/lens does not override the method. |
 | `max_per_page` | `int` | `100` | Upper bound enforced by the ResourceController when the client passes `?perPage=N` on the URL. Protects against pathological page sizes. |
 
-Override per-resource via `perPage()` and `perPageOptions()` on the resource class. When the returned `perPage()` is not present in `perPageOptions()`, Martis silently clamps to `perPageOptions()[0]` — see [resources.md — Effective per-page](resources.md#effective-per-page).
+Override per-resource via `perPage()` and `perPageOptions()` on the resource class. When the returned `perPage()` is not present in `perPageOptions()`, Martis silently clamps to `perPageOptions()[0]` — see [resources.md — Effective per-page](/docs/core/resources#effective-per-page).
 
 ## Storage
 
@@ -639,13 +660,22 @@ Override per-resource via `perPage()` and `perPageOptions()` on the resource cla
 
 Default filesystem disk for file uploads. Individual `File` and `Image` fields can override this via `->disk('s3')`.
 
-## Resources Path
+## Resources path and namespace
 
 ```php
 'resources_path' => app_path('Martis'),
+'resources_namespace' => null,
 ```
 
-Directory where auto-discovery looks for resource classes. Martis scans this path recursively for classes that extend `Martis\Resource`.
+Directory where auto-discovery looks for resource classes (scanned recursively for classes that extend `Martis\Resource`) and the PHP namespace that directory maps to.
+
+`resources_namespace` (since v1.36.0) resolves in this order:
+
+1. A non-empty string is used verbatim.
+2. `null`: the namespace is derived from Composer's PSR-4 autoload map (every registered class loader, so root `composer.json` entries, merge plugins and runtime `addPsr4()` registrations all count). `app/Martis` under `"App\\": "app/"` gives `App\Martis`; `app/Martis/Customer` gives `App\Martis\Customer`; `modules/Billing/Martis` under `"Modules\\": "modules/"` gives `Modules\Billing\Martis`. The longest matching root wins.
+3. No PSR-4 root contains the directory: `App\Martis`, the historical convention, so a non-autoloaded folder keeps working through the discovery's own `require_once` fallback.
+
+Set the key explicitly when the directory is not autoloaded or when you want to pin the value regardless of the autoload map. A config published before v1.36.0 has no `resources_namespace` key, which behaves like `null`.
 
 ## Policy Namespace
 
@@ -659,13 +689,13 @@ Namespace for auto-discovery of resource policies. When a resource does not defi
 
 ```php
 'tools_path' => app_path('Martis/Tools'),
-'tools_namespace' => 'App\\Martis\\Tools',
+'tools_namespace' => null,
 'discovery' => [
     'tools' => env('MARTIS_DISCOVERY_TOOLS', true),
 ],
 ```
 
-Where Martis scans for `Martis\Tools\Tool` subclasses (since v1.8.20). Discovery merges with any `Martis::tools([...])` registration via dedup by class-string, so adopting it does not break apps that already registered Tools manually. Set `discovery.tools` to `false` (or `MARTIS_DISCOVERY_TOOLS=false`) to opt out and keep manual registration.
+Where Martis scans for `Martis\Tools\Tool` subclasses (since v1.8.20). `tools_namespace` follows the same precedence as `resources_namespace` (explicit string, then Composer's PSR-4 map, then `App\Martis\Tools`); a config published before v1.36.0 still carries the literal `'App\\Martis\\Tools'`, which keeps working. Discovery merges with any `Martis::tools([...])` registration via dedup by class-string, so adopting it does not break apps that already registered Tools manually. Set `discovery.tools` to `false` (or `MARTIS_DISCOVERY_TOOLS=false`) to opt out and keep manual registration.
 
 ## Attachments
 
@@ -708,7 +738,7 @@ Individual actions can opt out via `->withoutActionEvents()`.
 | **Static config** | Paths, throttle, theme, profile, cache TTLs, drawer widths, sticky-views scope, notifications poll interval, … | `config/martis.php` |
 | **Code registrations** | Main menu resolver, dashboards, custom cache layers, gate definitions, page-title closures | `app/Providers/MartisServiceProvider.php` |
 
-`martis:install` publishes the provider stub to `app/Providers/MartisServiceProvider.php` and wires it into `bootstrap/providers.php` automatically. Re-running `martis:install` is idempotent — the file is preserved and the bootstrap entry is not duplicated. Use `--force` to refresh the stub.
+`martis:install` publishes the provider stub to `app/Providers/MartisServiceProvider.php` and wires it into `bootstrap/providers.php` automatically. Re-running `martis:install` is idempotent — the file is preserved and the bootstrap entry is not duplicated. `--force` does not touch it: use `--force-provider` to refresh the stub (this overwrites your registered dashboards, menu and gates).
 
 The stub ships every section commented-out, so an unmodified provider registers nothing and Martis runs on its built-in defaults. Uncomment what you need:
 
@@ -753,6 +783,52 @@ Why a dedicated provider instead of `AppServiceProvider`?
 
 To republish the stub manually (e.g. after package upgrade adds a new section): `php artisan vendor:publish --tag=martis-provider --force`.
 
+### Config keys that take a callable
+
+Five keys in `config/martis.php` take a callable instead of a value:
+
+| Key | Called with | Returns |
+|---|---|---|
+| `brand.page_title` | `Request $request` | The `<title>` (`?string`). A plain string is the title itself. |
+| `gates.plan_resolver` | `?Authenticatable $user` | The user's plan (`?string`). See [Soft-gates](/docs/core/gates#plan-rank-shortcut--for-linear-tier-saas). |
+| `profile.avatar.url_resolver` | `string $storedPath` | The avatar's public URL (`string`). |
+| `auth.sso.providers.{provider}.role_source_callable` | `string $externalId, string $accessToken` | The external role names (`array<int, string>`). See [SSO](/docs/auth/sso#role_source--where-external-role-names-come-from). |
+| `auth.sso.providers.{provider}.role_callable` | `array $externalRoles, ?User $user, string $provider` | The local roles (`Collection`). See [SSO](/docs/auth/sso#role_strategy--how-to-map-external-names-to-local-roles). |
+
+`php artisan config:cache` writes the merged config with `var_export()`, so only strings, numbers, booleans and arrays survive it. Two forms of callable do, so use one of them:
+
+```php
+// The name of an invokable class. Martis builds it through the
+// container, so its constructor can take dependencies.
+'plan_resolver' => \App\Martis\PlanResolver::class,
+
+// A [Class::class, 'method'] array naming a public static method.
+'plan_resolver' => [\App\Martis\PlanResolver::class, 'resolve'],
+```
+
+```php
+namespace App\Martis;
+
+use Illuminate\Contracts\Auth\Authenticatable;
+
+class PlanResolver
+{
+    public function __invoke(?Authenticatable $user): ?string
+    {
+        return $user?->plan_name;
+    }
+
+    public static function resolve(?Authenticatable $user): ?string
+    {
+        return $user?->plan_name;
+    }
+}
+```
+
+A closure or an object (`new PlanResolver`) works only while the config is not cached. `config:cache` fails on it with `Your configuration files could not be serialized because the value at "martis.gates.plan_resolver" is non-serializable`. Setting it from a service provider's `boot()` with `config()->set()` does not help: `config:cache` boots every provider before it writes the cache, so the value set there is exported too.
+
+A key set to anything that does not resolve to a callable throws an `InvalidArgumentException` naming the key and the reason, instead of silently falling back (a locked plan gate for every user, the disk URL, no SSO roles). That covers a class that does not exist, a class without a public `__invoke()`, a method that is not public and static (`[PlanResolver::class, 'handle']` when `handle()` is an instance method), and Laravel's `Class@method` string. `null`, `false` and an empty string leave the key unset. `brand.page_title` is the exception for strings: a string that names no invokable class is the literal title.
+
 ## Preferences (v1.7.0 defaults)
 
 The preferences subsystem has been env-driven since v0.10. v1.7.0 surfaces three more knobs so a host can pick the look-and-feel that every brand-new user sees on first sign-in.
@@ -774,7 +850,12 @@ The accent swatches in the PreferencesMenu can be extended with arbitrary brand 
 MARTIS_CUSTOM_ACCENTS="edgeflow:#1a73e8,sunset:#ff6b35,emerald:#10b981"
 ```
 
-Format: comma-separated `name:hex` pairs. Whitespace around the separators is tolerated.
+Format: comma-separated `name:hex` pairs, each with an optional third segment `name:hex:contrastHex` naming the text / icon colour painted on top of that accent (`--martis-accent-contrast`). Whitespace around the separators is tolerated.
+
+```env
+# Bright lime with an explicit navy text colour; the others derive theirs.
+MARTIS_CUSTOM_ACCENTS="edgeflow:#1a73e8,lime:#c6f135:#071726"
+```
 
 **Validation rules** (invalid entries are dropped silently with a `Log::warning`):
 
@@ -782,6 +863,7 @@ Format: comma-separated `name:hex` pairs. Whitespace around the separators is to
 |---|---|
 | `name` | `[a-z][a-z0-9_-]{0,31}` — lowercase, alphanumeric + dash / underscore. Must NOT collide with a bundled enum value (`martis`, `blue`, `teal`, `violet`, `amber`, `custom`). |
 | `hex` | `#RRGGBB` (6-digit hex with leading `#`). |
+| `contrastHex` | Optional. `#RRGGBB`. When absent Martis derives it from the accent's luminance: white while white reaches the WCAG 3:1 floor against the accent, a near-black navy (`#0b1220`) below it. An invalid value drops the whole entry. |
 | Duplicates | Last-wins (env-override semantics). |
 | Limit | Up to 24 custom accents. Beyond that the parser truncates. |
 
@@ -797,15 +879,17 @@ Martis injects an inline `<style>` block at boot for every custom accent:
 
 ```css
 html[data-accent="edgeflow"] {
-  --martis-accent: #1a73e8;
-  --martis-accent-hover:  color-mix(in srgb, #1a73e8 88%, black);
-  --martis-accent-soft:   color-mix(in srgb, #1a73e8 18%, transparent);
-  --martis-accent-strong: color-mix(in srgb, #1a73e8 92%, black);
-  --martis-accent-text:   #ffffff;
+  --martis-accent:          #1a73e8;
+  --martis-accent-hover:    color-mix(in srgb, #1a73e8 88%, black);
+  --martis-accent-active:   color-mix(in srgb, #1a73e8 78%, black);
+  --martis-accent-bg-light: color-mix(in srgb, #1a73e8 14%, transparent);
+  --martis-accent-bg:       color-mix(in srgb, #1a73e8 24%, transparent);
+  --martis-focus-ring:      color-mix(in srgb, #1a73e8 45%, transparent);
+  --martis-accent-contrast: #ffffff;   /* third segment, or derived */
 }
 ```
 
-Hover / soft / strong variants are derived from the base hex via `color-mix(in srgb, …)`, so the consumer only ships one colour per accent. Browser support: Chrome 111+, Safari 16.2+, Firefox 113+.
+Hover / active / bg / focus-ring variants are derived from the base hex via `color-mix(in srgb, …)`, and the contrast colour from its luminance (`Martis\Preferences\AccentContrast`), so the consumer only ships one colour per accent. Browser support: Chrome 111+, Safari 16.2+, Firefox 113+. The same derivation runs client-side for a per-user `brandColor` (see [Preferences](/docs/reference/preferences)).
 
 ### Removing a custom accent
 
@@ -818,13 +902,16 @@ Drop the entry from `MARTIS_CUSTOM_ACCENTS` and `php artisan config:cache`. User
     'enabled'    => true,
     'metrics'    => ['enabled' => true, 'ttl' => 5],
     'navigation' => ['enabled' => true, 'ttl' => 1],
-    'dashboards' => ['enabled' => true, 'ttl' => null],
+    'dashboards' => ['enabled' => true, 'ttl' => 5],
     'schema'     => ['enabled' => true, 'ttl' => null],
     'admin_ui'   => true,
+    'admin_ui_order' => 1000,
 ],
 ```
 
-Per-subsystem cache layer with three control planes (config / env / runtime), bypass header, and admin page. See [Cache](cache.md) for the full reference.
+`admin_ui_order` (v1.38.0+) positions the "System cache" link inside the bundled System sidebar section, which sorts its entries by weight (System-section resources and Tools default to `100`, so `1000` keeps the link last). See [Menus → Order inside the System section](/docs/core/menus#order-inside-the-system-section-v1380).
+
+Per-subsystem cache layer with three control planes (config / env / runtime), bypass header, and admin page. See [Cache](/docs/reference/cache) for the full reference.
 
 ## Profile
 
@@ -839,17 +926,25 @@ Per-subsystem cache layer with three control planes (config / env / runtime), by
         'path' => 'avatars',
         'max_size_kb' => 2048,
         'column' => 'profile_picture',
+        // Invokable class name or [Class::class, 'staticMethod'] array:
+        // (string $storedPath) => public URL. Null uses the disk's URL.
         'url_resolver' => null,
     ],
     'two_factor' => [
         'enabled' => true,
         'recovery_codes' => 8,
     ],
+    'account' => [
+        // When false, the Account section renders the e-mail field
+        // read-only (env MARTIS_PROFILE_EMAIL_EDITABLE). Pair with a
+        // ProfileResource that rejects e-mail changes server-side.
+        'email_editable' => true,
+    ],
     'sections' => ['avatar', 'account', 'password', 'security', 'sessions'],
 ],
 ```
 
-See [Authentication](authentication.md#user-profile) for full profile documentation.
+See [Authentication](/docs/auth/authentication#user-profile) for full profile documentation.
 
 ## User Preferences
 
@@ -857,6 +952,7 @@ See [Authentication](authentication.md#user-profile) for full profile documentat
 'preferences' => [
     'enabled' => env('MARTIS_PREFERENCES_ENABLED', true),
     'allowBrandColor' => env('MARTIS_ALLOW_BRAND_COLOR', false),
+    'locales' => ['en', 'pt_PT', 'pt_BR'],
     'locale_labels' => [
         // 'pt_BR' => 'Português (Brasil)',
     ],
@@ -867,9 +963,10 @@ See [Authentication](authentication.md#user-profile) for full profile documentat
 |---|---|---|---|
 | `enabled` | bool | `true` | Master switch for the per-user preferences panel (theme, density, locale, accent). |
 | `allowBrandColor` | bool | `false` | When true, exposes a custom-hex brand colour picker in the preferences panel. |
+| `locales` | array | `['en','pt_PT','pt_BR']` | The exact locale codes the language picker offers — on **both** the login screen and the in-app Preferences panel. Restrict it (e.g. `['en','pt_PT']`) to hide a bundled locale. When empty, the SPA falls back to the three bundled locales. |
 | `locale_labels` | array | `[]` | Override the human-readable labels surfaced in the locale dropdown. |
 
-See [User Preferences](preferences.md) for the D1/D2/D3 spec and [i18n](i18n.md) for the locale layer.
+See [User Preferences](/docs/reference/preferences) for the D1/D2/D3 spec and [i18n](/docs/customization/i18n) for the locale layer.
 
 ## Sticky Views
 
@@ -899,7 +996,7 @@ See [User Preferences](preferences.md) for the D1/D2/D3 spec and [i18n](i18n.md)
 | `persist.columns` | bool | `true` | Remember visible columns toggle. |
 | `persist.scroll` | bool | `false` | Remember scroll position on the index. |
 
-See [Sticky Views](sticky_views.md) for the full behaviour spec.
+See [Sticky Views](/docs/core/sticky-views) for the full behaviour spec.
 
 ## Loader
 
@@ -913,14 +1010,14 @@ See [Sticky Views](sticky_views.md) for the full behaviour spec.
 |---|---|---|---|
 | `disabled` | bool | `false` | Globally suppress the page loader. Useful in tests or for apps that ship their own loading UI. |
 
-See [Loader](loader.md) for the surface-by-surface behaviour matrix.
+See [Loader](/docs/customization/loader) for the surface-by-surface behaviour matrix.
 
 ## Impersonation
 
 ```php
 'impersonation' => [
     'enabled' => env('MARTIS_IMPERSONATION_ENABLED', false),
-    'guard' => env('MARTIS_IMPERSONATION_GUARD', 'web'),
+    'guard' => env('MARTIS_IMPERSONATION_GUARD'), // null: the Martis guard
     'session_key' => env('MARTIS_IMPERSONATION_SESSION_KEY', 'martis.impersonation'),
 ],
 ```
@@ -931,7 +1028,7 @@ See [Loader](loader.md) for the surface-by-surface behaviour matrix.
 | `guard` | string | `web` | Auth guard the impersonation operates on. |
 | `session_key` | string | `martis.impersonation` | Session bag where the operator's id is stashed. Change for cross-tenant isolation. |
 
-The package ships **no default Gate**. Define `martis-impersonate` in your `AuthServiceProvider` to gate which users can start an impersonation session. See [Impersonation](impersonation.md).
+The package ships **no default Gate**. Define `martis-impersonate` in your `AuthServiceProvider` to gate which users can start an impersonation session. See [Impersonation](/docs/auth/impersonation).
 
 ## Audit (v1.8.8)
 
@@ -950,7 +1047,7 @@ The package can record three categories of administrative events into the `marti
 |---|---|---|
 | `role_changes` | `true` | Logs `role.attached` / `role.detached` rows whenever Spatie attaches or detaches a role. |
 | `impersonation` | `true` | Logs `impersonation.started` / `impersonation.stopped`. |
-| `authz_denials` | `false` | Records denied gate decisions as `authz.denied`. Off by default — turning it on can be noisy on a busy app. |
+| `authz_denials` | `false` | Records denied gate decisions as `authz.denied`, while the Martis guard is the request's guard. Off by default: turning it on can be noisy on a busy app. |
 | `authz_denials_include_viewany` | `false` | When `authz_denials` is on, also record `viewAny` denials. Off by default because index pages probe `viewAny` on every request. |
 
 The denial listener dedupes the same `(ability, model_class, model_id)` tuple within one request, so a sidebar that probes the same gate three times only emits one row.
@@ -967,7 +1064,7 @@ The denial listener dedupes the same `(ability, model_class, model_id)` tuple wi
 | Key | Default | Effect |
 |---|---|---|
 | `request_cache` | `false` | Memoises `(user, ability, model)` gate results for the current request. Wins when a single request evaluates the same gate from many surfaces (sidebar, schema authorization block, action visibility). Per-request only — never crosses request boundaries. Closure gates with non-Model arguments are skipped. |
-| `revoke_sessions_on_demote` | `false` | When a role is detached from a user, force-logs out their existing browser sessions. Useful when promoting/demoting between admin tiers. |
+| `revoke_sessions_on_demote` | `false` | When a role is detached from a user, force-logs out their existing browser sessions. Useful when promoting/demoting between admin tiers. Skipped, with a warning, when the session guards sign in users of more than one table (a custom `MARTIS_GUARD` with its own model): the session rows cannot be told apart by id. |
 
 ## Magic-link sign-in (v1.8.8)
 
@@ -1004,7 +1101,7 @@ When enabled, the package wires Laravel's `verified` middleware into the panel g
 
 ## Auth screen copy (v1.8.5)
 
-Every auth surface (login, register, password forgot, password reset) lets you override the title and subtitle without touching translations.
+Every auth surface (login, register, password forgot, password reset, invitation accept) lets you override the title and subtitle without touching translations.
 
 | Variable | Default | Surface |
 |---|---|---|
@@ -1017,6 +1114,8 @@ Every auth surface (login, register, password forgot, password reset) lets you o
 | `MARTIS_AUTH_FORGOT_SUBTITLE` | translation | Forgot password subtitle |
 | `MARTIS_AUTH_RESET_TITLE` | translation | Reset password title |
 | `MARTIS_AUTH_RESET_SUBTITLE` | translation | Reset password subtitle |
+| `MARTIS_AUTH_INVITATION_ACCEPT_TITLE` | translation | Invitation accept title |
+| `MARTIS_AUTH_INVITATION_ACCEPT_SUBTITLE` | translation | Invitation accept subtitle |
 
 Translations remain the recommended path for multi-locale apps. Use these env vars only when you want a single hard-coded string for every locale (e.g. an internal tool).
 
@@ -1078,7 +1177,7 @@ In addition to `MARTIS_IMPERSONATION_ENABLED` (covered above), the impersonation
 
 | Variable | Default | Effect |
 |---|---|---|
-| `MARTIS_IMPERSONATION_GUARD` | `web` | Auth guard the impersonation operates on. |
+| `MARTIS_IMPERSONATION_GUARD` | the Martis guard | Auth guard the impersonation operates on (v2.0.0+: unset follows `MARTIS_GUARD`, then the app's default guard; it was `web`). |
 | `MARTIS_IMPERSONATION_SESSION_KEY` | `martis.impersonation` | Session bag where the operator's id is stashed. |
 | `MARTIS_IMPERSONATION_MAX_DURATION` | `0` | Maximum session length in minutes. `0` disables the timeout. |
 | `MARTIS_IMPERSONATION_POLL_MS` | `120000` | Banner status poll interval in ms. Default 2 min — sessions change rarely. Set to `0` to disable polling (banner still mounts and reads state once per page load). v1.8.8. |
@@ -1092,7 +1191,7 @@ In addition to `MARTIS_IMPERSONATION_ENABLED` (covered above), the impersonation
 ],
 ```
 
-Off by default. When enabled, mounts the Scramble-generated OpenAPI 3.1 surface at `/{path}` (default `/api-docs`). See [API → Overview](api/overview.md) for the worker-restart caveat: PHP-FPM caches parsed env in process memory, so flipping the env requires restarting workers (or the PHP container) before the gate sees the new value.
+Off by default. When enabled, mounts the Scramble-generated OpenAPI 3.1 surface at `/{path}` (default `/api-docs`). See [API → Overview](/docs/reference/api) for the worker-restart caveat: PHP-FPM caches parsed env in process memory, so flipping the env requires restarting workers (or the PHP container) before the gate sees the new value.
 
 ## Notifications
 
@@ -1115,13 +1214,13 @@ Beyond the global `MARTIS_CACHE_ENABLED` master switch, every surface that cache
 | Variable | Default | Surface |
 |---|---|---|
 | `MARTIS_CACHE_DASHBOARDS_ENABLED` | `true` | Dashboard renders |
-| `MARTIS_CACHE_DASHBOARDS` / `MARTIS_CACHE_DASHBOARDS_TTL` | `null` | Dashboard TTL |
+| `MARTIS_CACHE_DASHBOARDS` / `MARTIS_CACHE_DASHBOARDS_TTL` | `5` | Dashboard TTL (the list key is also fingerprinted by the user's authorized set, so membership changes never wait for the TTL) |
 | `MARTIS_CACHE_METRICS_ENABLED` | `true` | Metric cards |
 | `MARTIS_CACHE_METRICS` / `MARTIS_CACHE_METRICS_TTL` | `5` | Metrics TTL |
 | `MARTIS_CACHE_NAVIGATION_ENABLED` | `true` | Sidebar navigation tree |
 | `MARTIS_CACHE_NAVIGATION` / `MARTIS_CACHE_NAVIGATION_TTL` | `1` | Navigation TTL |
 | `MARTIS_CACHE_SCHEMA_ENABLED` | `true` | Resource schema payload |
-| `MARTIS_CACHE_SCHEMA` / `MARTIS_CACHE_SCHEMA_TTL` | `null` | Schema TTL |
+| `MARTIS_CACHE_SCHEMA` / `MARTIS_CACHE_SCHEMA_TTL` | `1440` | Schema TTL in minutes (one day since v2.0; `null` before, see [Cache → Invalidation](/docs/reference/cache#invalidation)) |
 | `MARTIS_CACHE_ADMIN_UI` | `true` | Cache admin UI in the System sidebar group |
 
 The shorter names (`MARTIS_CACHE_DASHBOARDS`, etc.) and the explicit `_TTL` variants resolve to the same value — the `_TTL` form just makes intent unambiguous. Pick whichever reads better in your `.env`.
@@ -1286,9 +1385,9 @@ php artisan martis:list-env-vars --json      # JSON array
 | `MARTIS_BRAND_NAME` | `'Martis'` |
 | `MARTIS_BRAND_VERSION` | `(no default)` |
 | `MARTIS_CACHE_ADMIN_UI` | `true` |
-| `MARTIS_CACHE_DASHBOARDS` | `null` |
+| `MARTIS_CACHE_DASHBOARDS` | `5` |
 | `MARTIS_CACHE_DASHBOARDS_ENABLED` | `true` |
-| `MARTIS_CACHE_DASHBOARDS_TTL` | `env('MARTIS_CACHE_DASHBOARDS', null)` |
+| `MARTIS_CACHE_DASHBOARDS_TTL` | `env('MARTIS_CACHE_DASHBOARDS', 5)` |
 | `MARTIS_CACHE_ENABLED` | `true` |
 | `MARTIS_CACHE_METRICS` | `5` |
 | `MARTIS_CACHE_METRICS_ENABLED` | `true` |
@@ -1298,7 +1397,7 @@ php artisan martis:list-env-vars --json      # JSON array
 | `MARTIS_CACHE_NAVIGATION_TTL` | `env('MARTIS_CACHE_NAVIGATION', 1)` |
 | `MARTIS_CACHE_SCHEMA` | `null` |
 | `MARTIS_CACHE_SCHEMA_ENABLED` | `true` |
-| `MARTIS_CACHE_SCHEMA_TTL` | `env('MARTIS_CACHE_SCHEMA', null)` |
+| `MARTIS_CACHE_SCHEMA_TTL` | `env('MARTIS_CACHE_SCHEMA', 1440)` |
 | `MARTIS_CUSTOM_ACCENTS` | `(no default)` |
 | `MARTIS_DASHBOARD_SHOW_GREETING` | `true` |
 | `MARTIS_DASHBOARD_SHOW_WELCOME` | `true` |
@@ -1318,7 +1417,7 @@ php artisan martis:list-env-vars --json      # JSON array
 | `MARTIS_FOOTER_TEXT` | `(no default)` |
 | `MARTIS_GUARD` | `null` |
 | `MARTIS_IMPERSONATION_ENABLED` | `false` |
-| `MARTIS_IMPERSONATION_GUARD` | `'web'` |
+| `MARTIS_IMPERSONATION_GUARD` | `null` (the Martis guard) |
 | `MARTIS_IMPERSONATION_MAX_DURATION` | `0` |
 | `MARTIS_IMPERSONATION_POLL_MS` | `120000` |
 | `MARTIS_IMPERSONATION_SESSION_KEY` | `'martis.impersonation'` |
@@ -1333,6 +1432,7 @@ php artisan martis:list-env-vars --json      # JSON array
 | `MARTIS_LOGIN_THROTTLE_MINUTES` | `1` |
 | `MARTIS_NAV_BADGES_POLL_MS` | `300000` |
 | `MARTIS_NAV_COUNTS` | `true` |
+| `MARTIS_NAV_COUNTS_REPORT_FAILURES` | `true` |
 | `MARTIS_NAV_COUNT_COMPACT_THRESHOLD` | `10000` |
 | `MARTIS_NOTIFICATIONS_ENABLED` | `true` |
 | `MARTIS_NOTIFICATIONS_MAX_DROPDOWN` | `10` |
@@ -1340,6 +1440,7 @@ php artisan martis:list-env-vars --json      # JSON array
 | `MARTIS_PAGE_TITLE` | `(no default)` |
 | `MARTIS_PATH` | `'martis'` |
 | `MARTIS_PREFERENCES_ENABLED` | `true` |
+| `MARTIS_PROFILE_EMAIL_EDITABLE` | `true` |
 | `MARTIS_PROFILE_ENABLED` | `true` |
 | `MARTIS_ROW_CLICK_OPENS_DETAIL` | `true` |
 | `MARTIS_RTL_LOCALES` | `'ar,fa,he,ur'` |
@@ -1365,7 +1466,7 @@ php artisan martis:list-env-vars --json      # JSON array
 | `MARTIS_WELCOME_HEADING` | `(no default)` |
 ## Next Steps
 
-- [Installation Guide](installation-guide.md) — Initial setup
-- [Authentication](authentication.md) — Login, 2FA, profile
-- [Resources](resources.md) — Resource configuration
-- [Override System](overrides.md) — Customize the UI
+- [Installation Guide](/docs/getting-started/installation) — Initial setup
+- [Authentication](/docs/auth/authentication) — Login, 2FA, profile
+- [Resources](/docs/core/resources) — Resource configuration
+- [Override System](/docs/customization/overrides) — Customize the UI

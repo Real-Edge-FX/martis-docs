@@ -1,11 +1,11 @@
 ---
 title: "Default Row Actions"
-description: "Every Martis resource index ships with a trailing column of built-in row actions — **View**, **Edit**, and **Delete** — out of the box. No registration required. Icons disable themselves automatically when the row's authorization denies the operation."
+description: "Every Martis resource index ships with a trailing column of built-in row actions (View, Edit and Delete) out of the box. No registration required. Icons disable themselves automatically when the row's authorization denies the operation."
 sourcePath: "martis-package/docs/default_row_actions.md"
 ---
 
 # Default Row Actions
-Every Martis resource index ships with a trailing column of built-in row actions — **View**, **Edit**, and **Delete** — out of the box. No registration required. Icons disable themselves automatically when the row's authorization denies the operation.
+Every Martis resource index ships with a trailing column of built-in row actions (**View**, **Edit** and **Delete**) out of the box. No registration required. Icons disable themselves automatically when the row's authorization denies the operation.
 
 This is a Martis differential: the View/Edit/Delete row actions are the default experience, and you can customize or opt out with three layers of control (global config, per-action global flag, per-resource override).
 
@@ -175,4 +175,3 @@ MARTIS_DEFAULT_ROW_ACTION_DELETE=false
 ```
 
 These are AND-composed with the per-resource `defaultRowActions()` override, so the global flag always wins when it says "off".
-
