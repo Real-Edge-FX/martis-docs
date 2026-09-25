@@ -37,9 +37,21 @@ export function InstallCommand({ command, className }: InstallCommandProps) {
   const codeRef = useRef<HTMLElement>(null)
   const [status, setStatus] = useState<CopyStatus>('idle')
   const resetTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
+  // `handleCopy` awaits `navigator.clipboard.writeText` before touching
+  // state; if the component unmounts while that promise is pending (a
+  // fast navigation away, or a test that unmounts mid-copy), the resumed
+  // handler must not call `setState` on an unmounted component or arm a
+  // reset timer nothing will ever clear.
+  const mounted = useRef(true)
 
-  // Never leave a pending reset behind after the component unmounts.
-  useEffect(() => () => clearTimeout(resetTimer.current), [])
+  useEffect(() => {
+    mounted.current = true
+    // Never leave a pending reset behind after the component unmounts.
+    return () => {
+      mounted.current = false
+      clearTimeout(resetTimer.current)
+    }
+  }, [])
 
   const selectCommand = () => {
     const node = codeRef.current
@@ -55,6 +67,7 @@ export function InstallCommand({ command, className }: InstallCommandProps) {
     event.preventDefault()
     try {
       await navigator.clipboard.writeText(command)
+      if (!mounted.current) return
       setStatus('copied')
       // The confirmation is transient: after a moment the button offers
       // to copy again. The manual-copy fallback below stays, because the
@@ -62,6 +75,7 @@ export function InstallCommand({ command, className }: InstallCommandProps) {
       clearTimeout(resetTimer.current)
       resetTimer.current = setTimeout(() => setStatus('idle'), COPIED_RESET_MS)
     } catch {
+      if (!mounted.current) return
       clearTimeout(resetTimer.current)
       selectCommand()
       setStatus('fallback')

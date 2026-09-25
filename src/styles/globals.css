@@ -132,6 +132,18 @@ kbd {
   html { scroll-behavior: auto; }
 }
 
+/* `CodeBlock`'s `<pre>` (src/components/CodeBlock.tsx) only takes
+   `tabIndex={0}` once it actually overflows and needs keyboard
+   scrolling. Its focus ring is defined here, unscoped by `.site-shell`
+   (site.css's `:focus-visible` rule), because the docs shell
+   (`src/pages/Docs.tsx`) still renders the legacy `TopBar`/`Footer`
+   outside `.site-shell` (WCAG 2.4.7 needs a visible indicator on both
+   shells, not just the new one). */
+.code-block__pre:focus-visible {
+  outline: var(--focus-ring-width, 2px) solid var(--focus-ring-color, var(--color-cobalt-500));
+  outline-offset: calc(var(--focus-ring-offset, 2px) * -1);
+}
+
 /* Custom scrollbar — quieter than the OS default. */
 ::-webkit-scrollbar { width: 12px; height: 12px; }
 ::-webkit-scrollbar-track { background: var(--color-ink-900); }

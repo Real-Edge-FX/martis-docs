@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Icons } from '@/components/icons'
 
 interface CodeBlockProps {
@@ -22,6 +22,27 @@ interface CodeBlockProps {
  */
 export function CodeBlock({ code, lang = 'php', filename, lineNumbers = false }: CodeBlockProps) {
   const [copied, setCopied] = useState(false)
+  const preRef = useRef<HTMLPreElement>(null)
+  // Whether the block actually overflows and needs a keyboard-reachable
+  // scroller. Server and the first client render both render `false`
+  // (there is no layout yet), so hydration never mismatches; this effect
+  // measures the real, laid-out element after mount and keeps watching
+  // it, so a block that starts short but later overflows (a resize, a
+  // font swap) still becomes reachable, and one that never overflows
+  // never gets an extra tab stop.
+  const [overflowing, setOverflowing] = useState(false)
+
+  useEffect(() => {
+    const el = preRef.current
+    if (!el) return
+
+    const measure = () => setOverflowing(el.scrollWidth > el.clientWidth)
+    measure()
+
+    const observer = new ResizeObserver(measure)
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [code, lang])
 
   function copy() {
     navigator.clipboard?.writeText(code).then(() => {
@@ -50,18 +71,25 @@ export function CodeBlock({ code, lang = 'php', filename, lineNumbers = false }:
           </button>
         </div>
       )}
-      {/* Long lines scroll horizontally: the scroller takes keyboard focus
-       *  (arrow keys scroll it) and is named, so it is reachable without a
-       *  pointer (WCAG 2.1.1). */}
+      {/* Long lines scroll horizontally. Only a block that actually
+       *  overflows takes a tab stop (arrow keys then scroll it) and gets
+       *  a name, so it is reachable without a pointer (WCAG 2.1.1)
+       *  without adding a stop to every short block on a docs page. */}
       <pre
-        // A scrollable region must be focusable to be scrolled by keyboard
-        // (axe scrollable-region-focusable); this is the case the rule's
-        // "non-interactive" heuristic does not cover.
-        // eslint-disable-next-line jsx-a11y/no-noninteractive-tabindex
-        tabIndex={0}
-        role="group"
-        aria-label={filename ? `Code: ${filename}` : `Code sample (${lang})`}
-        className="p-5 overflow-x-auto text-[12.5px] leading-[1.65] font-mono"
+        ref={preRef}
+        data-testid="code-block-pre"
+        {...(overflowing
+          ? {
+              // A scrollable region must be focusable to be scrolled by
+              // keyboard (axe scrollable-region-focusable). Spread so the
+              // attribute is absent entirely (not just falsy) when the
+              // block does not overflow.
+              tabIndex: 0,
+              role: 'group',
+              'aria-label': filename ? `Code: ${filename}` : `Code sample (${lang})`,
+            }
+          : {})}
+        className="code-block__pre p-5 overflow-x-auto text-[12.5px] leading-[1.65] font-mono"
       >
         <code>
           {lines.map((line, i) => (
