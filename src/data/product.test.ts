@@ -7,7 +7,7 @@ describe('PRODUCT_CHAPTERS', () => {
     expect(PRODUCT_CHAPTER_IDS).toEqual(['model', 'operate', 'secure', 'adapt', 'extend', 'ship'])
   })
 
-  it('gives every chapter a title, outcome, agency scenario, docs link, media and code sample', () => {
+  it('gives every chapter a title, outcome, agency scenario, docs link, media, code sample and prerequisite', () => {
     for (const chapter of PRODUCT_CHAPTERS) {
       expect(chapter.title).toBeTruthy()
       expect(chapter.outcome).toBeTruthy()
@@ -16,6 +16,7 @@ describe('PRODUCT_CHAPTERS', () => {
       expect(chapter.code.source).toBeTruthy()
       expect(chapter.code.filename).toBeTruthy()
       expect(['php', 'tsx', 'bash']).toContain(chapter.code.language)
+      expect(chapter.prerequisite).toBeTruthy()
       // mediaId must resolve to a real, typed media entry.
       expect(PRODUCT_MEDIA[chapter.mediaId]).toBeDefined()
     }

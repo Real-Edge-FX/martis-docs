@@ -16,6 +16,7 @@ function lazyPage<P extends object>(load: () => Promise<{ default: ComponentType
 // Each page is its own chunk, fetched on demand, so the landing's CSS / JS
 // budget does not pay for the docs renderer (and vice-versa).
 const Landing = lazyPage(() => import('@/pages/Landing'))
+const Product = lazyPage(() => import('@/pages/Product'))
 const Docs = lazyPage(() => import('@/pages/Docs'))
 const ProvisionalPage = lazyPage(() => import('@/pages/ProvisionalPage'))
 const NotFound = lazyPage(() => import('@/pages/NotFound'))
@@ -74,20 +75,9 @@ function DocsOrNotFound() {
 // `site-routes.ts` has its own entry (site-routes.test.ts checks it).
 export const PAGE_ROUTES: PageRoute[] = [
   { path: '/', caseSensitive: true, element: <Landing />, preload: Landing.preload },
-  // Provisional pages until Phases 2 and 3 ship the real ones: each of
-  // those tasks replaces its route's element (and preload) here.
-  {
-    path: '/product',
-    caseSensitive: true,
-    element: (
-      <ProvisionalPage
-        eyebrow="Product"
-        title="One foundation. Six parts of delivery."
-        summary="The chapter-by-chapter tour of Martis is still being written; until it ships, the documentation covers every feature."
-      />
-    ),
-    preload: ProvisionalPage.preload,
-  },
+  { path: '/product', caseSensitive: true, element: <Product />, preload: Product.preload },
+  // Provisional pages until Phase 3 ships the real ones: that task
+  // replaces each remaining route's element (and preload) here.
   {
     path: '/for-agencies',
     caseSensitive: true,

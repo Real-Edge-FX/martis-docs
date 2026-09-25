@@ -21,7 +21,12 @@ describe('Chapter', () => {
     expect(screen.getByRole('heading', { name: chapter.title })).toBeInTheDocument()
     expect(screen.getByText(chapter.outcome)).toBeInTheDocument()
     expect(screen.getByText(chapter.agencyScenario)).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: /learn more/i })).toHaveAttribute('href', chapter.docsHref)
+    expect(screen.getByRole('link', { name: /read the docs/i })).toHaveAttribute('href', chapter.docsHref)
+  })
+
+  it('renders the chapter prerequisite', () => {
+    renderChapter()
+    expect(screen.getByText(chapter.prerequisite)).toBeInTheDocument()
   })
 
   it('renders the real, current code sample with its filename', () => {

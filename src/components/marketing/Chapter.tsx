@@ -32,7 +32,7 @@ export function Chapter({ chapter, headingLevel = 2, priorityMedia = false, clas
         <p className="chapter__outcome">{chapter.outcome}</p>
         <p className="chapter__scenario">{chapter.agencyScenario}</p>
         <Link to={chapter.docsHref} className="chapter__link">
-          Learn more in the docs
+          Read the docs
         </Link>
       </div>
 
@@ -41,6 +41,7 @@ export function Chapter({ chapter, headingLevel = 2, priorityMedia = false, clas
           <span className="chapter__code-filename">{chapter.code.filename}</span>
           <code>{chapter.code.source}</code>
         </pre>
+        <p className="chapter__prerequisite">{chapter.prerequisite}</p>
         <MediaFigure
           src={media.src}
           alt={media.alt}

@@ -23,6 +23,11 @@ export interface ProductChapterData {
   docsHref: string
   mediaId: ProductMediaId
   code: ProductChapterCode
+  /** Relevant limitation or prerequisite for this chapter (spec 7),
+   *  shown on the Product page under the code sample. Kept honest and
+   *  specific: only what a reader would actually need to know before
+   *  relying on the chapter, never a generic disclaimer. */
+  prerequisite: string
 }
 
 export type ProductMediaId =
@@ -138,6 +143,7 @@ class PostResource extends Resource
     }
 }`,
     },
+    prerequisite: 'Requires an existing Eloquent model; Martis reads its fields and relationships, it does not generate the migration.',
   },
   {
     id: 'operate',
@@ -174,6 +180,7 @@ class PublishPosts extends Action
     }
 }`,
     },
+    prerequisite: 'Bulk actions still run each authorization check per model; a large selection runs as many policy calls.',
   },
   {
     id: 'secure',
@@ -212,6 +219,7 @@ class PostPolicy
     }
 }`,
     },
+    prerequisite: 'Policies are plain Laravel; Martis calls them on every write, but each one still has to be registered and written per model.',
   },
   {
     id: 'adapt',
@@ -231,6 +239,7 @@ class PostPolicy
     'name' => 'mytheme',           // Theme CSS file name (null = default)
 ],`,
     },
+    prerequisite: 'A new theme file still needs `martis:publish-assets` republished after it changes; the config edit alone does not recompile it.',
   },
   {
     id: 'extend',
@@ -250,6 +259,7 @@ import { StatusBadgeDisplay } from './components/StatusBadge'
 // Only the "status" field in the "posts" resource uses StatusBadgeDisplay.
 componentRegistry.registerResourceFieldDisplay('posts', 'status', StatusBadgeDisplay)`,
     },
+    prerequisite: 'Custom field components are consumer React/TypeScript code, built with the consuming app\'s own Node and Vite toolchain.',
   },
   {
     id: 'ship',
@@ -267,5 +277,6 @@ componentRegistry.registerResourceFieldDisplay('posts', 'status', StatusBadgeDis
 php artisan martis:install
 php artisan martis:user`,
     },
+    prerequisite: 'Requires PHP 8.3+ and an existing Laravel 12 or 13 application; end users consume precompiled assets, no Node toolchain required.',
   },
 ]

@@ -234,9 +234,138 @@
   letter-spacing: 0.08em;
 }
 
+.chapter__prerequisite {
+  margin: 0;
+  padding-left: var(--space-3);
+  border-left: 2px solid var(--border-default);
+  color: var(--fg-muted);
+  font-size: 12px;
+  line-height: 1.6;
+}
+
 @media (min-width: 900px) {
   .chapter {
     grid-template-columns: 1fr 1fr;
-    align-items: center;
+    /* Top-aligned, not centered: the demo column (code sample,
+       prerequisite and screenshot) runs far taller than the copy
+       column, and centering it left the title and outcome stranded
+       mid-height next to a screenshot instead of sitting beside the
+       code sample they describe. */
+    align-items: start;
   }
+}
+
+/* ---- Chapter nav --------------------------------------------------------
+   Sticky under the site header on desktop; a horizontally scrollable row
+   on narrow viewports. Plain native fragment links: no scroll-spy, no
+   JavaScript required to use it, so it renders correctly before hydration. */
+
+.chapter-nav {
+  position: sticky;
+  top: var(--site-header-height);
+  z-index: 20;
+  background: var(--surface-header);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.chapter-nav__list {
+  display: flex;
+  gap: var(--space-2);
+  margin: 0;
+  padding: var(--space-3) var(--site-gutter);
+  list-style: none;
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+
+.chapter-nav__item {
+  flex: none;
+}
+
+.chapter-nav__link {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: var(--site-touch-target);
+  padding-inline: var(--space-3);
+  border-radius: var(--site-radius-sm);
+  color: var(--fg-muted);
+  font-size: 13px;
+  font-weight: 500;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: color var(--motion-duration-fast) var(--motion-ease-standard);
+}
+
+.chapter-nav__link:hover {
+  color: var(--fg-primary);
+}
+
+.chapter-nav__no {
+  color: var(--fg-accent);
+  font-family: var(--font-mono);
+  font-size: 10px;
+}
+
+@media (min-width: 900px) {
+  .chapter-nav__list {
+    justify-content: center;
+    max-width: var(--site-container-max);
+    margin-inline: auto;
+  }
+}
+
+/* ---- Product page -------------------------------------------------------- */
+
+.product-page {
+  overflow-x: clip;
+}
+
+.product-page__intro {
+  padding-block: clamp(56px, 8vw, 88px) var(--space-8);
+}
+
+.product-page__title {
+  margin: var(--space-3) 0 0;
+  max-width: 22ch;
+  color: var(--fg-primary);
+  font-size: clamp(32px, 5vw, 48px);
+  font-weight: 560;
+  line-height: 1.05;
+  letter-spacing: -0.035em;
+  text-wrap: balance;
+}
+
+.product-page__lede {
+  margin: var(--space-4) 0 0;
+  max-width: 60ch;
+  color: var(--fg-muted);
+  font-size: 16px;
+  line-height: 1.6;
+}
+
+.product-extension {
+  padding-block: clamp(56px, 8vw, 88px);
+  border-top: 1px solid var(--border-subtle);
+}
+
+.product-extension__inner {
+  max-width: 72ch;
+}
+
+.product-extension__title {
+  margin: var(--space-3) 0 0;
+  color: var(--fg-primary);
+  font-size: clamp(24px, 3.4vw, 32px);
+  font-weight: 560;
+  line-height: 1.15;
+  letter-spacing: -0.03em;
+}
+
+.product-extension__copy {
+  margin: var(--space-4) 0 0;
+  color: var(--fg-muted);
+  font-size: 15px;
+  line-height: 1.7;
 }
