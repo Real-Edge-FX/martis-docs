@@ -91,18 +91,22 @@ martis-docs/
 
 ## Deployment
 
-The site runs on the host at `192.168.50.21:3000`, served by Caddy out of `/home/martis/martis-docs/dist`. The external Nginx Proxy Manager terminates TLS for `martis-docs.realedgefx.com` and forwards to that port.
+The official production host is **getmartis.com**, on Hostinger shared hosting (Apache/LiteSpeed). The site is static, so deploy = build locally and `rsync` `dist/` into the domain docroot over SSH.
 
-`.github/workflows/deploy.yml` builds and rsyncs on every push to `main`:
+```bash
+bash scripts/deploy.sh
+```
 
-1. Activate Node 22 from nvm.
-2. `pnpm install --frozen-lockfile`.
-3. `pnpm build`.
-4. `cp dist/index.html dist/404.html` for SPA fallback.
-5. `rsync -a --delete dist/ /home/martis/martis-docs/dist/`.
-6. Smoke `curl` against `/`, `/docs`, `/docs/getting-started/installation`, and `/search-index.json`.
+`scripts/deploy.sh`:
 
-The runner is registered with label `martis-docs` and lives on the same host as Caddy, so deploy = atomic rsync.
+1. Runs `pnpm build` and verifies that the SPA rewrite file reached `dist/`.
+2. Creates `dist/404.html` as an additional SPA fallback.
+3. Publishes `dist/` with `rsync --delete` to `domains/getmartis.com/public_html/`.
+4. Smoke-tests `/`, `/docs`, `/compare`, `/contact`, and `/search-index.json` on production.
+
+The deploy prefers the dedicated SSH key and falls back to a password read at runtime or supplied through `MARTIS_DOCS_SSH_PASS`. Credentials are never written by the script. Deep links are handled by `public/.htaccess`.
+
+> The old Caddy deployment at `martis-docs.realedgefx.com` is retired. `.github/workflows/deploy.yml` is kept as dispatch-only historical reference and does not run on pushes.
 
 ## Contact form delivery
 
