@@ -1,6 +1,5 @@
 import { Link } from 'react-router-dom'
-import { TopBar } from '@/components/landing/TopBar'
-import { Footer } from '@/components/landing/Footer'
+import { SiteShell } from '@/components/site/SiteShell'
 
 interface ProvisionalPageProps {
   /** Short label above the heading: the section or audience. */
@@ -19,22 +18,17 @@ interface ProvisionalPageProps {
  */
 export default function ProvisionalPage({ eyebrow, title, summary }: ProvisionalPageProps) {
   return (
-    <div className="min-h-screen bg-ink-900 text-ink-100 flex flex-col">
-      <TopBar />
-      <main className="flex-1 px-6 py-24">
-        <div className="max-w-[1280px] mx-auto">
-          <p className="text-[11px] font-mono uppercase tracking-[0.2em] text-cobalt-300">{eyebrow}</p>
-          <h1 className="mt-4 max-w-[22ch] text-4xl font-medium text-white tracking-tight">{title}</h1>
-          <p className="mt-4 max-w-[60ch] text-ink-200">{summary}</p>
-          <Link
-            to="/docs/getting-started/installation"
-            className="mt-8 h-10 px-4 inline-flex items-center rounded-lg btn-primary text-white text-[13px] font-medium"
-          >
+    <SiteShell>
+      <main id="main-content" tabIndex={-1} className="py-24">
+        <div className="site-container">
+          <p className="text-[11px] font-mono uppercase tracking-[0.2em] text-cobalt">{eyebrow}</p>
+          <h1 className="mt-4 max-w-[22ch] text-4xl font-medium tracking-tight text-primary">{title}</h1>
+          <p className="mt-4 max-w-[60ch] text-muted">{summary}</p>
+          <Link to="/docs/getting-started/installation" className="site-button site-button--primary mt-8">
             Install Martis
           </Link>
         </div>
       </main>
-      <Footer />
-    </div>
+    </SiteShell>
   )
 }

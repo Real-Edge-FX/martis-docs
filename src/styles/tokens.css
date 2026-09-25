@@ -1,0 +1,226 @@
+/* ============================================================
+   Martis site design tokens (getmartis.com redesign).
+
+   Three layers:
+   1. Self-hosted font faces, plus metric-compatible fallback faces
+      built on a local system font, so the swap from fallback to web
+      font does not move the layout.
+   2. The raw palette and font stacks, registered with Tailwind's
+      @theme so utilities such as `bg-night` or `font-serif` exist.
+   3. Semantic custom properties (surfaces, text, focus, layout,
+      spacing) that components read. Marketing is always dark; the docs
+      surface follows the theme (light uses Editorial paper).
+   ============================================================ */
+
+/* ---- 1. Fonts ------------------------------------------------------
+   Files live in public/fonts/ (OFL 1.1; see OFL.txt and SOURCES.txt
+   there). Geist and Geist Mono are variable fonts, so one file covers
+   every weight. Only geist-latin.woff2 is preloaded (index.html). */
+
+@font-face {
+  font-family: "Geist";
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url("/fonts/geist-latin.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "Geist Mono";
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url("/fonts/geist-mono-latin.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "Instrument Serif";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/instrument-serif-latin.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "Instrument Serif";
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/instrument-serif-latin-italic.woff2") format("woff2");
+}
+
+/* Fallback faces: a local system font scaled to the web font's average
+   glyph width (size-adjust) and given its vertical metrics (ascent,
+   descent, line gap), measured from the shipped files against Arial,
+   Courier New and Times New Roman on English copy. */
+
+@font-face {
+  font-family: "Geist Fallback";
+  src: local("Arial"), local("ArialMT");
+  size-adjust: 104.53%;
+  ascent-override: 96.14%;
+  descent-override: 28.22%;
+  line-gap-override: 0%;
+}
+
+@font-face {
+  font-family: "Geist Mono Fallback";
+  src: local("Courier New"), local("CourierNewPSMT");
+  size-adjust: 99.98%;
+  ascent-override: 100.52%;
+  descent-override: 29.5%;
+  line-gap-override: 0%;
+}
+
+@font-face {
+  font-family: "Instrument Serif Fallback";
+  font-style: normal;
+  src: local("Times New Roman"), local("TimesNewRomanPSMT");
+  size-adjust: 84.13%;
+  ascent-override: 117.68%;
+  descent-override: 36.85%;
+  line-gap-override: 0%;
+}
+
+@font-face {
+  font-family: "Instrument Serif Fallback";
+  font-style: italic;
+  src: local("Times New Roman Italic"), local("TimesNewRomanPS-ItalicMT");
+  size-adjust: 88.52%;
+  ascent-override: 111.83%;
+  descent-override: 35.02%;
+  line-gap-override: 0%;
+}
+
+/* ---- 2. Palette and font stacks ----------------------------------- */
+
+@theme {
+  --font-sans: "Geist", "Geist Fallback", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "Geist Mono", "Geist Mono Fallback", ui-monospace, SFMono-Regular, Menlo, monospace;
+  --font-serif: "Instrument Serif", "Instrument Serif Fallback", ui-serif, Georgia, serif;
+
+  --color-night: #080A10;
+  --color-surface: #10131C;
+  --color-elevated: #171B27;
+  --color-line: #2B3245;
+  --color-primary: #F4F5FA;
+  --color-muted: #A5ADBD;
+  --color-cobalt: #7187FF;
+  --color-violet: #A674FF;
+  --color-proof: #56C98B;
+  --color-paper: #F2F0E9;
+  --color-editorial-ink: #14151A;
+}
+
+/* ---- 3. Semantic tokens ------------------------------------------- */
+
+:root {
+  /* Layout */
+  --site-container-max: 1280px;
+  --site-gutter: clamp(16px, 4vw, 32px);
+  --site-header-height: 64px;
+  --site-touch-target: 44px;
+
+  /* Spacing scale (4 px base) */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+  --space-20: 80px;
+  --space-24: 96px;
+
+  /* Radii: moderate corners, no pill-shaped dashboard look. */
+  --site-radius-sm: 6px;
+  --site-radius-md: 8px;
+  --site-radius-lg: 12px;
+
+  /* Focus ring: 2 px cobalt, offset so it always sits on the page
+     background (cobalt on Night is 6.2:1). */
+  --focus-ring-width: 2px;
+  --focus-ring-offset: 2px;
+}
+
+/* Dark: the marketing signature, and the default for every surface. */
+:root,
+[data-surface="marketing"] {
+  --surface-page: var(--color-night);
+  --surface-raised: var(--color-surface);
+  --surface-elevated: var(--color-elevated);
+  --surface-header: rgb(8 10 16 / 0.92);
+  --border-default: var(--color-line);
+  --border-subtle: rgb(255 255 255 / 0.06);
+  --fg-primary: var(--color-primary);
+  --fg-muted: var(--color-muted);
+  --fg-accent: var(--color-cobalt);
+  --fg-editorial: #C9ADFF;
+  --state-positive: var(--color-proof);
+  --focus-ring-color: var(--color-cobalt);
+  /* White on cobalt is only 3.2:1, so the primary action uses Night text
+     (6.2:1), which passes WCAG AA at every size. */
+  --action-primary-bg: var(--color-cobalt);
+  --action-primary-bg-hover: #8B9BFF;
+  --action-primary-fg: var(--color-night);
+  --action-secondary-bg: var(--color-surface);
+  --action-secondary-bg-hover: var(--color-elevated);
+  --action-secondary-fg: var(--color-primary);
+  color-scheme: dark;
+}
+
+/* Light: docs only (the marketing surface stays dark on purpose). Used
+   when the reader picks it (data-theme="light" on <html>) or, with no
+   explicit choice, when the system prefers it. */
+[data-theme="light"] [data-surface="docs"],
+[data-surface="docs"][data-theme="light"] {
+  --surface-page: var(--color-paper);
+  --surface-raised: #FBFAF6;
+  --surface-elevated: #FFFFFF;
+  --surface-header: rgb(242 240 233 / 0.92);
+  --border-default: #D9D5C9;
+  --border-subtle: rgb(20 21 26 / 0.08);
+  --fg-primary: var(--color-editorial-ink);
+  /* 7.1:1 on paper. */
+  --fg-muted: #4A5060;
+  /* Cobalt itself is 3:1 on paper, too low for text: a darker cobalt
+     (6.5:1) carries links and focus. */
+  --fg-accent: #3448C0;
+  --fg-editorial: #6A3FC2;
+  --state-positive: #1F7A4A;
+  --focus-ring-color: #3448C0;
+  --action-primary-bg: #3448C0;
+  --action-primary-bg-hover: #2B3CA6;
+  --action-primary-fg: var(--color-paper);
+  --action-secondary-bg: #FFFFFF;
+  --action-secondary-bg-hover: #F7F5EF;
+  --action-secondary-fg: var(--color-editorial-ink);
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme]) [data-surface="docs"] {
+    --surface-page: var(--color-paper);
+    --surface-raised: #FBFAF6;
+    --surface-elevated: #FFFFFF;
+    --surface-header: rgb(242 240 233 / 0.92);
+    --border-default: #D9D5C9;
+    --border-subtle: rgb(20 21 26 / 0.08);
+    --fg-primary: var(--color-editorial-ink);
+    --fg-muted: #4A5060;
+    --fg-accent: #3448C0;
+    --fg-editorial: #6A3FC2;
+    --state-positive: #1F7A4A;
+    --focus-ring-color: #3448C0;
+    --action-primary-bg: #3448C0;
+    --action-primary-bg-hover: #2B3CA6;
+    --action-primary-fg: var(--color-paper);
+    --action-secondary-bg: #FFFFFF;
+    --action-secondary-bg-hover: #F7F5EF;
+    --action-secondary-fg: var(--color-editorial-ink);
+    color-scheme: light;
+  }
+}

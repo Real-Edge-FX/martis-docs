@@ -1,0 +1,323 @@
+/* ============================================================
+   Site shell: skip link, header, mobile menu and footer
+   (src/components/site/SiteShell.tsx and friends). Reads only the
+   semantic tokens from tokens.css and motion.css.
+
+   Nothing here starts hidden or transparent: the server HTML is the
+   final state, and works without JavaScript at every width.
+   ============================================================ */
+
+.site-shell {
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  background: var(--surface-page);
+  color: var(--fg-primary);
+  font-family: var(--font-sans);
+}
+
+.site-shell > main {
+  flex: 1 0 auto;
+}
+
+/* The skip link's target takes focus programmatically; it is not a
+   control, so it gets no ring of its own. */
+.site-shell #main-content:focus {
+  outline: none;
+}
+
+.site-shell :focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: var(--focus-ring-offset);
+}
+
+.site-container {
+  width: 100%;
+  max-width: var(--site-container-max);
+  margin-inline: auto;
+  padding-inline: var(--site-gutter);
+}
+
+/* ---- Skip link ---------------------------------------------------- */
+
+.skip-link {
+  position: absolute;
+  z-index: 60;
+  top: var(--space-2);
+  left: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--site-radius-md);
+  background: var(--action-primary-bg);
+  color: var(--action-primary-fg);
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+/* Off-screen until focused, but always in the accessibility tree. */
+.skip-link:not(:focus) {
+  clip-path: inset(50%);
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+/* ---- Buttons ------------------------------------------------------ */
+
+.site-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  min-height: 40px;
+  padding: 0 var(--space-4);
+  border-radius: var(--site-radius-md);
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1;
+  white-space: nowrap;
+  text-decoration: none;
+  transition: background-color var(--motion-duration-fast) var(--motion-ease-standard);
+}
+
+.site-button--primary {
+  background: var(--action-primary-bg);
+  color: var(--action-primary-fg);
+}
+
+.site-button--primary:hover {
+  background: var(--action-primary-bg-hover);
+}
+
+.site-button--secondary {
+  background: var(--action-secondary-bg);
+  color: var(--action-secondary-fg);
+  box-shadow: inset 0 0 0 1px var(--border-default);
+}
+
+.site-button--secondary:hover {
+  background: var(--action-secondary-bg-hover);
+}
+
+/* ---- Header ------------------------------------------------------- */
+
+/* Sticky, and the containing block for the mobile menu panel. */
+.site-header {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  background: var(--surface-header);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.site-header__bar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  height: var(--site-header-height);
+}
+
+.site-header__brand {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  min-height: var(--site-touch-target);
+  border-radius: var(--site-radius-sm);
+}
+
+.site-header__nav {
+  display: none;
+  flex: 1;
+  justify-content: center;
+}
+
+.site-header__nav ul,
+.site-menu__panel ul,
+.site-footer__nav ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.site-header__nav ul {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.site-header__link {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  min-height: var(--site-touch-target);
+  padding: 0 var(--space-3);
+  border-radius: var(--site-radius-sm);
+  color: var(--fg-muted);
+  font-size: 14px;
+  font-weight: 500;
+  text-decoration: none;
+  transition: color var(--motion-duration-fast) var(--motion-ease-standard);
+}
+
+.site-header__link:hover {
+  color: var(--fg-primary);
+}
+
+.site-header__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-inline-start: auto;
+}
+
+/* ---- Mobile menu (native <details>, enhanced by SiteHeader) -------- */
+
+.site-menu > summary {
+  list-style: none;
+}
+
+.site-menu > summary::-webkit-details-marker {
+  display: none;
+}
+
+.site-menu__toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: var(--site-touch-target);
+  min-height: 40px;
+  padding: 0 var(--space-3);
+  border: 1px solid var(--border-default);
+  border-radius: var(--site-radius-md);
+  color: var(--fg-primary);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  user-select: none;
+  transition: background-color var(--motion-duration-fast) var(--motion-ease-standard);
+}
+
+.site-menu__toggle:hover {
+  background: var(--surface-raised);
+}
+
+.site-menu__icon--close,
+.site-menu[open] .site-menu__icon--open {
+  display: none;
+}
+
+.site-menu[open] .site-menu__icon--close {
+  display: block;
+}
+
+.site-menu__panel {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  max-height: calc(100dvh - var(--site-header-height));
+  overflow-y: auto;
+  padding: var(--space-2) var(--site-gutter) var(--space-6);
+  background: var(--surface-page);
+  border-bottom: 1px solid var(--border-default);
+}
+
+.site-menu__link {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: 52px;
+  border-bottom: 1px solid var(--border-subtle);
+  color: var(--fg-primary);
+  font-size: 17px;
+  font-weight: 500;
+  text-decoration: none;
+}
+
+@media (min-width: 900px) {
+  .site-header__bar {
+    gap: var(--space-8);
+  }
+
+  .site-header__nav {
+    display: flex;
+  }
+
+  .site-header__actions {
+    margin-inline-start: 0;
+  }
+
+  .site-menu {
+    display: none;
+  }
+}
+
+/* ---- Footer ------------------------------------------------------- */
+
+.site-footer {
+  margin-top: var(--space-16);
+  border-top: 1px solid var(--border-subtle);
+  color: var(--fg-muted);
+  font-size: 14px;
+}
+
+.site-footer__inner {
+  display: grid;
+  gap: var(--space-8);
+  padding-block: var(--space-12) var(--space-8);
+}
+
+.site-footer__logo {
+  display: inline-flex;
+  border-radius: var(--site-radius-sm);
+}
+
+.site-footer__tagline {
+  margin: var(--space-4) 0 0;
+  max-width: 34ch;
+  line-height: 1.55;
+}
+
+.site-footer__licence {
+  margin: var(--space-2) 0 0;
+  color: var(--fg-primary);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.02em;
+}
+
+.site-footer__nav ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1) var(--space-6);
+}
+
+.site-footer__link {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--site-touch-target);
+  color: var(--fg-muted);
+  text-decoration: none;
+  transition: color var(--motion-duration-fast) var(--motion-ease-standard);
+}
+
+.site-footer__link:hover {
+  color: var(--fg-primary);
+}
+
+.site-footer__meta {
+  padding-block: var(--space-5);
+  border-top: 1px solid var(--border-subtle);
+  font-family: var(--font-mono);
+  font-size: 12px;
+}
+
+@media (min-width: 768px) {
+  .site-footer__inner {
+    grid-template-columns: 1fr auto;
+    align-items: start;
+  }
+}

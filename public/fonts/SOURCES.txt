@@ -1,0 +1,22 @@
+Self-hosted fonts for getmartis.com. All are licensed under the SIL Open
+Font License 1.1 (full text and copyright notices in OFL.txt). Nothing at
+runtime depends on the npm packages below; the files were copied once.
+
+geist-latin.woff2
+  From the npm package geist@1.7.2 (Vercel),
+  dist/fonts/geist-sans/Geist-Variable.woff2 (variable, wght 100-900),
+  subset to Latin plus arrows with fonttools pyftsubset, all layout
+  features kept:
+  U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA,
+  U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122,
+  U+2190-2199, U+2212, U+2215, U+FEFF, U+FFFD
+
+geist-mono-latin.woff2
+  From geist@1.7.2, dist/fonts/geist-mono/GeistMono-Variable.woff2
+  (variable, wght 100-900), same subset as above.
+
+instrument-serif-latin.woff2
+instrument-serif-latin-italic.woff2
+  From the npm package @fontsource/instrument-serif@5.3.0,
+  files/instrument-serif-latin-400-normal.woff2 and
+  files/instrument-serif-latin-400-italic.woff2, unmodified.

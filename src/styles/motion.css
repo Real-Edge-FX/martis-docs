@@ -1,0 +1,43 @@
+/* ============================================================
+   Motion tokens for the Martis site.
+
+   Motion serves reading and causality: entrances run 180 to 320 ms,
+   product demonstrations up to 700 ms, always on transform/opacity
+   where possible. No looping glow, cursor spotlight or continuous
+   parallax. Content never waits on motion: every element renders in
+   its final state first, and animation is only ever layered on top.
+   ============================================================ */
+
+:root {
+  --motion-duration-fast: 180ms;
+  --motion-duration-base: 240ms;
+  --motion-duration-slow: 320ms;
+  --motion-duration-demo: 700ms;
+
+  /* One easing family, so every transition feels like the same system. */
+  --motion-ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --motion-ease-enter: cubic-bezier(0, 0, 0, 1);
+  --motion-ease-exit: cubic-bezier(0.3, 0, 1, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --motion-duration-fast: 0ms;
+    --motion-duration-base: 0ms;
+    --motion-duration-slow: 0ms;
+    --motion-duration-demo: 0ms;
+  }
+
+  /* Non-essential motion off across the new site shell: whatever is
+     animating jumps to its final state. Scoped to .site-shell so the
+     legacy landing and docs keep their own reduced-motion handling
+     until they move onto the shell. */
+  .site-shell *,
+  .site-shell *::before,
+  .site-shell *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

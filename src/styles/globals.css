@@ -1,4 +1,9 @@
 @import "tailwindcss";
+/* Site design system (Phase 2): fonts, palette and semantic tokens,
+   motion tokens, and the shared site shell. */
+@import "./tokens.css";
+@import "./motion.css";
+@import "./site.css";
 
 /* ============================================================
    Martis docs — design tokens (ink + cobalt) sourced from
@@ -6,11 +11,8 @@
    stays visually aligned with the brand.
    ============================================================ */
 
+/* Font stacks live in tokens.css, next to their self-hosted faces. */
 @theme {
-  --font-sans: "Geist", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
-  --font-mono: "Geist Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
-  --font-serif: "Instrument Serif", ui-serif, serif;
-
   --color-ink-950: #070710;
   --color-ink-900: #0B0B14;
   --color-ink-850: #0F0F1A;
