@@ -38,4 +38,13 @@ export default tseslint.config(
       globals: globals.node,
     },
   },
+  {
+    // playwright.config.ts and the E2E specs run under Node, not the
+    // browser: they need `process`/`__dirname`-style globals, not
+    // `window`/`document`.
+    files: ['playwright.config.ts', 'tests/e2e/**/*.ts'],
+    languageOptions: {
+      globals: globals.node,
+    },
+  },
 )

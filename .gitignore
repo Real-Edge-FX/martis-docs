@@ -9,6 +9,11 @@ tsconfig.tsbuildinfo
 .astro/
 .vitest/
 public/search-index.json
+
+# Playwright (pnpm test:e2e)
+test-results/
+playwright-report/
+blob-report/
 .claude/
 .claude-flow/
 .superpowers/

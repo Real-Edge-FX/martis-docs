@@ -24,6 +24,14 @@
     },
     "types": ["vite/client", "node", "vitest/globals"]
   },
-  "include": ["src", "vite.config.ts", "vite.ssr.config.ts", "vitest.config.ts", "src/types/mdx.d.ts"],
+  "include": [
+    "src",
+    "vite.config.ts",
+    "vite.ssr.config.ts",
+    "vitest.config.ts",
+    "src/types/mdx.d.ts",
+    "playwright.config.ts",
+    "tests"
+  ],
   "exclude": ["node_modules", "dist"]
 }

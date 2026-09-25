@@ -37,7 +37,21 @@ export function Chapter({ chapter, headingLevel = 2, priorityMedia = false, clas
       </div>
 
       <div className="chapter__demo">
-        <pre className="chapter__code" data-language={chapter.code.language}>
+        {/* `overflow-x: auto` (marketing.css) makes this a scrollable region on
+         *  narrow viewports; without a focusable, labelled element a keyboard
+         *  user has no way to reach that horizontal scroll (axe
+         *  "scrollable-region-focusable", serious impact). `tabIndex={0}` plus
+         *  `role="region"` with a per-sample label fixes both: the element is
+         *  deliberately non-interactive otherwise, so the linter's default
+         *  "no-noninteractive-tabindex" guidance does not apply here. */}
+        <pre
+          className="chapter__code"
+          data-language={chapter.code.language}
+          // eslint-disable-next-line jsx-a11y/no-noninteractive-tabindex -- see comment above
+          tabIndex={0}
+          role="region"
+          aria-label={`${chapter.code.filename} code sample`}
+        >
           <span className="chapter__code-filename">{chapter.code.filename}</span>
           <code>{chapter.code.source}</code>
         </pre>

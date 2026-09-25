@@ -17,6 +17,7 @@ function lazyPage<P extends object>(load: () => Promise<{ default: ComponentType
 // budget does not pay for the docs renderer (and vice-versa).
 const Landing = lazyPage(() => import('@/pages/Landing'))
 const Product = lazyPage(() => import('@/pages/Product'))
+const ForAgencies = lazyPage(() => import('@/pages/ForAgencies'))
 const Docs = lazyPage(() => import('@/pages/Docs'))
 const ProvisionalPage = lazyPage(() => import('@/pages/ProvisionalPage'))
 const NotFound = lazyPage(() => import('@/pages/NotFound'))
@@ -76,20 +77,9 @@ function DocsOrNotFound() {
 export const PAGE_ROUTES: PageRoute[] = [
   { path: '/', caseSensitive: true, element: <Landing />, preload: Landing.preload },
   { path: '/product', caseSensitive: true, element: <Product />, preload: Product.preload },
+  { path: '/for-agencies', caseSensitive: true, element: <ForAgencies />, preload: ForAgencies.preload },
   // Provisional pages until Phase 3 ships the real ones: that task
   // replaces each remaining route's element (and preload) here.
-  {
-    path: '/for-agencies',
-    caseSensitive: true,
-    element: (
-      <ProvisionalPage
-        eyebrow="For Laravel agencies"
-        title="Build a baseline once. Keep shipping it."
-        summary="The guide to running client admin work on one Martis baseline is still being written; the installation guide is the place to start."
-      />
-    ),
-    preload: ProvisionalPage.preload,
-  },
   {
     path: '/compare',
     caseSensitive: true,

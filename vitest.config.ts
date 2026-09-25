@@ -30,7 +30,12 @@ export default mergeConfig(
       // test:prerender`. Its name still matches Vitest's default
       // `*.test.*` glob, so exclude the directory or Vitest tries to
       // run it as a suite and fails with "No test suite found".
-      exclude: [...configDefaults.exclude, 'scripts/**'],
+      //
+      // tests/e2e/ holds Playwright specs (`pnpm test:e2e`), whose
+      // `.spec.ts` name matches Vitest's default `*.spec.*` glob too;
+      // `test.describe()` from `@playwright/test` throws outside a
+      // Playwright run, so this directory must stay excluded as well.
+      exclude: [...configDefaults.exclude, 'scripts/**', 'tests/e2e/**'],
     },
   }),
 )
