@@ -456,6 +456,10 @@ html:has(.chapter-nav) {
 .agency-cycle__steps {
   display: grid;
   gap: var(--space-4);
+  /* Each card sizes to its own content from the top. Stretched to the
+     row's height instead, a card's own grid spread its rows over the
+     extra space, so step names sat at different heights across the row. */
+  align-items: start;
   margin: 0;
   padding: 0;
   list-style: none;

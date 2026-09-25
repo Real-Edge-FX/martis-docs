@@ -118,10 +118,64 @@ test.describe('mobile navigation menu', () => {
         await expect(panel.getByRole('link', { name: label })).toBeVisible()
       }
 
+      // Move into the panel first, so Escape has focus to give back.
+      await page.keyboard.press('Tab')
+      await expect(panel.getByRole('link', { name: 'Product' })).toBeFocused()
+
       await page.keyboard.press('Escape')
       await expect(toggle).toHaveAttribute('aria-expanded', 'false')
+      // Escape closes the panel the keyboard was inside (its links unmount):
+      // focus must land back on the control that opened it, not on <body>.
+      await expect(toggle).toBeFocused()
     })
   }
+})
+
+test.describe('mobile navigation menu without JavaScript', () => {
+  test.use({ viewport: { width: 375, height: 844 }, javaScriptEnabled: false })
+
+  for (const route of PAGES) {
+    test(`opens natively (<details>) and exposes every primary link at ${route}`, async ({ page }) => {
+      await page.goto(route)
+      await expect(page.getByRole('heading', { level: 1 })).toBeVisible()
+
+      const menu = page.locator('details.site-menu')
+      const toggle = menu.locator('summary', { hasText: 'Menu' })
+      await expect(toggle).toBeVisible()
+      await expect(menu).not.toHaveAttribute('open', '')
+
+      // No script runs: this is the browser's own disclosure behaviour.
+      await toggle.click()
+      await expect(menu).toHaveAttribute('open', '')
+
+      const panel = menu.getByRole('navigation', { name: 'Primary' })
+      for (const [label, href] of [
+        ['Product', '/product'],
+        ['For Agencies', '/for-agencies'],
+        ['Compare', '/compare'],
+        ['Docs', '/docs'],
+      ] as const) {
+        await expect(panel.getByRole('link', { name: label, exact: true })).toBeVisible()
+        await expect(panel.getByRole('link', { name: label, exact: true })).toHaveAttribute('href', href)
+      }
+      await expect(panel.getByRole('link', { name: 'GitHub' })).toBeVisible()
+
+      await toggle.click()
+      await expect(menu).not.toHaveAttribute('open', '')
+    })
+  }
+})
+
+test.describe('/for-agencies delivery cycle', () => {
+  test.use({ viewport: { width: 1440, height: 900 } })
+
+  test('lines the step names up across the five cycle cards', async ({ page }) => {
+    await page.goto('/for-agencies')
+    const names = page.locator('.agency-cycle__step-name')
+    await expect(names).toHaveCount(5)
+    const tops = await names.evaluateAll((elements) => elements.map((el) => el.getBoundingClientRect().top))
+    for (const top of tops) expect(Math.abs(top - tops[0]), `step name tops ${tops.join(', ')}`).toBeLessThan(1)
+  })
 })
 
 // WCAG 2.2 2.4.11 (Focus Not Obscured, Minimum): a keyboard user moving
