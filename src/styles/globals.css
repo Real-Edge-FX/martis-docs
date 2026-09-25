@@ -602,7 +602,30 @@ button, a { -webkit-tap-highlight-color: transparent; }
 .contact-field [aria-invalid="true"] { border-color: #a64a55; }
 .field-error, .contact-error { margin: 0; color: #913842; font-size: 11px; }
 .contact-consent { display: flex; align-items: flex-start; gap: 10px; color: #5e6068; font-size: 11px; line-height: 1.5; cursor: pointer; }
-.contact-consent input { margin-top: 2px; accent-color: #657cff; }
+.contact-consent input {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 16px;
+  height: 16px;
+  flex: 0 0 16px;
+  margin: 1px 0 0;
+  border: 1px solid #aaa69b;
+  border-radius: 4px;
+  background-color: #f6f4ee;
+  cursor: pointer;
+  transition: border-color 160ms ease, background-color 160ms ease, box-shadow 160ms ease;
+}
+.contact-consent:hover input { border-color: #7d7890; }
+.contact-consent input:checked {
+  border-color: #657cff;
+  background-color: #657cff;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0%200%2010%2010'%3E%3Cpath d='M1.6%205.2%204%207.5%208.5%202.4' fill='none' stroke='white' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: 10px 10px;
+  box-shadow: inset 0 1px rgba(255,255,255,.24);
+}
+.contact-consent input:focus-visible { outline: 2px solid #657cff; outline-offset: 2px; }
 .contact-honeypot { position: absolute; left: -10000px; width: 1px; height: 1px; overflow: hidden; }
 .contact-submit { width: fit-content; border: 0; }
 .contact-submit:disabled { opacity: .55; cursor: wait; }
