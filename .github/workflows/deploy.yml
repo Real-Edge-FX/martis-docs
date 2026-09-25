@@ -1,14 +1,10 @@
-name: Deploy docs
+name: Deploy docs (retired)
 
-# Build the Vite + React + MDX docs site directly on the self-hosted
-# runner at /home/martis/martis-docs and rsync `dist/` into the path
-# Caddy serves on port 3000. The external reverse proxy (Nginx Proxy
-# Manager) maps that to https://martis-docs.realedgefx.com. No extra
-# deploy step is needed: building in place IS the deploy.
+# RETIRED. Production is getmartis.com on Hostinger and deploys use
+# scripts/deploy.sh. This workflow remains dispatch-only as a record
+# of the previous Caddy deployment and must not run on pushes.
 
 on:
-  push:
-    branches: [main]
   workflow_dispatch:
 
 # Only one deploy at a time; queued runs cancel any in-flight build
