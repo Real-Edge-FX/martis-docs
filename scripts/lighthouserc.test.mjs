@@ -12,7 +12,24 @@ import { createRequire } from 'node:module'
 import test from 'node:test'
 
 const require = createRequire(import.meta.url)
-const config = require('../lighthouserc.cjs')
+const CONFIG_PATH = require.resolve('../lighthouserc.cjs')
+
+/** Loads a fresh copy of the config with `CI` set or unset, restoring it after. */
+function loadConfig(ci) {
+  const previous = process.env.CI
+  if (ci) process.env.CI = 'true'
+  else delete process.env.CI
+  try {
+    delete require.cache[CONFIG_PATH]
+    return require(CONFIG_PATH)
+  } finally {
+    if (previous === undefined) delete process.env.CI
+    else process.env.CI = previous
+    delete require.cache[CONFIG_PATH]
+  }
+}
+
+const config = loadConfig(false)
 const assertions = config.ci.assert.assertions
 
 const BUDGETED = [
@@ -43,4 +60,12 @@ test('keeps the spec thresholds', () => {
 
 test('collects enough runs for a median', () => {
   assert.ok(config.ci.collect.numberOfRuns >= 3 && config.ci.collect.numberOfRuns % 2 === 1)
+})
+
+test('launches Chrome without its sandbox on CI only', () => {
+  // ubuntu-24.04 runners block the unprivileged user namespaces Chromium's
+  // sandbox needs ("No usable sandbox!"); a local run keeps the sandbox.
+  assert.equal(loadConfig(true).ci.collect.settings.chromeFlags, '--no-sandbox')
+  assert.equal(loadConfig(false).ci.collect.settings.chromeFlags, undefined)
+  assert.equal(loadConfig(true).ci.collect.settings.throttlingMethod, 'devtools')
 })

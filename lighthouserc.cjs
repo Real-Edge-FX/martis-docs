@@ -58,7 +58,18 @@ module.exports = {
       // trace — LCP measures ~1.6s on every route with it. This is a
       // measurement-method fix, not a loosened budget: the 2500ms budget
       // and the mobile throttling profile are unchanged.
-      settings: { throttlingMethod: 'devtools' },
+      //
+      // `chromeFlags: '--no-sandbox'` only on CI: GitHub's ubuntu-24.04
+      // runners block unprivileged user namespaces through AppArmor, so
+      // Chromium's sandbox cannot start there ("No usable sandbox!").
+      // Playwright already launches the same Chromium (CHROME_PATH in
+      // ci.yml) with --no-sandbox; LHCI's chrome-launcher does not. It
+      // only loads this site's own static build, and locally the sandbox
+      // stays on.
+      settings: {
+        throttlingMethod: 'devtools',
+        ...(process.env.CI ? { chromeFlags: '--no-sandbox' } : {}),
+      },
     },
     assert: {
       assertions: {
