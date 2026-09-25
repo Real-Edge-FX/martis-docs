@@ -69,13 +69,13 @@ martis-docs/
 │   ├── components/
 │   │   ├── docs/             # sidebar, TOC, breadcrumbs, pagination
 │   │   ├── icons/            # 22 stroke icons
-│   │   ├── landing/          # hero, features, code panel, footer, top bar
+│   │   ├── site/             # site shell (header, nav, footer) of the redesign
 │   │   ├── CmdK.tsx          # cmd+K palette
 │   │   ├── CodeBlock.tsx     # filename chrome + naive PHP highlighter
 │   │   ├── LoadingScreen.tsx
 │   │   └── Logo.tsx          # cube SVG with optional wordmark
 │   ├── content/              # MDX docs (synced + hand-authored)
-│   ├── data/landing.ts       # marketing copy, stats, code samples, version
+│   ├── data/site.ts          # RELEASE (version, test count), product copy
 │   ├── lib/
 │   │   ├── docs-tree.ts      # /docs nav + prev/next helpers
 │   │   ├── mdx-loader.ts     # glob import of src/content/**/*.mdx
