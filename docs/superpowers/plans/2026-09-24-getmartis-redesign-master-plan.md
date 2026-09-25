@@ -167,3 +167,15 @@ Decisões tomadas com o utilizador na revisão prévia dos planos contra o códi
   - `Cache-Control` imutável só em `/assets/`.
   O `deploy.sh` passa a sondar também o `Cache-Control` de um ficheiro de `/assets/`. As imagens `/social/*.png` geradas substituem o `og-cover.png` partilhado. O smoke (`checkSiteImages`) já exige que existam.
 - **Repositório:** o CI deve passar a ser required status check em `release/**` e `main`. É uma definição do GitHub e só o utilizador a pode ativar.
+
+### Gate 2 (25 de setembro de 2026)
+
+O utilizador aprovou a revisão visual da Fase 2 tal como entregue:
+- as 12 capturas de referência (darwin, só locais);
+- o hero com a captura da v1.2.1 até à recaptura da Fase 4;
+- a primeira dobra a 1024×768;
+- `/for-agencies` sem imagem de produto, com o comando de instalação repetido e sem guia de avaliação dedicado;
+- os cartões dos capítulos sem imagem própria;
+- o copy em inglês americano.
+
+A recaptura da Fase 4 substitui as capturas antigas e as repetidas.
