@@ -1,0 +1,228 @@
+/* ============================================================
+   Conversion and proof primitives (design spec 6.2, 6.5, 6.7, 7):
+   InstallCommand, ProofStrip, ProductFrame, Chapter and MediaFigure
+   (src/components/site/InstallCommand.tsx, src/components/marketing/).
+
+   Reads only the semantic tokens from tokens.css and motion.css.
+   Nothing here starts hidden or transparent: the server HTML is the
+   final state, and every primitive works without JavaScript.
+   ============================================================ */
+
+/* ---- Install command ----------------------------------------------- */
+
+.install-command {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--border-default);
+  border-radius: var(--site-radius-md);
+  background: var(--surface-raised);
+  font-family: var(--font-mono);
+  font-size: 13px;
+}
+
+.install-command__prompt {
+  color: var(--fg-muted);
+}
+
+.install-command__code {
+  color: var(--fg-primary);
+  white-space: pre;
+  user-select: all;
+}
+
+.install-command__copy {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--site-touch-target);
+  height: var(--site-touch-target);
+  margin: calc(var(--space-2) * -1);
+  border: 1px solid transparent;
+  border-radius: var(--site-radius-sm);
+  color: var(--fg-muted);
+  cursor: pointer;
+  transition: color var(--motion-duration-fast) var(--motion-ease-standard);
+}
+
+.install-command__copy:hover {
+  color: var(--fg-primary);
+}
+
+/* ---- Proof strip ----------------------------------------------------- */
+
+.proof-strip {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  margin: 0;
+  border-top: 1px solid var(--border-subtle);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.proof-strip__item {
+  padding: var(--space-5) var(--space-4);
+  text-align: center;
+  border-left: 1px solid var(--border-subtle);
+}
+
+.proof-strip__item:first-child {
+  border-left: none;
+}
+
+.proof-strip__label {
+  margin: 0 0 var(--space-1);
+  color: var(--fg-muted);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.proof-strip__value {
+  font-size: 20px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+.proof-strip__detail {
+  color: var(--fg-muted);
+  font-size: 12px;
+}
+
+@media (min-width: 640px) {
+  .proof-strip {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+/* ---- Product frame ---------------------------------------------------- */
+
+.product-frame {
+  margin: 0;
+  overflow: hidden;
+  border: 1px solid var(--border-default);
+  border-radius: var(--site-radius-lg);
+  background: var(--surface-raised);
+}
+
+.product-frame__chrome {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  height: 28px;
+  padding-inline: var(--space-3);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.product-frame__dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--border-control);
+}
+
+.product-frame__image {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.product-frame__version {
+  padding: var(--space-2) var(--space-3);
+  color: var(--fg-muted);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  border-top: 1px solid var(--border-subtle);
+}
+
+/* ---- Media figure ------------------------------------------------------ */
+
+.media-figure {
+  margin: 0;
+}
+
+.media-figure__image {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: var(--site-radius-md);
+  border: 1px solid var(--border-default);
+}
+
+.media-figure__caption {
+  margin-top: var(--space-2);
+  color: var(--fg-muted);
+  font-size: 13px;
+}
+
+/* ---- Chapter ------------------------------------------------------------ */
+
+.chapter {
+  display: grid;
+  gap: var(--space-8);
+  padding-block: var(--space-12);
+}
+
+.chapter__title {
+  margin: 0 0 var(--space-3);
+  font-size: 28px;
+  letter-spacing: -0.02em;
+}
+
+.chapter__outcome {
+  margin: 0 0 var(--space-3);
+  font-size: 16px;
+  line-height: 1.6;
+}
+
+.chapter__scenario {
+  margin: 0 0 var(--space-4);
+  color: var(--fg-muted);
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.chapter__link {
+  color: var(--fg-accent);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.chapter__link:hover {
+  text-decoration: underline;
+}
+
+.chapter__demo {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.chapter__code {
+  margin: 0;
+  padding: var(--space-4);
+  overflow-x: auto;
+  border: 1px solid var(--border-default);
+  border-radius: var(--site-radius-md);
+  background: var(--surface-raised);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.chapter__code-filename {
+  display: block;
+  margin-bottom: var(--space-3);
+  color: var(--fg-muted);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+@media (min-width: 900px) {
+  .chapter {
+    grid-template-columns: 1fr 1fr;
+    align-items: center;
+  }
+}

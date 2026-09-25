@@ -18,6 +18,13 @@ import {
 // the loader directly instead of importing them from this module.
 const release = loadReleaseManifest()
 
+// The single source of truth for the installable command shown in the
+// hero, the final CTA and anywhere else the redesign's
+// `InstallCommand` component (src/components/site/InstallCommand.tsx)
+// renders (design spec 6.1, 6.9). Kept here, not inline in JSX, so a
+// future change to the recommended install command is a one-line edit.
+export const INSTALL_COMMAND = 'composer require martis/martis'
+
 export const STATS: { n: string; l: string }[] = [
   { n: '50',                            l: 'Field types' },
   { n: '12',                            l: 'Relationship kinds' },
