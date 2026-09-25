@@ -10,6 +10,7 @@ const nav = [
   { label: 'For Agencies', to: '/for-agencies' },
   { label: 'Compare', to: '/compare' },
   { label: 'Docs', to: '/docs' },
+  { label: 'Contact', to: '/contact' },
 ]
 
 export function SiteShell({ children, surface = 'marketing' }: { children: ReactNode; surface?: 'marketing' | 'docs' }) {
@@ -75,7 +76,7 @@ function SiteFooter() {
           <p>The open-source admin foundation built for repeatable Laravel delivery.</p>
           <span>MIT licensed · No paid tier</span>
         </div>
-        <FooterColumn title="Product" links={[["Product", "/product"], ["For Agencies", "/for-agencies"], ["Compare", "/compare"], ["Changelog", "/changelog"]]} />
+        <FooterColumn title="Product" links={[["Product", "/product"], ["For Agencies", "/for-agencies"], ["Compare", "/compare"], ["Changelog", "/changelog"], ["Contact", "/contact"]]} />
         <FooterColumn title="Learn" links={[["Installation", "/docs/getting-started/installation"], ["Quick Start", "/docs/getting-started/quick-start"], ["Resources", "/docs/core/resources"], ["Theming", "/docs/customization/theming"]]} />
         <div className="site-footer__column"><p>Open source</p><a href="https://github.com/Real-Edge-FX/martis-package" target="_blank" rel="noreferrer">GitHub</a><a href="https://github.com/Real-Edge-FX/martis-package/blob/main/LICENSE" target="_blank" rel="noreferrer">MIT License</a></div>
       </div>

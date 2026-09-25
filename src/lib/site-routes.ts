@@ -70,6 +70,13 @@ const ROUTE_META: RouteMeta[] = [
     canonical: `${SITE_URL}/changelog`,
     image: socialImage('changelog'),
   },
+  {
+    path: '/contact',
+    title: 'Contact · Martis',
+    description: 'Talk to Martis about a repeatable Laravel delivery foundation for your agency.',
+    canonical: `${SITE_URL}/contact`,
+    image: socialImage('agencies'),
+  },
 ]
 
 const NOT_FOUND_META: RouteMeta = {
