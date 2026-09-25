@@ -104,9 +104,9 @@ export function InstallCommand({ command, className }: InstallCommandProps) {
       {/* Visible next to the button so a sighted user whose clipboard
        *  call fails (or succeeds) sees the outcome too, not just hears
        *  it. `role="status"`/`aria-live="polite"` still announce it to
-       *  assistive tech from this same, visible element. The CSS gives
-       *  it a reserved min-width (the longest status string) so its
-       *  text appearing does not shift the row. */}
+       *  assistive tech from this same, visible element. The CSS keeps
+       *  it on its own line under the command, collapsed while empty, so
+       *  the block fits a phone-width column (marketing.css). */}
       <span className="install-command__status" role="status" aria-live="polite">
         {STATUS_TEXT[status]}
       </span>

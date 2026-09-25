@@ -256,3 +256,37 @@ test.describe('focus not obscured by sticky bars (WCAG 2.4.11)', () => {
     }
   }
 })
+
+// WCAG 1.4.10 (Reflow): at 320 CSS px wide the install command must stay
+// readable without horizontal scrolling. The page's `overflow-x: clip`
+// hides an overflowing row instead of scrolling it, so the page-level
+// overflow check above cannot see it: measure each block itself.
+test.describe('install command reflow', () => {
+  for (const width of [320, 375] as const) {
+    test.describe(`${width} px`, () => {
+      test.use({ viewport: { width, height: 844 } })
+
+      for (const route of PAGES) {
+        test(`keeps every install command inside the viewport at ${route}`, async ({ page }) => {
+          await page.goto(route)
+          const blocks = page.locator('.install-command')
+          expect(await blocks.count()).toBeGreaterThan(0)
+          const boxes = await blocks.evaluateAll((elements) =>
+            elements.map((el) => {
+              const rect = el.getBoundingClientRect()
+              const code = el.querySelector('code')!.getBoundingClientRect()
+              return { left: rect.left, right: rect.right, codeLeft: code.left, codeRight: code.right }
+            }),
+          )
+          const viewportWidth = page.viewportSize()!.width
+          for (const box of boxes) {
+            expect(box.left, JSON.stringify(box)).toBeGreaterThanOrEqual(0)
+            expect(box.right, JSON.stringify(box)).toBeLessThanOrEqual(viewportWidth)
+            expect(box.codeLeft, JSON.stringify(box)).toBeGreaterThanOrEqual(0)
+            expect(box.codeRight, JSON.stringify(box)).toBeLessThanOrEqual(viewportWidth)
+          }
+        })
+      }
+    })
+  }
+})

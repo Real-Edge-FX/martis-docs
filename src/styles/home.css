@@ -225,47 +225,6 @@
   }
 }
 
-/* ---- Install command placement ---------------------------------------- */
-
-/* The command block never outgrows its column, and never scrolls: on a
- * narrow column the command wraps at its spaces instead of overflowing
- * (it stays one selectable, copyable string).
- *
- * The copy status is the role="status" live region, so it is never
- * `display: none` (that drops it from the accessibility tree and its
- * announcement can be lost). While empty it collapses to zero height on
- * its own line; when it has text it takes that line under the command.
- * That only happens right after a click, which layout-shift metrics
- * exclude, and it keeps the idle block compact instead of reserving a
- * blank status column beside the button. */
-.home .install-command {
-  max-width: 100%;
-  flex-wrap: wrap;
-  row-gap: 0;
-}
-
-.home .install-command__code {
-  min-width: 0;
-  white-space: normal;
-  overflow-wrap: anywhere;
-}
-
-.home .install-command__status {
-  flex-basis: 100%;
-  min-width: 0;
-  white-space: normal;
-  text-align: start;
-}
-
-.home .install-command__status:empty {
-  height: 0;
-  overflow: hidden;
-}
-
-.home .install-command__status:not(:empty) {
-  margin-top: var(--space-2);
-}
-
 /* ---- Proof strip ------------------------------------------------------- */
 
 .home-proof {

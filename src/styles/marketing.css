@@ -28,7 +28,6 @@
 
 .install-command__code {
   color: var(--fg-primary);
-  white-space: pre;
   user-select: all;
 }
 
@@ -54,14 +53,47 @@
   color: var(--state-positive);
 }
 
-/* Reserved at the longest status string's width ("Select and copy the
- * command", in the container's own monospace font) so its text
- * appearing/disappearing never shifts the row. */
+/* The block never outgrows its column, and never scrolls: on a narrow
+ * column the command wraps at its spaces instead of overflowing (it stays
+ * one selectable, copyable string), on every page, down to 320 px (WCAG
+ * 1.4.10, tests/e2e/marketing.spec.ts "install command reflow").
+ *
+ * The copy status is the role="status" live region, so it is never
+ * `display: none` (that drops it from the accessibility tree and its
+ * announcement can be lost). While empty it collapses to zero height on
+ * its own line; when it has text it takes that line under the command.
+ * That only happens right after a click, which layout-shift metrics
+ * exclude, and it keeps the idle block compact instead of reserving a
+ * blank status column beside the button (a reserved column is what made
+ * the row wider than a phone viewport). */
+.install-command {
+  max-width: 100%;
+  flex-wrap: wrap;
+  row-gap: 0;
+}
+
+.install-command__code {
+  min-width: 0;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
 .install-command__status {
-  min-width: 29ch;
+  flex-basis: 100%;
+  min-width: 0;
   color: var(--fg-muted);
   font-size: 12px;
-  white-space: nowrap;
+  white-space: normal;
+  text-align: start;
+}
+
+.install-command__status:empty {
+  height: 0;
+  overflow: hidden;
+}
+
+.install-command__status:not(:empty) {
+  margin-top: var(--space-2);
 }
 
 /* ---- Proof strip ----------------------------------------------------- */
