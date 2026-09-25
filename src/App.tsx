@@ -4,6 +4,7 @@ import { LoadingScreen } from '@/components/LoadingScreen'
 import { CmdKProvider } from '@/lib/cmdk-context'
 import { ThemeProvider } from '@/lib/theme'
 import { DocumentMeta } from '@/components/site/DocumentMeta'
+import { ScrollManager } from '@/components/site/ScrollManager'
 
 // Lazy-load the two top-level surfaces so the landing's CSS / JS
 // budget does not pay for the docs renderer (and vice-versa). Both
@@ -22,6 +23,7 @@ export function App() {
     <ThemeProvider>
       <CmdKProvider>
         <DocumentMeta />
+        <ScrollManager />
         <Suspense fallback={<LoadingScreen />}>
           <Routes>
             <Route path="/" element={<Landing />} />
