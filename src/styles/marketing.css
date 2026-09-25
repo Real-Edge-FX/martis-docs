@@ -50,6 +50,20 @@
   color: var(--fg-primary);
 }
 
+.install-command__copy[data-copied] {
+  color: var(--state-positive);
+}
+
+/* Reserved at the longest status string's width ("Select and copy the
+ * command", in the container's own monospace font) so its text
+ * appearing/disappearing never shifts the row. */
+.install-command__status {
+  min-width: 29ch;
+  color: var(--fg-muted);
+  font-size: 12px;
+  white-space: nowrap;
+}
+
 /* ---- Proof strip ----------------------------------------------------- */
 
 .proof-strip {

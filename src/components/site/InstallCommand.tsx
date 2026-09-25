@@ -1,9 +1,17 @@
 import { useRef, useState, type MouseEvent } from 'react'
 import { Icons } from '@/components/icons'
 
+type CopyStatus = 'idle' | 'copied' | 'fallback'
+
 const COPY_LABEL = 'Copy install command'
 const COPIED_STATUS = 'Copied'
 const FALLBACK_STATUS = 'Select and copy the command'
+
+const STATUS_TEXT: Record<CopyStatus, string> = {
+  idle: '',
+  copied: COPIED_STATUS,
+  fallback: FALLBACK_STATUS,
+}
 
 interface InstallCommandProps {
   /** The shell command to display and copy, e.g. `composer require martis/martis`. */
@@ -25,7 +33,7 @@ interface InstallCommandProps {
  */
 export function InstallCommand({ command, className }: InstallCommandProps) {
   const codeRef = useRef<HTMLElement>(null)
-  const [status, setStatus] = useState('')
+  const [status, setStatus] = useState<CopyStatus>('idle')
 
   const selectCommand = () => {
     const node = codeRef.current
@@ -41,12 +49,14 @@ export function InstallCommand({ command, className }: InstallCommandProps) {
     event.preventDefault()
     try {
       await navigator.clipboard.writeText(command)
-      setStatus(COPIED_STATUS)
+      setStatus('copied')
     } catch {
       selectCommand()
-      setStatus(FALLBACK_STATUS)
+      setStatus('fallback')
     }
   }
+
+  const copied = status === 'copied'
 
   return (
     <div className={['install-command', className].filter(Boolean).join(' ')}>
@@ -56,12 +66,23 @@ export function InstallCommand({ command, className }: InstallCommandProps) {
       <code ref={codeRef} className="install-command__code">
         {command}
       </code>
-      <button type="button" className="install-command__copy" onClick={handleCopy}>
-        <Icons.Copy aria-hidden="true" size={14} />
-        <span className="sr-only">{COPY_LABEL}</span>
+      <button
+        type="button"
+        className="install-command__copy"
+        onClick={handleCopy}
+        aria-label={copied ? COPIED_STATUS : COPY_LABEL}
+        data-copied={copied || undefined}
+      >
+        {copied ? <Icons.Check aria-hidden="true" size={14} /> : <Icons.Copy aria-hidden="true" size={14} />}
       </button>
-      <span className="sr-only" role="status" aria-live="polite">
-        {status}
+      {/* Visible next to the button so a sighted user whose clipboard
+       *  call fails (or succeeds) sees the outcome too, not just hears
+       *  it. `role="status"`/`aria-live="polite"` still announce it to
+       *  assistive tech from this same, visible element. The CSS gives
+       *  it a reserved min-width (the longest status string) so its
+       *  text appearing does not shift the row. */}
+      <span className="install-command__status" role="status" aria-live="polite">
+        {STATUS_TEXT[status]}
       </span>
     </div>
   )

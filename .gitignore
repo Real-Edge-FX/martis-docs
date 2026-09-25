@@ -7,6 +7,7 @@ dist-ssr/
 # build artefacts
 tsconfig.tsbuildinfo
 .astro/
+.vitest/
 public/search-index.json
 .claude/
 .claude-flow/

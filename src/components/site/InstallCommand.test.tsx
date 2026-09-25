@@ -27,6 +27,19 @@ describe('InstallCommand', () => {
     expect(screen.getByText('Select and copy the command')).toBeInTheDocument()
   })
 
+  it('shows the fallback status visibly for a sighted user, not only announced to assistive tech', async () => {
+    const writeText = vi.fn().mockRejectedValue(new Error('blocked'))
+    Object.assign(navigator, { clipboard: { writeText } })
+    render(<InstallCommand command="composer require martis/martis" />)
+    await userEvent.click(screen.getByRole('button', { name: 'Copy install command' }))
+    const status = screen.getByText('Select and copy the command')
+    // sr-only would hide it from sighted users while keeping it in the
+    // accessibility tree; the fallback must be visible next to the
+    // button, not just announced.
+    expect(status).not.toHaveClass('sr-only')
+    expect(status).toHaveAttribute('aria-live', 'polite')
+  })
+
   it('exposes the status announcement politely for assistive tech', () => {
     render(<InstallCommand command="composer require martis/martis" />)
     const status = screen.getByRole('status', { hidden: true })
