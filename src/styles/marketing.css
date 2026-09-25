@@ -173,10 +173,26 @@
 
 /* ---- Chapter ------------------------------------------------------------ */
 
+:root {
+  /* Same box model as `.chapter-nav__list` below (padding-block
+     `--space-3` around a `--site-touch-target` link), kept as its own
+     token instead of a repeated calc so the two never drift apart. */
+  --chapter-nav-height: calc(var(--site-touch-target) + (var(--space-3) * 2));
+}
+
 .chapter {
   display: grid;
   gap: var(--space-8);
   padding-block: var(--space-12);
+  /* The fragment target for both ChapterNav's own links and the
+     homepage's `/product#<id>` deep links is this `<article id>`
+     itself (globals.css's heading `scroll-margin-top` rule only
+     matches `h1`-`h6`). Without it, the sticky site header
+     (`--site-header-height`) plus the sticky ChapterNav
+     (`--chapter-nav-height`) hide the chapter's H2 after navigating
+     here. Derived from those two tokens, not a magic number, so it
+     tracks either one changing. */
+  scroll-margin-top: calc(var(--site-header-height) + var(--chapter-nav-height));
 }
 
 .chapter__title {
