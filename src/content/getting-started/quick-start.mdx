@@ -8,7 +8,7 @@ sourcePath: "martis-package/docs/quick-start.md"
 
 Build your first Martis resource in five minutes. By the end you will have a fully working CRUD surface for a `Client` model with a searchable name, a sortable creation date, a coloured status badge, and one bulk action.
 
-This guide assumes Martis is already installed. If not, see [Installation](installation-guide.md).
+This guide assumes Martis is already installed. If not, see [Installation](/docs/getting-started/installation).
 
 ## 1. Generate the model and migration
 
@@ -104,9 +104,9 @@ class ClientResource extends Resource
 
 ## 3. That's it. Resources are auto-discovered.
 
-Martis scans the directory configured in `config/martis.php` (`resources_path`, default `app_path('Martis')`) recursively on every boot and registers every class that extends `Martis\Resource`. There is no `'resources' => [...]` array to maintain. As soon as the file above is saved on disk, the resource is live.
+Martis scans the directory configured in `config/martis.php` (`resources_path`, default `app_path('Martis')`) recursively on every boot and registers every class that extends `Martis\Resource`. The namespace of that directory comes from Composer's PSR-4 map (`App\Martis` for the default layout; override with `resources_namespace`). There is no `'resources' => [...]` array to maintain. As soon as the file above is saved on disk, the resource is live.
 
-If your editor created the file outside `app/Martis/` you have two options: move it back into the configured path, or change `resources_path` in the config to point wherever you keep your resource classes.
+If your editor created the file outside `app/Martis/` you have two options: move it back into the configured path, or change `resources_path` in the config to point wherever you keep your resource classes (any autoloaded directory works; set `resources_namespace` only when it is not autoloaded).
 
 ## 4. Visit the panel
 
@@ -171,8 +171,8 @@ Reload the catalog. Select rows, open the action menu, archive in bulk.
 
 ## What's next
 
-- [Fields](fields.md) — the full catalogue of 50 field types.
-- [Relationships](relationships.md) — wire up `BelongsTo`, `HasMany`, `MorphToMany`, and the rest.
-- [Filters](filters.md) and [lenses](lenses.md) — sticky views and alternative queries.
-- [Metrics & dashboards](metrics.md) — value, trend, partition, progress, activity feed cards.
-- [Override system](overrides.md) — replace any view, field, or layout without forking.
+- [Fields](/docs/core/fields) — the full catalogue of 50 field types.
+- [Relationships](/docs/core/relationships) — wire up `BelongsTo`, `HasMany`, `MorphToMany`, and the rest.
+- [Filters](/docs/core/filters) and [lenses](/docs/core/lenses) — sticky views and alternative queries.
+- [Metrics & dashboards](/docs/core/metrics) — value, trend, partition, progress, activity feed cards.
+- [Override system](/docs/customization/overrides) — replace any view, field, or layout without forking.

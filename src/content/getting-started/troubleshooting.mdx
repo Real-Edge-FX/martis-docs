@@ -60,13 +60,23 @@ The package ships precompiled assets under `public/vendor/martis`. Republish the
 php artisan martis:publish-assets
 ```
 
-This wipes `public/vendor/martis/` first so stale Vite-hashed chunks from previous package versions don't pile up across upgrades. Then clear caches:
+This wipes `public/vendor/martis/` first so stale Vite-hashed chunks from previous package versions don't pile up across upgrades, does a deterministic full-tree copy of the package's compiled assets, and then **verifies the result** — every file the published `manifest.json` references (the app entry bundle, its CSS, and every chunk) must exist in the destination. Then clear caches:
 
 ```bash
 php artisan optimize:clear
 ```
 
-> **Note:** the legacy `php artisan vendor:publish --tag=martis-assets --force` still works but is a merge-style copy — orphaned chunks accumulate at every `composer update`. The `martis:publish-assets` command (and `martis:vendor-publish --assets`) is the canonical entry point and avoids the disk bloat. Pass `--no-wipe` to opt back into the merge behaviour if you have a specific reason to.
+> **Note:** the legacy `php artisan vendor:publish --tag=martis-assets --force` still works but is a merge-style copy — orphaned chunks accumulate at every `composer update`, and it never checks that the full set landed. The `martis:publish-assets` command (and `martis:vendor-publish --assets`, and `martis:install`) is the canonical entry point: it avoids the disk bloat and guarantees a complete set. Pass `--no-wipe` to opt back into the merge behaviour if you have a specific reason to.
+
+### Black screen (admin loads but nothing renders)
+
+A blank/black admin with a `404` on `assets/app-<hash>.js` in the browser console means the app entry bundle is missing from `public/vendor/martis/` — the published asset set is incomplete. Re-run the canonical command:
+
+```bash
+php artisan martis:publish-assets
+```
+
+Since **v1.29.1** this command fails **loudly** on an incomplete copy: instead of reporting success it prints the count of missing files and exits non-zero, so a partial publish (an interrupted run, a full disk, restrictive filesystem permissions) is caught at publish time rather than surfacing as a black screen. If it does report missing files, check disk space and the writability of `public/vendor/martis/`, then re-run.
 
 If you sit behind a reverse proxy (Nginx Proxy Manager, Cloudflare, custom Nginx), set `ASSET_URL` in `.env` to the public origin:
 
@@ -133,7 +143,7 @@ AZURE_REDIRECT_URI=https://your-app.example.com/martis/sso/azure/callback
 AZURE_RESOURCE_ID=...
 ```
 
-See [SSO](sso.md) for the full provider matrix and the four canonical recipes.
+See [SSO](/docs/auth/sso) for the full provider matrix and the four canonical recipes.
 
 ### Forgot-password email returns 503 instead of sending
 
@@ -162,17 +172,29 @@ The next login will treat 2FA as un-enrolled. Re-enable it from the user's profi
 
 ### "Resource not found" on a slug that exists
 
-Resources are auto-discovered from the directory configured in `config/martis.php` (`resources_path`, default `app_path('Martis')`). There is no `resources` array to maintain. If a resource exists on disk but Martis cannot find it:
+Resources are auto-discovered from the directory configured in `config/martis.php` (`resources_path`, default `app_path('Martis')`) and mapped to classes under `resources_namespace` (default `null`: derived from Composer's PSR-4 map, falling back to `App\Martis`). There is no `resources` array to maintain. If a resource exists on disk but Martis cannot find it:
 
 1. Check it lives under the configured path. Move it back into `app/Martis/`, or change `resources_path` in the config.
-2. Check the class autoloads:
+2. Check the namespace matches the path. With `resources_namespace` left `null`, the file at `app/Martis/Customer/Resources/OrganizationResource.php` must declare `App\Martis\Customer\Resources` (whatever Composer's PSR-4 map says for that directory). If the directory is not autoloaded, set `resources_namespace` explicitly to the namespace the files declare. Before v1.36.0 the namespace was always `App\Martis`, so a `resources_path` outside `app/Martis` found nothing. See [Configuration → Resources path and namespace](/docs/reference/configuration#resources-path-and-namespace).
+3. Check the class autoloads:
    ```bash
    composer dump-autoload
    ```
-3. Clear caches (the resource registry is rebuilt on every boot, but a stale opcache/config cache can mask it):
+4. Clear caches (the resource registry is rebuilt on every boot, but a stale opcache/config cache can mask it):
    ```bash
    php artisan optimize:clear
    ```
+
+### Index shows "No records found." (or a badge is missing) while `laravel.log` shows an exception
+
+Before v1.32.4 two failures were silent in the UI: a failed index fetch (`GET /api/resources/{resource}` returning 5xx) was rendered as the empty state after the retries, and a `menuCount()` that threw simply dropped its sidebar badge. Both typically share one root cause: a query that throws for some users (a tenant scope with no tenant resolved, a missing table, a permission gate inside a global scope).
+
+Since v1.32.4:
+
+1. The index, lens pages and relationship panels render an inline error state with the HTTP status, the server message and a **Retry** button instead of "No records found.", and fire an error toast. "No records found." only ever describes a successful empty result.
+2. The badge failure is reported through `report()` as `Martis\Exceptions\MenuCountFailedException` (naming the resource / tool class), and with dev tools on the badges payload lists the broken counters under `_failed`. See [Menus → When a badge is missing](/docs/core/menus#when-a-badge-is-missing).
+
+If you still see the empty state on an older version, check `storage/logs/laravel.log` for the exception thrown by the resource's `indexQuery()` / global scopes, and fix the query at its source (or stop offering the resource to that user via `authorizedToViewAny()`).
 
 ### Sortable column has no effect
 
@@ -180,17 +202,16 @@ Resources are auto-discovered from the directory configured in `config/martis.ph
 
 ### Searchable on a relationship column returns 0 results
 
-`->searchable()` defaults to `LIKE %term%` against the field's column on the resource's table. To search a related model's column (for example, the owner's `name`), use a relationship field with `relationSearchable()`:
+`->searchable()` defaults to `LIKE %term%` against the field's column on the resource's table. To search a related model's column (for example, the owner's `name`), list it as a dot path in the resource's `searchableRelations()`: the index search and the global search add a `whereHas` for it.
 
 ```php
-use Martis\Fields\BelongsTo;
-
-BelongsTo::make('Owner', 'owner', \App\Martis\UserResource::class)
-    ->searchable()
-    ->relationSearchable(),
+public static function searchableRelations(): array
+{
+    return ['owner.name'];
+}
 ```
 
-`relationSearchable()` is shipped on `BelongsTo`, `MorphTo`, `HasMany`, `MorphMany`, and `Tag`. It tells the global search to issue a `whereHas` against the related table's title attribute (or the columns you explicitly opt in via the resource's `searchableRelations()`). See [Fields](fields.md#searchable) for the full search behaviour.
+See [Global Search → Searchable detail relations](/docs/core/global-search#-searchable-detail-relations--searchablerelations). `relationSearchable()` on a relationship field searches nothing on its own: it shows or hides the search box of that field's panel (`HasMany`, `MorphMany`, `BelongsToMany`, `MorphToMany`) or, since v1.38.0, of its picker (`BelongsTo`, `MorphTo`, `Tag`).
 
 ## Theme and components
 
@@ -212,7 +233,7 @@ Almost always a key mismatch between the PHP layer (which declares "I want a com
 php artisan martis:list-overrides
 ```
 
-Confirm that every key in the output is registered in your `resources/js/martis-extensions/index.ts`. The `componentRegistry` is exported as a module from `@/lib/componentRegistry` — there is no `window.componentRegistry`, so to inspect at runtime add a temporary `import { componentRegistry } from '@/lib/componentRegistry'; (window as any).componentRegistry = componentRegistry;` to your extension entry, rebuild, and read `componentRegistry.keys()` from devtools.
+Confirm that every key in the output is registered by your extension: the auto-discovery entry registers each file of the four buckets, and `resources/js/martis-extensions/index.ts` holds any `register()` call of your own. To inspect the live registry, run `window.Martis.componentRegistry.keys()` in the browser console once the SPA has booted: it is the registry the SPA resolves from (the same instance `@martis/runtime` exports as `componentRegistry`), so no rebuild is needed. `php artisan martis:list-overrides --frontend` runs the same cross-check statically against your `index.ts`.
 
 Common culprits when an override is missing:
 
@@ -252,7 +273,7 @@ public function cacheFor(): ?DateTimeInterface
 }
 ```
 
-See [Metrics](metrics.md) for the cache key and ranges.
+See [Metrics](/docs/core/metrics) for the cache key and ranges.
 
 ### Cache subsystem disabled at runtime
 
@@ -280,10 +301,10 @@ app()->setLocale('pt_PT');
 
 There is no `Profile->locale` column and no `Martis::setLocale()` helper — both belong to old drafts of this page.
 
-See [Internationalisation](i18n.md) for the resolution order and the published lang files.
+See [Internationalisation](/docs/customization/i18n) for the resolution order and the published lang files.
 
 ## Still stuck?
 
 - [Open a GitHub issue](https://github.com/Real-Edge-FX/martis-package/issues/new) with PHP version, Laravel version, and the smallest reproducer you can produce.
 - Check the [release history](https://github.com/Real-Edge-FX/martis-package/releases) — your problem may already be fixed in a newer tag.
-- Read [Configuration](configuration.md) for the full list of `MARTIS_*` env flags.
+- Read [Configuration](/docs/reference/configuration) for the full list of `MARTIS_*` env flags.

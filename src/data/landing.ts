@@ -3,12 +3,13 @@
 // `design-system/Martis Docs/src/landing.jsx`.
 
 import type { IconName } from '@/components/icons'
+import { RELEASE } from '@/data/site'
 
 export const STATS: { n: string; l: string }[] = [
   { n: '50',    l: 'Field types' },
   { n: '12',    l: 'Relationship kinds' },
   { n: '94',    l: 'Theme tokens' },
-  { n: '2,325', l: 'Tests passing' },
+  { n: RELEASE.tests.toLocaleString('en-US'), l: 'Tests passing' },
 ]
 
 export interface FeatureCard {
@@ -154,7 +155,7 @@ class SendInvoice extends Action
 
 export type CodeSampleKey = keyof typeof CODE_SAMPLES
 
-export const VERSION = 'v1.16.1'
+export const VERSION = `v${RELEASE.version}`
 
 /**
  * One-line headline shown alongside VERSION in the landing-page
@@ -163,4 +164,4 @@ export const VERSION = 'v1.16.1'
  * the tag actually ships. Keep under ~60 chars so the badge stays on
  * one line on common desktop widths.
  */
-export const RELEASE_HEADLINE = 'ecosystem security audit — XSS, IDOR & authz hardening'
+export const RELEASE_HEADLINE = 'Martis 2.0: Nova-order options, safer panels and guards'

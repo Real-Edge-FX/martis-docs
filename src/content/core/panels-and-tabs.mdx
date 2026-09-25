@@ -1,11 +1,10 @@
 ---
 title: "Panels and Tabs"
-description: "Martis supports three layout mechanisms for organising fields on forms and detail pages: **Panels**, **Tabs**, and **Sections**."
+description: "Martis supports three layout mechanisms for organising fields on forms and detail pages: Panels, Tabs, and Sections."
 sourcePath: "martis-package/docs/panels-and-tabs.md"
 ---
 
 # Panels and Tabs
-
 Martis supports three layout mechanisms for organising fields on forms and
 detail pages: **Panels**, **Tabs**, and **Sections**.
 
@@ -59,7 +58,7 @@ cannot collapse it.
 ```php
 Panel::make('Publication', [
     Select::make('status')
-        ->options(['draft', 'published', 'archived'])
+        ->options(['draft' => 'Draft', 'published' => 'Published', 'archived' => 'Archived'])
         ->required(),
 
     DateTime::make('published_at', 'Published At')
@@ -107,7 +106,7 @@ Panel::make('Tags & Labels', [
         ->relatedResource('tags'),
 
     MultiSelect::make('labels', 'Labels')
-        ->options(['featured', 'trending', 'exclusive']),
+        ->options(['featured' => 'Featured', 'trending' => 'Trending', 'exclusive' => 'Exclusive']),
 
     Text::make('source_url', 'Source URL')
         ->nullable(),
@@ -166,7 +165,7 @@ TabGroup::make([
 TabGroup::make([
     Tab::make('General', [
         Text::make('title')->required(),
-        Select::make('status')->options(['draft', 'published']),
+        Select::make('status')->options(['draft' => 'Draft', 'published' => 'Published']),
         DateTime::make('published_at')->nullable(),
     ]),
 
@@ -231,7 +230,7 @@ public function fieldsForUpdate(Request $request): array
                 ])->collapsible(),
                 Tag::make('tags', 'Tags')->relatedResource('tags')->withPreview(),
                 MultiSelect::make('labels', 'Labels')
-                    ->options(['featured', 'trending', 'exclusive'])
+                    ->options(['featured' => 'Featured', 'trending' => 'Trending', 'exclusive' => 'Exclusive'])
                     ->nullable(),
             ]),
 
@@ -272,6 +271,24 @@ It does not appear in `fields()` (index) — fields are always flattened for the
 
 Section cannot be nested inside a Tab (Tab accepts `FieldContract|Panel` only). See [Grid Layout](/docs/core/grid-layout) for the Section API.
 
+### Relationship panels inside layout containers
+
+Standalone relationship fields — `HasMany`, `HasOne`, `BelongsToMany`, `MorphMany`, `MorphOne`, `MorphToMany` (and the OfMany / Through variants) — can be nested inside a `Section`, `Panel`, or `TabGroup` on the detail view. Their own relation endpoints (list, attach, detach, pivot) resolve correctly regardless of nesting depth.
+
+```php
+public function fieldsForDetail(Request $request): array
+{
+    return [
+        Section::make('Team', [
+            BelongsToMany::make('Members', 'members')->relatedResource('users'),
+            HasMany::make('Invitations', 'invitations')->relatedResource('invitations'),
+        ]),
+    ];
+}
+```
+
+> Before **v1.29.2** the relation controllers resolved the field from `fieldsForDetail()` without flattening layout containers, so a relation wrapped in a `Section`/`Panel`/`TabGroup` returned `404` on every relation endpoint. It now flattens first, so nesting is fully supported.
+
 ---
 
 ## Playground Showcase
@@ -291,6 +308,16 @@ To reach the showcase, navigate to `/showcase/layout-showcase/create` and `/show
 
 The backend serialises Panels and TabGroups as part of the resource's field schema.
 The format is stable and can be inspected via `GET /api/{resource}/schema`.
+
+A field the user cannot see (`canSee()`) is left out of every serialised
+layout, and a container (a Panel, a Section, a Tab or a TabGroup) left
+without fields is left out with it: the schema's field lists, and since
+v1.38.0 the fields of a Tool (`GET /api/tools/{uriKey}/fields`). The
+built-in containers rebuild themselves with the fields they keep through
+`Martis\Contracts\FiltersFields` (`filterFields(\Closure $keep): ?static`,
+see `Field::filterLayoutFields()`); a custom container implementing
+`LayoutContract` keeps its place when it implements `FiltersFields` too,
+and otherwise gives way to the fields it keeps.
 
 ### Panel
 
