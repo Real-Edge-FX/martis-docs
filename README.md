@@ -104,6 +104,19 @@ The site runs on the host at `192.168.50.21:3000`, served by Caddy out of `/home
 
 The runner is registered with label `martis-docs` and lives on the same host as Caddy, so deploy = atomic rsync.
 
+## Contact form delivery
+
+The static contact form reads its delivery URL from `VITE_CONTACT_ENDPOINT` at build time. Copy `.env.example` to the deployment environment and keep the variable configured there; the React components never contain the recipient address.
+
+The current example uses FormSubmit's JSON endpoint for `lfmoura@gmail.com`. Before production deployment:
+
+1. Deploy to staging with `VITE_CONTACT_ENDPOINT` configured.
+2. Submit one authorised test message from `/contact`.
+3. Open the activation email received by `lfmoura@gmail.com` and approve that endpoint.
+4. Submit a second test and confirm the success state and email delivery.
+
+Automated tests inject a fake transport and never send real messages. If the endpoint is absent or unavailable, the form keeps the entered content visible and presents a retryable error.
+
 ## Source of truth
 
 Documentation lives in `martis-package/docs/`. Always edit there and re-run `pnpm sync-docs` here. The CI gate (`pnpm sync-docs --check`) blocks merges that fall out of sync.
