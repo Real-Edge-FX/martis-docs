@@ -12,7 +12,7 @@ describe('ProductFrame', () => {
     onTestFinished(() => consoleError.mockRestore())
     render(
       <ProductFrame
-        src="/screenshots/dashboard.png"
+        src="/screenshots/dashboard.webp"
         alt="Martis dashboard"
         width={1280}
         height={800}
@@ -28,7 +28,7 @@ describe('ProductFrame', () => {
   })
 
   it('lazy-loads when not marked as the priority hero frame', () => {
-    render(<ProductFrame src="/screenshots/dashboard.png" alt="Martis dashboard" width={1280} height={800} version="v1.39.1" />)
+    render(<ProductFrame src="/screenshots/dashboard.webp" alt="Martis dashboard" width={1280} height={800} version="v1.39.1" />)
     expect(screen.getByRole('img', { name: 'Martis dashboard' })).toHaveAttribute('loading', 'lazy')
   })
 })

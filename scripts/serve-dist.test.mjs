@@ -10,6 +10,7 @@ import os from 'node:os'
 import path from 'node:path'
 import { PassThrough } from 'node:stream'
 import test, { after } from 'node:test'
+import zlib from 'node:zlib'
 import { createRequestListener, resolveRequest } from './serve-dist.mjs'
 
 const root = fs.mkdtempSync(path.join(os.tmpdir(), 'serve-dist-test-'))
@@ -19,6 +20,12 @@ fs.writeFileSync(path.join(root, 'for-agencies', 'index.html'), '<!doctype html>
 fs.writeFileSync(path.join(root, '404.html'), '<!doctype html><title>Not found</title>')
 fs.mkdirSync(path.join(root, 'assets'))
 fs.writeFileSync(path.join(root, 'assets', 'app.css'), 'body{color:red}')
+// A binary, non-compressible asset: real bytes (not just an extension),
+// so a broken gzip branch that recompressed it would corrupt the file
+// (a `Buffer.equal` check below would fail) rather than merely tagging
+// it wrong.
+const PNG_BYTES = Buffer.from('89504e470d0a1a0a0000000d4948445200000001000000010806000000', 'hex')
+fs.writeFileSync(path.join(root, 'assets', 'pixel.png'), PNG_BYTES)
 
 // A sibling directory that merely shares `root`'s basename as a string
 // *prefix* (`<root>-secret` starts with `<root>`), to reproduce the
@@ -143,6 +150,68 @@ test('a read error on the underlying file stream answers 500 instead of crashing
     assert.equal(home.status, 200)
   } finally {
     fs.createReadStream = originalCreateReadStream
+    await new Promise((resolve) => server.close(resolve))
+  }
+})
+
+/** Issues a raw HTTP GET with an explicit `Accept-Encoding` header and
+ *  resolves with `{ status, headers, body }` (`body` as a `Buffer`,
+ *  never transparently decompressed) — unlike the global `fetch`, which
+ *  negotiates its own `Accept-Encoding` and auto-decodes the body, so it
+ *  cannot tell this suite whether compression actually happened or
+ *  distinguish "not compressed" from "compressed, then decoded back to
+ *  the same bytes". */
+function rawGet(port, pathname, acceptEncoding) {
+  return new Promise((resolve, reject) => {
+    const req = http.get(
+      { host: '127.0.0.1', port, path: pathname, headers: acceptEncoding ? { 'Accept-Encoding': acceptEncoding } : {} },
+      (res) => {
+        const chunks = []
+        res.on('data', (chunk) => chunks.push(chunk))
+        res.on('end', () => resolve({ status: res.statusCode, headers: res.headers, body: Buffer.concat(chunks) }))
+        res.on('error', reject)
+      },
+    )
+    req.on('error', reject)
+  })
+}
+
+test('a text asset is gzipped when the client sends Accept-Encoding: gzip', async () => {
+  const server = http.createServer(createRequestListener(root))
+  await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve))
+  const { port } = server.address()
+
+  try {
+    const compressed = await rawGet(port, '/assets/app.css', 'gzip')
+    assert.equal(compressed.headers['content-encoding'], 'gzip')
+    assert.equal(compressed.headers['vary'], 'Accept-Encoding')
+    // The wire bytes are gzip, not the original CSS text; decoding them
+    // recovers the exact source (round-trips through zlib, not just
+    // "the header says gzip").
+    assert.notEqual(compressed.body.toString('utf8'), 'body{color:red}')
+    assert.equal(zlib.gunzipSync(compressed.body).toString('utf8'), 'body{color:red}')
+
+    const uncompressed = await rawGet(port, '/assets/app.css', 'identity')
+    assert.equal(uncompressed.headers['content-encoding'], undefined)
+    assert.equal(uncompressed.body.toString('utf8'), 'body{color:red}')
+  } finally {
+    await new Promise((resolve) => server.close(resolve))
+  }
+})
+
+test('an already-compressed image is served as-is, never gzipped again', async () => {
+  const server = http.createServer(createRequestListener(root))
+  await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve))
+  const { port } = server.address()
+
+  try {
+    const response = await rawGet(port, '/assets/pixel.png', 'gzip')
+    assert.equal(response.headers['content-encoding'], undefined)
+    assert.equal(response.headers['content-type'], 'image/png')
+    // Exact original bytes, not merely "still a valid PNG": a
+    // recompress-then-serve-uncompressed bug could still corrupt them.
+    assert.ok(response.body.equals(PNG_BYTES))
+  } finally {
     await new Promise((resolve) => server.close(resolve))
   }
 })

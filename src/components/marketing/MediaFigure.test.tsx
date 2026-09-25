@@ -7,7 +7,7 @@ describe('MediaFigure', () => {
   it('reserves the aspect ratio and lazy-loads by default', () => {
     render(
       <MediaFigure
-        src="/screenshots/resource-index.png"
+        src="/screenshots/resource-index.webp"
         alt="Resource index table"
         caption="Filter, sort and bulk-act on any resource."
         width={1280}
@@ -30,7 +30,7 @@ describe('MediaFigure', () => {
     onTestFinished(() => consoleError.mockRestore())
     render(
       <MediaFigure
-        src="/screenshots/dashboard.png"
+        src="/screenshots/dashboard.webp"
         alt="Dashboard overview"
         caption="The first screen a team sees."
         width={1280}

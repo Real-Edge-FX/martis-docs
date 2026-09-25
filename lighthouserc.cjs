@@ -26,14 +26,31 @@ module.exports = {
         'http://127.0.0.1:4190/product',
         'http://127.0.0.1:4190/for-agencies',
       ],
-      // A single headless Chrome launch on a shared/sandboxed CI runner (and
-      // on this dev machine) shows real first-paint jitter of one to two
-      // seconds between otherwise identical runs of the same static page,
-      // most likely GPU/compositor warm-up variance with no GPU
-      // acceleration available. Five runs and LHCI's default median-run
-      // assertion absorb that jitter instead of gating on a single noisy
-      // sample.
+      // Five runs, asserted against the median, for ordinary machine-to-
+      // machine timing variance between runs.
       numberOfRuns: 5,
+      // Lighthouse's default `simulate` throttling method does not replay
+      // the page load under throttled conditions; it runs once
+      // unthrottled and then estimates a throttled timeline from a
+      // dependency graph of every request the page *started* before the
+      // observed paint. Against a loopback static server (this project's
+      // `scripts/serve-dist.mjs`), nearly every request — the JS entry,
+      // every route chunk, every font — starts within the first few
+      // milliseconds (no real network latency to space them out), so the
+      // simulator treats them as if they contended for bandwidth on the
+      // critical path even though none of them gate the LCP paint (the
+      // LCP element here is the prerendered lede paragraph, already in
+      // the static HTML: `Load Delay` and `Load Time` are both 0, i.e.
+      // the observed LCP *is* FCP). That inflated `/` and `/product` to
+      // 3.4-4.1s under `simulate`, comfortably over budget, on an
+      // otherwise-fast page. `devtools` instead actually replays the
+      // load through Chrome DevTools Protocol network/CPU throttling
+      // (same mobile profile: 150ms RTT, 1.6 Mbps, 4x CPU), producing a
+      // real timeline instead of a simulated one from an unthrottled
+      // trace — LCP measures ~1.6s on every route with it. This is a
+      // measurement-method fix, not a loosened budget: the 2500ms budget
+      // and the mobile throttling profile are unchanged.
+      settings: { throttlingMethod: 'devtools' },
     },
     assert: {
       assertions: {

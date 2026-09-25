@@ -90,6 +90,15 @@ jobs:
       - name: Install Playwright Chromium
         run: pnpm exec playwright install --with-deps chromium
 
+      - name: Point Lighthouse CI at Playwright's pinned Chromium
+        # Without this, Lighthouse CI's own chrome-launcher searches the
+        # runner for a system Chrome (installing/using whatever version
+        # happens to be there) instead of the exact Chromium build the
+        # previous step just installed and pinned via @playwright/test's
+        # lockfile — a second, unpinned browser install CI would
+        # otherwise silently depend on.
+        run: echo "CHROME_PATH=$(node -e "console.log(require('@playwright/test').chromium.executablePath())")" >> "$GITHUB_ENV"
+
       - name: Build (client + SSR + prerender)
         run: pnpm build
 

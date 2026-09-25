@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test'
+import { expect, test, type Page } from '@playwright/test'
 
 // Pixel regression gate for the three redesigned marketing pages, one
 // baseline per route per validation breakpoint (design spec 17,
@@ -24,8 +24,27 @@ const VIEWPORTS = [
   { label: '1440x900', width: 1440, height: 900 },
 ] as const
 
+/**
+ * Forces every `<img>` to load and finish decoding, and waits for every
+ * `@font-face` to settle, before a screenshot is taken. `toHaveScreenshot`
+ * scrolls the page for a full-page capture, which is what triggers a
+ * `loading="lazy"` image's native load in the first place — a race the
+ * scroll does not reliably win against the decode, so a below-the-fold
+ * screenshot could otherwise capture an empty image frame. Removing the
+ * `loading` attribute makes Chromium fetch immediately instead of
+ * waiting for the image to near the viewport.
+ */
+async function waitForImagesAndFonts(page: Page): Promise<void> {
+  await page.evaluate(async () => {
+    const images = Array.from(document.querySelectorAll('img'))
+    for (const image of images) image.removeAttribute('loading')
+    await Promise.all(images.map((image) => image.decode().catch(() => {})))
+    await document.fonts.ready
+  })
+}
+
 for (const route of PAGES) {
-  const routeSlug = route === '/' ? 'home' : route.replaceAll('/', '-')
+  const routeSlug = route === '/' ? 'home' : route.slice(1).replaceAll('/', '-')
 
   test.describe(`${route} visual snapshot`, () => {
     for (const viewport of VIEWPORTS) {
@@ -36,11 +55,20 @@ for (const route of PAGES) {
           await page.emulateMedia({ reducedMotion: 'reduce' })
           await page.goto(route)
           await expect(page.getByRole('heading', { level: 1 })).toBeVisible()
+          await waitForImagesAndFonts(page)
+
+          // The proof strip (home only) reads live Packagist download
+          // counts and a "fetched at" timestamp (src/components/marketing/
+          // ProofStrip.tsx), which change on every data refresh
+          // independently of any visual change to the page — masked so a
+          // routine data update never fails this gate.
+          const proofStrip = page.locator('.proof-strip')
 
           await expect(page).toHaveScreenshot(`${routeSlug}-${viewport.label}.png`, {
             fullPage: true,
             animations: 'disabled',
             maxDiffPixelRatio: 0.005,
+            mask: (await proofStrip.count()) > 0 ? [proofStrip] : [],
           })
         })
       })
