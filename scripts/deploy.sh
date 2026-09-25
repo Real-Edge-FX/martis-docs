@@ -11,6 +11,8 @@
 #   bash scripts/deploy.sh
 #   MARTIS_DOCS_SSH_PASS='...' bash scripts/deploy.sh
 #
+# It refuses to run unless the checkout is clean and at origin/main.
+#
 set -euo pipefail
 
 SSH_HOST="147.79.113.74"
@@ -21,6 +23,22 @@ SITE_URL="https://getmartis.com"
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
+
+# Publish only what main holds. A deploy from another branch (or with
+# uncommitted edits) replaces the live site with that tree: on 2026-09-25
+# a deploy from an old docs branch put the pre-redesign site back up.
+# MARTIS_DOCS_DEPLOY_ANY_REF=1 skips the check for a deliberate preview.
+if [ "${MARTIS_DOCS_DEPLOY_ANY_REF:-}" != "1" ]; then
+  git fetch -q origin main
+  if [ -n "$(git status --porcelain --untracked-files=no)" ]; then
+    echo "ERROR: uncommitted changes; commit them to main first (or set MARTIS_DOCS_DEPLOY_ANY_REF=1)." >&2
+    exit 1
+  fi
+  if [ "$(git rev-parse HEAD)" != "$(git rev-parse origin/main)" ]; then
+    echo "ERROR: HEAD $(git rev-parse --short HEAD) is not origin/main $(git rev-parse --short origin/main); deploy from main (or set MARTIS_DOCS_DEPLOY_ANY_REF=1)." >&2
+    exit 1
+  fi
+fi
 
 if command -v pnpm >/dev/null 2>&1; then
   PNPM=(pnpm)

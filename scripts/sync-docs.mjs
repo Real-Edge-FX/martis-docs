@@ -58,6 +58,7 @@ export const GITHUB_BRANCH = 'main'
 // page in that case).
 export const MAP = {
   'getting-started/installation': 'installation-guide.md',
+  'getting-started/upgrading': 'upgrading.md',
   // 'getting-started/quick-start': hand-authored
   // 'getting-started/troubleshooting': hand-authored
   'core/resources': 'resources.md',

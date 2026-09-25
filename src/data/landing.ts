@@ -164,4 +164,4 @@ export const VERSION = `v${RELEASE.version}`
  * the tag actually ships. Keep under ~60 chars so the badge stays on
  * one line on common desktop widths.
  */
-export const RELEASE_HEADLINE = 'Martis 2.0: Nova-order options, safer panels and guards'
+export const RELEASE_HEADLINE = 'Relatable writes, a closed audit log, Nova panels'
