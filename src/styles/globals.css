@@ -526,7 +526,7 @@ button, a { -webkit-tap-highlight-color: transparent; }
 .comparison-table th, .comparison-table td { padding: 22px; text-align: left; border-right: 1px solid #d1cec5; border-bottom: 1px solid #d1cec5; font-size: 13px; }
 .comparison-table th:last-child, .comparison-table td:last-child { border-right: 0; }
 .comparison-table tbody tr:last-child th, .comparison-table tbody tr:last-child td { border-bottom: 0; }
-.comparison-table thead th { position: sticky; top: 72px; z-index: 2; color: #202126; background: #e9e6df; }
+.comparison-table thead th { color: #202126; background: #e9e6df; }
 .comparison-table thead th:first-child { width: 22%; }
 .comparison-table thead small { display: block; margin-top: 5px; color: #777983; font: 500 8px var(--font-mono); text-transform: uppercase; }
 .comparison-table tbody th { width: 28%; color: #202126; font-weight: 600; }
