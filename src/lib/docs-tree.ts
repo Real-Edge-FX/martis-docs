@@ -41,7 +41,7 @@ export const DOC_NAV: DocGroup[] = [
       { slug: 'core/resources',       label: 'Resources',     icon: 'Stack' },
       { slug: 'core/fields',          label: 'Fields',        icon: 'Stack',    badge: '50', tooltip: '50 field types (Text, Select, Date, File, Markdown, Currency, Badge…)' },
       { slug: 'core/relationships',   label: 'Relationships', icon: 'Workflow', badge: '12', tooltip: '12 Eloquent relationship kinds (BelongsTo … MorphToMany)' },
-      { slug: 'core/filters',         label: 'Filters',       icon: 'Filter',   badge: '4',  tooltip: '4 filter types: Select, Boolean, Date, DateRange' },
+      { slug: 'core/filters',         label: 'Filters',       icon: 'Filter',   badge: '5',  tooltip: '5 filter types: Select, MultiSelect, Boolean, Date, DateRange' },
       { slug: 'core/lenses',          label: 'Lenses',        icon: 'Eye' },
       { slug: 'core/metrics',         label: 'Metrics',       icon: 'Activity', badge: '6',  tooltip: '6 metric types: Value, Trend, Partition, Progress, ActivityFeed, EndpointTable' },
       { slug: 'core/dashboards',      label: 'Dashboards',    icon: 'Activity' },
@@ -59,7 +59,7 @@ export const DOC_NAV: DocGroup[] = [
   {
     group: 'Customization',
     items: [
-      { slug: 'customization/theming',            label: 'Theming',                icon: 'Palette',   badge: '94', tooltip: '94 design tokens across 10 groups' },
+      { slug: 'customization/theming',            label: 'Theming',                icon: 'Palette',   badge: '177', tooltip: '177 distinct --martis-* CSS variables in the package theme' },
       { slug: 'customization/overrides',          label: 'Override system',        icon: 'Layers',    badge: '4',  tooltip: '4-tier component resolution (explicit key → per-resource → global type → built-in)' },
       { slug: 'customization/components',         label: 'Built-in components',    icon: 'Stack' },
       { slug: 'customization/tools',              label: 'Custom Tools',           icon: 'Plug' },
@@ -89,9 +89,9 @@ export const DOC_NAV: DocGroup[] = [
       { slug: 'reference/configuration',      label: 'Configuration',        icon: 'Hash' },
       { slug: 'reference/cache',              label: 'Cache',                icon: 'Stack' },
       { slug: 'reference/notifications',      label: 'Notifications',        icon: 'Activity' },
-      { slug: 'reference/keyboard-shortcuts', label: 'Keyboard shortcuts',   icon: 'Hash',    badge: '9',  tooltip: '9 keyboard shortcuts available across the panel' },
+      { slug: 'reference/keyboard-shortcuts', label: 'Keyboard shortcuts',   icon: 'Hash',    badge: '3',  tooltip: '3 built-in keyboard shortcuts: mod+K, / and Shift+?' },
       { slug: 'reference/preferences',        label: 'User preferences',     icon: 'Hash' },
-      { slug: 'reference/differentials',      label: 'Martis differentials', icon: 'Compass', badge: '10', tooltip: '10 differential categories vs. Nova/Filament' },
+      { slug: 'reference/differentials',      label: 'Martis differentials', icon: 'Compass', badge: '11', tooltip: '11 differential categories vs. Nova/Filament' },
     ],
   },
 ]
