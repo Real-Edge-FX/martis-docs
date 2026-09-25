@@ -1,6 +1,17 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Icons } from '@/components/icons'
 import { useOverflowFocusable } from '@/hooks/useOverflowFocusable'
+
+type CopyStatus = 'idle' | 'copied' | 'fallback'
+
+/** How long the "Copied" confirmation stays before the button offers to copy again. */
+export const COPY_RESET_MS = 1400
+
+const STATUS_TEXT: Record<CopyStatus, string> = {
+  idle: '',
+  copied: 'Copied',
+  fallback: 'Select and copy the code',
+}
 
 interface CodeBlockProps {
   code: string
@@ -22,19 +33,56 @@ interface CodeBlockProps {
  * `globals.css`.
  */
 export function CodeBlock({ code, lang = 'php', filename, lineNumbers = false }: CodeBlockProps) {
-  const [copied, setCopied] = useState(false)
+  const [status, setStatus] = useState<CopyStatus>('idle')
+  const codeRef = useRef<HTMLElement>(null)
+  const resetTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
+  // The clipboard promise can settle after the block unmounts (a fast
+  // navigation away): the resumed handler must not set state or arm a
+  // reset timer nothing would ever clear.
+  const mounted = useRef(true)
   // Whether the block currently needs a keyboard-reachable scroller (see
   // useOverflowFocusable): true until measured otherwise, so the tab stop
   // is present without JavaScript too. Re-measures whenever `code` or
   // `lang` change under the same instance, not just at mount.
   const { ref: preRef, focusable } = useOverflowFocusable<HTMLPreElement>(`${lang}:${code}`)
 
-  function copy() {
-    navigator.clipboard?.writeText(code).then(() => {
-      setCopied(true)
-      setTimeout(() => setCopied(false), 1400)
-    })
+  useEffect(() => {
+    mounted.current = true
+    return () => {
+      mounted.current = false
+      clearTimeout(resetTimer.current)
+    }
+  }, [])
+
+  // Same progressive enhancement as InstallCommand: when the clipboard is
+  // blocked or missing, select the code so the reader can copy it by hand,
+  // and say so in the visible status next to the button.
+  function selectCode() {
+    const node = codeRef.current
+    const selection = window.getSelection?.()
+    if (!node || !selection) return
+    const range = document.createRange()
+    range.selectNodeContents(node)
+    selection.removeAllRanges()
+    selection.addRange(range)
   }
+
+  async function copy() {
+    clearTimeout(resetTimer.current)
+    try {
+      if (!navigator.clipboard) throw new Error('Clipboard API unavailable')
+      await navigator.clipboard.writeText(code)
+      if (!mounted.current) return
+      setStatus('copied')
+      resetTimer.current = setTimeout(() => setStatus('idle'), COPY_RESET_MS)
+    } catch {
+      if (!mounted.current) return
+      selectCode()
+      setStatus('fallback')
+    }
+  }
+
+  const copied = status === 'copied'
 
   const lines = code.split('\n')
 
@@ -43,17 +91,25 @@ export function CodeBlock({ code, lang = 'php', filename, lineNumbers = false }:
       {filename && (
         <div className="flex items-center justify-between px-3 h-9 bg-ink-850 border-b border-white/5">
           <div className="flex items-center gap-2 text-[11px] font-mono text-ink-300">
-            <Icons.Hash size={11} />
+            <Icons.Hash aria-hidden="true" size={11} />
             {filename}
           </div>
-          <button
-            type="button"
-            onClick={copy}
-            className="h-6 w-6 grid place-items-center rounded hover:bg-white/5 text-ink-300 hover:text-white transition-colors"
-            aria-label="Copy code"
-          >
-            {copied ? <Icons.Check size={12} /> : <Icons.Copy size={12} />}
-          </button>
+          <div className="flex items-center gap-2">
+            {/* Visible, so a sighted reader whose clipboard is blocked sees the
+             *  manual-copy instruction too; `role="status"` announces the same
+             *  text politely without moving focus. */}
+            <span role="status" aria-live="polite" className="text-[11px] font-mono text-ink-300">
+              {STATUS_TEXT[status]}
+            </span>
+            <button
+              type="button"
+              onClick={copy}
+              className="h-6 w-6 grid place-items-center rounded hover:bg-white/5 text-ink-300 hover:text-white transition-colors"
+              aria-label={copied ? 'Copied' : 'Copy code'}
+            >
+              {copied ? <Icons.Check aria-hidden="true" size={12} /> : <Icons.Copy aria-hidden="true" size={12} />}
+            </button>
+          </div>
         </div>
       )}
       {/* Long lines scroll horizontally. A scrollable region must be
@@ -76,7 +132,7 @@ export function CodeBlock({ code, lang = 'php', filename, lineNumbers = false }:
           : {})}
         className="code-block__pre p-5 overflow-x-auto text-[12.5px] leading-[1.65] font-mono"
       >
-        <code>
+        <code ref={codeRef}>
           {lines.map((line, i) => (
             <div key={i} className="flex gap-4">
               {lineNumbers && (

@@ -53,8 +53,10 @@ export function Chapter({ chapter, headingLevel = 2, priorityMedia = false, clas
          *  actually overflows, so it starts (server HTML and first client
          *  render) as a tab stop with a name, and only loses that, post-mount,
          *  once measured as not needing it (useOverflowFocusable, shared with
-         *  CodeBlock). Spread so the attributes are absent entirely (not just
-         *  falsy) once dropped. */}
+         *  CodeBlock). The role is `group`, as in CodeBlock: it names the
+         *  tab stop without making each sample a landmark, as a named
+         *  `region` would. Spread so the attributes are absent entirely (not
+         *  just falsy) once dropped. */}
         <pre
           ref={codeRef}
           className="chapter__code"
@@ -62,7 +64,7 @@ export function Chapter({ chapter, headingLevel = 2, priorityMedia = false, clas
           {...(codeFocusable
             ? {
                 tabIndex: 0,
-                role: 'region',
+                role: 'group',
                 'aria-label': `${chapter.code.filename} code sample`,
               }
             : {})}

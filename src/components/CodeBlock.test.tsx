@@ -1,6 +1,6 @@
 import { act, render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { CodeBlock } from './CodeBlock'
+import { CodeBlock, COPY_RESET_MS } from './CodeBlock'
 
 /** Stubs `<pre>`'s scroll/client width so the overflow effect measures a
  *  deterministic result: jsdom never lays anything out, so both are 0
@@ -56,6 +56,9 @@ describe('CodeBlock', () => {
 
   it('re-measures on resize through ResizeObserver instead of only once at mount', async () => {
     mockOverflow(false)
+    // Restored below to src/test/setup.ts's stub, not unstubbed: the tests
+    // after this one still construct a ResizeObserver.
+    const setupResizeObserver = globalThis.ResizeObserver
     let observedCallback: ResizeObserverCallback | undefined
     const observe = vi.fn()
     const disconnect = vi.fn()
@@ -85,6 +88,81 @@ describe('CodeBlock', () => {
     })
     expect(screen.getByRole('group', { name: 'Code: a.php' })).toBeInTheDocument()
 
-    vi.unstubAllGlobals()
+    vi.stubGlobal('ResizeObserver', setupResizeObserver)
+  })
+})
+
+// The copy button in the filename chrome. Clipboard access is a progressive
+// enhancement: a blocked or missing clipboard must leave the reader with a
+// visible way to copy by hand (the same pattern as InstallCommand), and a
+// pending "Copied" reset must never outlive the component.
+describe('CodeBlock copy button', () => {
+  const setClipboard = (value: unknown) =>
+    Object.defineProperty(navigator, 'clipboard', { value, configurable: true })
+
+  afterEach(() => {
+    vi.useRealTimers()
+    Reflect.deleteProperty(navigator, 'clipboard')
+    window.getSelection()?.removeAllRanges()
+  })
+
+  it('hides its icons from assistive tech (the button carries the name)', () => {
+    render(<CodeBlock code="echo 1;" filename="a.php" />)
+    const button = screen.getByRole('button', { name: 'Copy code' })
+    const icons = button.querySelectorAll('svg')
+    expect(icons.length).toBeGreaterThan(0)
+    for (const icon of icons) expect(icon).toHaveAttribute('aria-hidden', 'true')
+  })
+
+  it('announces a successful copy in a visible status next to the button', async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined)
+    setClipboard({ writeText })
+    render(<CodeBlock code="echo 1;" filename="a.php" />)
+    await act(async () => {
+      screen.getByRole('button', { name: 'Copy code' }).click()
+    })
+    expect(writeText).toHaveBeenCalledWith('echo 1;')
+    expect(screen.getByRole('status')).toHaveTextContent('Copied')
+  })
+
+  it.each([
+    ['rejects', () => ({ writeText: vi.fn().mockRejectedValue(new Error('blocked')) })],
+    ['is missing', () => undefined],
+  ])('selects the code and shows a visible manual-copy message when the clipboard %s', async (_, clipboard) => {
+    setClipboard(clipboard())
+    render(<CodeBlock code="echo 1;" filename="a.php" />)
+    await act(async () => {
+      screen.getByRole('button', { name: 'Copy code' }).click()
+    })
+    const status = screen.getByRole('status')
+    expect(status).toHaveTextContent('Select and copy the code')
+    expect(status).not.toHaveClass('sr-only')
+    expect(window.getSelection()?.toString()).toContain('echo 1;')
+  })
+
+  it('clears the pending "Copied" reset when it unmounts', async () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+    setClipboard({ writeText: vi.fn().mockResolvedValue(undefined) })
+    const { unmount } = render(<CodeBlock code="echo 1;" filename="a.php" />)
+    await act(async () => {
+      screen.getByRole('button', { name: 'Copy code' }).click()
+    })
+    expect(vi.getTimerCount()).toBeGreaterThan(0)
+    unmount()
+    expect(vi.getTimerCount()).toBe(0)
+  })
+
+  it('returns to idle after the reset delay', async () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+    setClipboard({ writeText: vi.fn().mockResolvedValue(undefined) })
+    render(<CodeBlock code="echo 1;" filename="a.php" />)
+    await act(async () => {
+      screen.getByRole('button', { name: 'Copy code' }).click()
+    })
+    act(() => {
+      vi.advanceTimersByTime(COPY_RESET_MS)
+    })
+    expect(screen.getByRole('status')).toHaveTextContent('')
+    expect(screen.getByRole('button', { name: 'Copy code' })).toBeInTheDocument()
   })
 })

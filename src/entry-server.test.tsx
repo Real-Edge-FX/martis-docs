@@ -67,7 +67,7 @@ it('renders a docs page from its MDX module, not the loading screen', async () =
 // here whether a given sample will actually overflow once painted — the
 // static markup a no-JS reader gets (and the very first client render,
 // before hydration's own measurement effect runs) must assume it does
-// and stay a focusable, named region, per useOverflowFocusable's
+// and stay a focusable, named group, per useOverflowFocusable's
 // "focusable until measured otherwise" contract. Losing the attribute
 // only happens after mount, client-side (see CodeBlock.test.tsx and
 // Chapter.test.tsx).
@@ -77,7 +77,7 @@ it('gives every Chapter code sample a tab stop and a name in the static HTML, un
   expect(preTags.length).toBeGreaterThan(0)
   for (const tag of preTags) {
     expect(tag).toContain('tabindex="0"')
-    expect(tag).toContain('role="region"')
+    expect(tag).toContain('role="group"')
     expect(tag).toMatch(/aria-label="[^"]+ code sample"/)
   }
 })

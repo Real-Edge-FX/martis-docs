@@ -81,9 +81,12 @@ describe('Chapter', () => {
     await act(async () => {
       renderChapter()
     })
-    const region = screen.getByRole('region', { name: `${chapter.code.filename} code sample` })
-    expect(region.tagName).toBe('PRE')
-    expect(region).toHaveAttribute('tabindex', '0')
+    // `group`, like CodeBlock's scroller: a named `region` is a landmark,
+    // and six code samples would add six landmarks to /product.
+    const group = screen.getByRole('group', { name: `${chapter.code.filename} code sample` })
+    expect(group.tagName).toBe('PRE')
+    expect(group).toHaveAttribute('tabindex', '0')
+    expect(screen.queryByRole('region')).not.toBeInTheDocument()
   })
 
   it('marks the current heading level so Home and Product can each control document structure', () => {
