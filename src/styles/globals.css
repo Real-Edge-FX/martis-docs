@@ -508,12 +508,15 @@ button, a { -webkit-tap-highlight-color: transparent; }
 .comparison-table th, .comparison-table td { padding: 22px; text-align: left; border-right: 1px solid #d1cec5; border-bottom: 1px solid #d1cec5; font-size: 13px; }
 .comparison-table th:last-child, .comparison-table td:last-child { border-right: 0; }
 .comparison-table tbody tr:last-child th, .comparison-table tbody tr:last-child td { border-bottom: 0; }
-.comparison-table thead th { color: #202126; background: #e9e6df; }
+.comparison-table thead th { position: sticky; top: 72px; z-index: 2; color: #202126; background: #e9e6df; }
 .comparison-table thead th:first-child { width: 22%; }
 .comparison-table thead small { display: block; margin-top: 5px; color: #777983; font: 500 8px var(--font-mono); text-transform: uppercase; }
-.comparison-table tbody th { color: #666870; font-weight: 500; }
+.comparison-table tbody th { width: 28%; color: #202126; font-weight: 600; }
+.comparison-table tbody th small { display: block; margin-bottom: 7px; color: #756595; font: 600 8px var(--font-mono); letter-spacing: .1em; text-transform: uppercase; }
+.comparison-table tbody th span { display: block; margin-top: 8px; color: #777983; font-size: 11px; font-weight: 400; line-height: 1.5; }
 .comparison-table td { color: #494b53; }
 .comparison-table .is-martis { background: rgba(113,135,255,.08); color: #302653; font-weight: 600; }
+.comparison-mobile { display: none; }
 .compare-cards { margin-top: 34px; display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
 .compare-cards > a { min-height: 260px; padding: 31px; display: flex; flex-direction: column; align-items: flex-start; border: 1px solid #d1cec5; border-radius: 14px; transition: 180ms ease; }
 .compare-cards > a:hover { transform: translateY(-4px); border-color: #9d90c2; background: #ece8e0; }
@@ -532,6 +535,27 @@ button, a { -webkit-tap-highlight-color: transparent; }
 .choice-card ul { display: grid; gap: 13px; }
 .choice-card li { display: flex; align-items: flex-start; gap: 10px; color: #55575f; font-size: 13px; line-height: 1.5; }
 .choice-card li svg { flex: 0 0 auto; margin-top: 2px; color: #43855f; }
+.decision-section { padding-block: 80px; border-bottom: 1px solid rgba(255,255,255,.07); }
+.decision-section h2 { max-width: 1040px; margin: 24px 0 0; color: #e8ebf1; font-size: clamp(30px, 4vw, 52px); font-weight: 450; line-height: 1.13; letter-spacing: -.04em; }
+.compare-analysis { border-top: 1px solid rgba(255,255,255,.07); }
+.analysis-list { margin-top: 40px; border-top: 1px solid rgba(255,255,255,.09); }
+.analysis-list article { display: grid; grid-template-columns: 48px .72fr 1.28fr; gap: 28px; padding: 42px 0; border-bottom: 1px solid rgba(255,255,255,.09); }
+.analysis-list article > span { color: #656f84; font: 600 10px var(--font-mono); }
+.analysis-list h2 { margin: 0 0 12px; color: #f1f2f5; font-size: 25px; letter-spacing: -.03em; }
+.analysis-list p { margin: 0; color: #8992a2; font-size: 13px; line-height: 1.6; }
+.analysis-list dl { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.analysis-list dl div { padding: 22px; border: 1px solid rgba(255,255,255,.09); border-radius: 12px; }
+.analysis-list dl .is-martis { border-color: rgba(113,135,255,.32); background: rgba(113,135,255,.07); }
+.analysis-list dt { margin-bottom: 12px; color: #aeb6c4; font: 600 9px var(--font-mono); letter-spacing: .1em; text-transform: uppercase; }
+.analysis-list dd { margin: 0; color: #d3d7df; font-size: 12px; line-height: 1.6; }
+.compare-faq { color: var(--paper-ink); background: var(--paper); }
+.compare-faq .eyebrow { color: #6d608a; }
+.faq-grid { margin-top: 38px; display: grid; grid-template-columns: repeat(3, 1fr); border-block: 1px solid #d1cec5; }
+.faq-grid article { min-height: 250px; padding: 34px 28px 34px 0; border-right: 1px solid #d1cec5; }
+.faq-grid article + article { padding-left: 28px; }
+.faq-grid article:last-child { border-right: 0; }
+.faq-grid h2 { margin: 0 0 18px; color: #1b1c21; font-size: 20px; line-height: 1.25; }
+.faq-grid p { margin: 0; color: #65676f; font-size: 13px; line-height: 1.65; }
 .source-section { border-top: 1px solid rgba(255,255,255,.07); }
 .source-section__inner { display: grid; grid-template-columns: 1fr 1fr; gap: 100px; align-items: start; }
 .source-section__inner > div:last-child { display: grid; gap: 14px; padding-top: 28px; }
@@ -641,6 +665,11 @@ button, a { -webkit-tap-highlight-color: transparent; }
   .chapter-card:nth-last-child(-n+3) { border-bottom: 1px solid rgba(255,255,255,.08); }
   .chapter-card:nth-last-child(-n+2) { border-bottom: 0; }
   .comparison-callout__inner, .agency-hero__grid, .agency-checklist__grid, .source-section__inner { grid-template-columns: 1fr; }
+  .analysis-list article { grid-template-columns: 35px 1fr; }
+  .analysis-list dl { grid-column: 2; }
+  .faq-grid { grid-template-columns: 1fr; }
+  .faq-grid article, .faq-grid article + article { min-height: 0; padding: 28px 0; border-right: 0; border-bottom: 1px solid #d1cec5; }
+  .faq-grid article:last-child { border-bottom: 0; }
   .gallery-grid { grid-template-columns: 1fr; }
   .gallery-grid .product-visual:first-child { grid-row: auto; }
   .product-chapter__grid { grid-template-columns: 1fr; }
@@ -708,6 +737,20 @@ button, a { -webkit-tap-highlight-color: transparent; }
   .agency-outcomes h2 { font-size: 20px; }
   .agency-checklist h2 { font-size: 36px; }
   .compare-cards, .choice-grid { grid-template-columns: 1fr; }
+  .comparison-table-wrap { display: none; }
+  .comparison-mobile { display: grid; gap: 12px; }
+  .comparison-mobile article { padding: 24px; border: 1px solid #d1cec5; border-radius: 13px; }
+  .comparison-mobile article > small { color: #756595; font: 600 8px var(--font-mono); letter-spacing: .1em; text-transform: uppercase; }
+  .comparison-mobile h2 { margin: 9px 0; color: #1b1c21; font-size: 22px; }
+  .comparison-mobile article > p { margin: 0 0 20px; color: #70727a; font-size: 12px; line-height: 1.55; }
+  .comparison-mobile dl { display: grid; gap: 7px; }
+  .comparison-mobile dl div { padding: 14px; border-radius: 9px; background: #e7e4dd; }
+  .comparison-mobile dl .is-martis { background: rgba(113,135,255,.13); }
+  .comparison-mobile dt { color: #625475; font: 600 9px var(--font-mono); text-transform: uppercase; }
+  .comparison-mobile dd { margin: 5px 0 0; color: #42444b; font-size: 12px; line-height: 1.45; }
+  .analysis-list article { grid-template-columns: 1fr; }
+  .analysis-list article > span, .analysis-list dl { grid-column: auto; }
+  .analysis-list dl { grid-template-columns: 1fr; }
   .choice-card { min-height: 380px; padding: 28px; }
   .changelog-list article { grid-template-columns: 1fr; gap: 32px; }
   .docs-journeys { grid-template-columns: 1fr; }

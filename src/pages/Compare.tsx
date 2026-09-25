@@ -1,18 +1,11 @@
 import { Link } from 'react-router-dom'
 import { Icons } from '@/components/icons'
 import { SiteShell } from '@/components/site/SiteShell'
-import { COMPARISONS } from '@/data/site'
-
-const criteria = [
-  ['Licence', 'MIT · no paid tier', 'Commercial', 'MIT core'],
-  ['Frontend model', 'React + TypeScript', 'Vue', 'Livewire + Alpine'],
-  ['Primary posture', 'Reusable foundation', 'First-party product', 'UI ecosystem'],
-  ['Agency fit', 'Repeatable client delivery', 'Laravel-native procurement', 'Server-driven teams'],
-] as const
+import { COMPARISON_CRITERIA, COMPARISON_PRODUCTS } from '@/data/comparison'
 
 export default function Compare() {
   return <SiteShell><main id="main-content">
-    <section className="page-hero compare-hero"><div className="site-container"><p className="eyebrow"><span /> Compare the trade-offs</p><h1>Choose the foundation<br /><em>that fits how you ship.</em></h1><p>No winner badges. No invented scores. Just the differences that shape your delivery model, checked against official sources.</p></div></section>
-    <section className="section compare-overview"><div className="site-container"><div className="comparison-table-wrap"><table className="comparison-table"><caption>Martis, Laravel Nova and Filament at a glance</caption><thead><tr><th scope="col">Criterion</th><th scope="col" className="is-martis">Martis <small>Open foundation</small></th><th scope="col">Laravel Nova</th><th scope="col">Filament</th></tr></thead><tbody>{criteria.map(([criterion, martis, nova, filament]) => <tr key={criterion}><th scope="row">{criterion}</th><td className="is-martis">{martis}</td><td>{nova}</td><td>{filament}</td></tr>)}</tbody></table></div><div className="compare-cards">{Object.values(COMPARISONS).map((item) => <Link key={item.slug} to={`/compare/${item.slug}`}><small>Detailed comparison</small><h2>Martis vs {item.name.replace('Laravel ', '')}</h2><p>{item.summary}</p><span>Compare with {item.name.replace('Laravel ', '')} <Icons.ArrowRight size={15} /></span></Link>)}</div><p className="comparison-method">Claims checked on 24 September 2026 against official product websites. Product capabilities change; every detail page links to its source.</p></div></section>
+    <section className="page-hero compare-hero"><div className="site-container"><p className="eyebrow"><span /> Compare the trade-offs</p><h1>Choose the foundation<br /><em>that fits how you ship.</em></h1><p>A practical decision matrix for agencies—licensing, architecture, extension and long-term handover without invented scores or winner badges.</p></div></section>
+    <section className="section compare-overview"><div className="site-container"><div className="comparison-table-wrap"><table className="comparison-table"><caption>Martis, Laravel Nova and Filament — decision matrix</caption><thead><tr><th scope="col">Criterion</th><th scope="col" className="is-martis">Martis <small>Open foundation</small></th><th scope="col">Laravel Nova</th><th scope="col">Filament</th></tr></thead><tbody>{COMPARISON_CRITERIA.map((item) => <tr key={item.id}><th scope="row"><small>{item.category}</small>{item.label}<span>{item.implication}</span></th><td className="is-martis">{item.martis}</td><td>{item.nova}</td><td>{item.filament}</td></tr>)}</tbody></table></div><div className="comparison-mobile">{COMPARISON_CRITERIA.map((item) => <article key={item.id}><small>{item.category}</small><h2>{item.label}</h2><p>{item.implication}</p><dl><div className="is-martis"><dt>Martis</dt><dd>{item.martis}</dd></div><div><dt>Nova</dt><dd>{item.nova}</dd></div><div><dt>Filament</dt><dd>{item.filament}</dd></div></dl></article>)}</div><div className="compare-cards">{Object.values(COMPARISON_PRODUCTS).map((item) => <Link key={item.slug} to={`/compare/${item.slug}`}><small>Detailed comparison</small><h2>Martis vs {item.shortName}</h2><p>{item.summary}</p><span>Compare with {item.shortName} <Icons.ArrowRight size={15} /></span></Link>)}</div><p className="comparison-method">Reviewed 24 September 2026. Product capabilities change; report corrections through the Martis contact page.</p></div></section>
   </main></SiteShell>
 }

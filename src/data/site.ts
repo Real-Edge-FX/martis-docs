@@ -101,39 +101,3 @@ export const AGENCY_VALUE = [
     body: 'MIT licensed, no paid tier and no per-project fee. Your team controls the code, the roadmap and the handover.',
   },
 ] as const
-
-export type ComparedProduct = 'nova' | 'filament'
-
-export interface ComparisonProduct {
-  slug: ComparedProduct
-  name: string
-  summary: string
-  chooseMartis: string[]
-  chooseAlternative: string[]
-  sourceUrl: string
-  sourceLabel: string
-  checkedAt: string
-}
-
-export const COMPARISONS: Record<ComparedProduct, ComparisonProduct> = {
-  nova: {
-    slug: 'nova',
-    name: 'Laravel Nova',
-    summary: 'A first-party Laravel administration product with a commercial licence and a Vue-based interface.',
-    chooseMartis: ['You want an MIT foundation with no paid tier.', 'Your frontend team works in React and TypeScript.', 'You need to standardise delivery across many client projects.'],
-    chooseAlternative: ['You prefer an official first-party Laravel product.', 'A commercial licence fits your procurement model.', 'Your team is already invested in Nova resources and Vue tooling.'],
-    sourceUrl: 'https://nova.laravel.com',
-    sourceLabel: 'Laravel Nova official website',
-    checkedAt: '2026-09-24',
-  },
-  filament: {
-    slug: 'filament',
-    name: 'Filament',
-    summary: 'A broad Laravel UI ecosystem built around Livewire, Alpine.js and server-driven components.',
-    chooseMartis: ['You want React as the product interface.', 'You value explicit REST boundaries and frontend extension points.', 'You want one agency baseline with no commercial product layer.'],
-    chooseAlternative: ['Your team prefers Livewire and Alpine.js.', 'You want Filament’s wider plugin ecosystem.', 'You prefer server-driven UI over a React application boundary.'],
-    sourceUrl: 'https://filamentphp.com',
-    sourceLabel: 'Filament official website',
-    checkedAt: '2026-09-24',
-  },
-}

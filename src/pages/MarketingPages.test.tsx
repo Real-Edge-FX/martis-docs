@@ -37,6 +37,9 @@ describe('marketing routes', () => {
     expect(await screen.findByRole('heading', { level: 1, name: /Choose the foundation/i })).toBeInTheDocument()
     expect(screen.getByRole('link', { name: /Compare with Nova/i })).toHaveAttribute('href', '/compare/nova')
     expect(screen.getByRole('link', { name: /Compare with Filament/i })).toHaveAttribute('href', '/compare/filament')
+    expect(screen.getAllByRole('row').length).toBeGreaterThanOrEqual(11)
+    expect(document.querySelector('a[href*="nova.laravel.com"]')).not.toBeInTheDocument()
+    expect(document.querySelector('a[href*="filamentphp.com"]')).not.toBeInTheDocument()
   })
 
   it('renders a local changelog route', async () => {
