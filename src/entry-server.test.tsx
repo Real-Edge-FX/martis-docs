@@ -1,7 +1,7 @@
 // @vitest-environment node
 import { readFileSync } from 'node:fs'
 import { afterEach, beforeEach, describe, expect, it, vi, type MockInstance } from 'vitest'
-import { STATS } from '@/data/landing'
+import { loadPackagistStats, loadReleaseManifest, formatCount, formatVersion } from '@/lib/generated-data'
 import { DOC_NAV } from '@/lib/docs-tree'
 import { serializeMeta } from '@/lib/seo'
 import { getRouteMeta, PUBLIC_ROUTES } from '@/lib/site-routes'
@@ -137,12 +137,35 @@ describe('provisional marketing pages', () => {
   })
 })
 
-it('renders the real value of every landing stat, not the count-up start', async () => {
-  const { html } = await render('/')
-  expect(STATS).toHaveLength(4)
-  for (const { n } of STATS) {
-    expect(html).toContain(`tabular-nums">${n}</div>`)
-  }
+describe('the homepage without JavaScript', () => {
+  // The prerendered `/` is the finished page (Phase 1 inherited criterion
+  // in the master plan): nothing may start transparent, hidden or moved
+  // off-screen waiting for an animation that only runs after hydration.
+  it('renders nothing hidden, transparent or transformed', async () => {
+    const { html } = await render('/')
+    const main = /<main\b[\s\S]*<\/main>/.exec(html)?.[0] ?? ''
+    expect(main).not.toBe('')
+    expect(main).not.toMatch(/opacity:\s*0(?![.\d])/)
+    expect(main).not.toMatch(/visibility:\s*hidden/)
+    expect(main).not.toMatch(/transform:/)
+    expect(main).not.toMatch(/\shidden(=|\s|>)/)
+  })
+
+  it('shows the real generated release and download figures', async () => {
+    const { html } = await render('/')
+    const release = loadReleaseManifest()
+    const stats = loadPackagistStats()
+    for (const value of [formatVersion(release.version), formatCount(release.totalTests), formatCount(stats.total)]) {
+      expect(html).toContain(`<span class="proof-strip__value">${value}</span>`)
+    }
+    expect(html).not.toContain('Data temporarily unavailable')
+  })
+
+  it('carries the approved headline and licence seal in the server HTML', async () => {
+    const { html } = await render('/')
+    expect(firstHeading(html)).toBe('The admin foundation your agency can ship again.')
+    expect(html.match(/MIT licensed · No paid tier/g)?.length).toBeGreaterThanOrEqual(2)
+  })
 })
 
 it('renders the docs index as a list of every docs page', async () => {

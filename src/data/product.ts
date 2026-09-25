@@ -42,6 +42,15 @@ export interface ProductMediaEntry {
   height: number
 }
 
+// The Martis release the committed files in public/screenshots/ were
+// captured at: they were last refreshed in this repository's commit
+// 1e4e05d ("refresh as admin@martis.local + v1.2.1"), and the panel's
+// own sidebar footer in each image reads v1.2.1. Surfaces that show a
+// screenshot label it with this version, not the current release, so a
+// reader always knows how current the picture is (spec 6.1, 6.7). The
+// versioned `ProductMediaManifest` replaces it in Phase 4.
+export const PRODUCT_MEDIA_VERSION = '1.2.1'
+
 // Real pixel dimensions of the committed files in public/screenshots/
 // (captured at 1280x800; a versioned `ProductMediaManifest` replaces
 // this table once Phase 4 lands the capture pipeline).

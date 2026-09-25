@@ -11,8 +11,9 @@ afterEach(() => {
 // none of them, so any browser-global access during a server render fails
 // there instead of silently hitting a stub.
 if (typeof window !== 'undefined') {
-  // jsdom does not implement matchMedia. `usePrefersReducedMotion` and
-  // `useCountUp`'s effect both read `prefers-reduced-motion` through it.
+  // jsdom does not implement matchMedia. The site header reads its
+  // desktop breakpoint and `usePrefersReducedMotion` reads
+  // `prefers-reduced-motion` through it.
   vi.stubGlobal(
     'matchMedia',
     vi.fn().mockImplementation((query: string) => ({
@@ -31,10 +32,9 @@ if (typeof window !== 'undefined') {
   // noise to the console when called.
   vi.stubGlobal('scrollTo', vi.fn())
 
-  // jsdom implements neither observer. Landing components construct them
-  // (`Reveal`'s `whileInView`, `useCountUp`'s scroll-triggered count) purely
-  // to schedule a callback, so a no-op stub is enough for rendering to
-  // succeed without simulating real viewport/size behaviour.
+  // jsdom implements neither observer. A component that constructs one
+  // purely to schedule a callback renders fine against a no-op stub,
+  // without simulating real viewport/size behaviour.
   class ResizeObserverStub implements ResizeObserver {
     observe() {}
     unobserve() {}
@@ -54,17 +54,6 @@ if (typeof window !== 'undefined') {
     unobserve() {}
   }
   vi.stubGlobal('IntersectionObserver', IntersectionObserverStub)
-
-  // jsdom has no real canvas/WebGL backend: without this stub, every call
-  // to `HTMLCanvasElement#getContext` logs a "Not implemented" console
-  // error (from `AuroraBackdrop`'s WebGL probe on the hero). Returning
-  // `null` mirrors what a real browser without WebGL support would
-  // return, which `AuroraBackdrop` already handles by skipping the
-  // animated layer.
-  Object.defineProperty(HTMLCanvasElement.prototype, 'getContext', {
-    value: vi.fn(() => null),
-    writable: true,
-  })
 
   // jsdom does not implement `innerText`, which needs layout. The docs TOC
   // reads its headings' text with it; for plain heading text,

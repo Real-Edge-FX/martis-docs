@@ -1,3 +1,5 @@
+import { fetchPriorityAttribute } from './fetch-priority'
+
 interface MediaFigureProps {
   src: string
   /** Required: describes the screenshot's content, never decorative. */
@@ -32,7 +34,7 @@ export function MediaFigure({ src, alt, caption, width, height, priority = false
         width={width}
         height={height}
         loading={priority ? 'eager' : 'lazy'}
-        fetchPriority={priority ? 'high' : undefined}
+        {...fetchPriorityAttribute(priority)}
         className="media-figure__image"
         style={{ aspectRatio: `${width} / ${height}` }}
       />

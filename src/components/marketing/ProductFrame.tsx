@@ -1,3 +1,5 @@
+import { fetchPriorityAttribute } from './fetch-priority'
+
 interface ProductFrameProps {
   src: string
   alt: string
@@ -32,7 +34,7 @@ export function ProductFrame({ src, alt, width, height, version, priority = fals
         width={width}
         height={height}
         loading={priority ? 'eager' : 'lazy'}
-        fetchPriority={priority ? 'high' : undefined}
+        {...fetchPriorityAttribute(priority)}
         className="product-frame__image"
         style={{ aspectRatio: `${width} / ${height}` }}
       />

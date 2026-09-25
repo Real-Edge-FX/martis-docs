@@ -1,108 +1,98 @@
-import { useState } from 'react'
-import { AnimatePresence, motion } from 'motion/react'
-import { usePrefersReducedMotion } from '@/hooks/usePrefersReducedMotion'
 import { CodeBlock } from '@/components/CodeBlock'
-import { Icons } from '@/components/icons'
-import { Reveal } from '@/components/landing/Reveal'
-import { CODE_SAMPLES, type CodeSampleKey } from '@/data/landing'
+import { MediaFigure } from '@/components/marketing/MediaFigure'
+import { PRODUCT_MEDIA } from '@/data/product'
 
-const TABS: { id: CodeSampleKey; label: string; lines: number; preview: string; alt: string }[] = [
-  { id: 'resource', label: 'Resource', lines: 22, preview: '/screenshots/resource-index.png',  alt: 'Resource index'  },
-  { id: 'metric',   label: 'Metric',   lines: 18, preview: '/screenshots/dashboard.png',       alt: 'Dashboard'       },
-  { id: 'action',   label: 'Action',   lines: 28, preview: '/screenshots/resource-create.png', alt: 'Create form'     },
-]
+const HEADING_ID = 'home-code-ui-heading'
+const RESULT = PRODUCT_MEDIA['resource-index']
 
+// A shortened, compilable excerpt of the Playground's
+// app/Martis/Resources/ClientResource.php, the resource behind the
+// "Clients" screenshot beside it (resource-index.png): the same fields,
+// with the translated labels and the index-only Stack/Icon columns left
+// out. Every method is Martis API at v1.39.1 (`Badge::map`/`addTypes`,
+// `Country::withFlags`, `Currency`).
+const CLIENT_RESOURCE = `<?php
+
+namespace App\\Martis\\Resources;
+
+use App\\Models\\Client;
+use Illuminate\\Http\\Request;
+use Martis\\Fields\\{Badge, Country, Currency, Email, Text};
+use Martis\\Resource;
+
+class ClientResource extends Resource
+{
+    public static function model(): string
+    {
+        return Client::class;
+    }
+
+    public function fields(Request $request): array
+    {
+        return [
+            Text::make('name')->sortable()->searchable()->required(),
+            Email::make('email')->sortable()->searchable()->required(),
+            Text::make('company')->sortable()->searchable(),
+            Badge::make('plan')->sortable()->map([
+                'free' => 'info',
+                'pro' => 'success',
+                'enterprise' => 'pink',
+            ])->addTypes(['pink' => '#ec4899']),
+            Currency::make('monthly_revenue')->sortable(),
+            Badge::make('status')->sortable()->map([
+                'active' => 'success',
+                'inactive' => 'warning',
+                'churned' => 'danger',
+            ]),
+            Country::make('country')->withFlags()->nullable(),
+        ];
+    }
+}`
+
+/**
+ * "Code to interface" (design spec 6.4): a real resource class beside
+ * the screen Martis renders from it in the Playground. The two are
+ * numbered steps, so on a narrow screen they stack in reading order
+ * (declare, then render) without losing the link between them. The
+ * `#how-it-works` id is the target of the hero's "See how it works".
+ */
 export function CodeUI() {
-  const [tab, setTab] = useState<CodeSampleKey>('resource')
-  const reduce = usePrefersReducedMotion()
-  const sample = CODE_SAMPLES[tab]
-  const cur = TABS.find((t) => t.id === tab)!
-
-  const fade = reduce
-    ? {}
-    : {
-        initial: { opacity: 0, y: 8 },
-        animate: { opacity: 1, y: 0 },
-        exit: { opacity: 0, y: -8 },
-        transition: { duration: 0.25, ease: [0.22, 1, 0.36, 1] as const },
-      }
-
   return (
-    <section className="py-24 relative">
-      <div className="max-w-[1280px] mx-auto px-6">
-        <Reveal className="max-w-3xl mb-12">
-          <div className="text-[11px] font-mono uppercase tracking-[0.2em] text-cobalt-300 mb-3">
-            Code → UI
+    <section id="how-it-works" className="home-section" aria-labelledby={HEADING_ID}>
+      <div className="site-container">
+        <header className="home-section__head">
+          <div>
+            <p className="home-kicker">Code to production interface</p>
+            <h2 id={HEADING_ID} className="home-h2">
+              Declare the resource. Ship the workflow.
+            </h2>
           </div>
-          <h2 className="text-[clamp(1.8rem,3.5vw,2.6rem)] tracking-[-0.025em] leading-[1.1] font-medium text-white">
-            Declare it once. Ship a real panel.
-          </h2>
-          <p className="mt-4 text-ink-200">
-            Every Resource, Metric and Action is a plain PHP class. Martis renders
-            the React, wires routes, builds forms, validates input, and persists
-            view state — for free.
+          <p className="home-section__copy">
+            A plain PHP class becomes a React workspace with routes, validation, search, sorting and filters. No
+            controllers, no hand-built forms.
           </p>
-        </Reveal>
+        </header>
 
-        <div className="relative flex items-center gap-1 mb-5 p-1 rounded-lg bg-ink-850 ring-faint w-fit">
-          {TABS.map((t) => (
-            <button
-              key={t.id}
-              type="button"
-              onClick={() => setTab(t.id)}
-              className={`relative px-3.5 h-8 rounded-md text-[12.5px] font-medium transition-colors ${
-                tab === t.id ? 'text-white' : 'text-ink-300 hover:text-white'
-              }`}
-            >
-              {tab === t.id && (
-                <motion.span
-                  layoutId="codeui-tab"
-                  className="absolute inset-0 rounded-md bg-cobalt-500/20"
-                  transition={{ duration: reduce ? 0 : 0.25, ease: [0.22, 1, 0.36, 1] }}
-                />
-              )}
-              <span className="relative z-[1]">{t.label}</span>
-            </button>
-          ))}
-        </div>
-
-        {/* `min-w-0` on the grid items is required: without it CSS Grid keeps
-            `min-width: auto` and the wide `<pre>` blows past the viewport. */}
-        <div className="grid lg:grid-cols-2 gap-6 items-start">
-          <div className="lg:sticky lg:top-24 min-w-0">
-            <AnimatePresence mode="wait">
-              <motion.div key={tab} {...fade}>
-                <CodeBlock
-                  lang={sample.lang}
-                  filename={sample.file}
-                  code={sample.code}
-                  lineNumbers
-                />
-              </motion.div>
-            </AnimatePresence>
-          </div>
-          <div className="min-w-0">
-            <div className="rounded-xl ring-1 ring-white/10 bg-ink-900 overflow-hidden">
-              <div className="flex items-center gap-2 px-3 h-8 bg-ink-850 border-b border-white/5 text-[11px] font-mono text-ink-300">
-                <Icons.Eye size={11} /> rendered output
-              </div>
-              <AnimatePresence mode="wait">
-                <motion.img
-                  key={tab}
-                  src={cur.preview}
-                  alt={cur.alt}
-                  className="w-full block"
-                  loading="lazy"
-                  {...fade}
-                />
-              </AnimatePresence>
-            </div>
-            <div className="mt-3 text-[12.5px] text-ink-300 font-mono">
-              <span className="text-cobalt-300">→</span> auto-discovered, no
-              registration code, ~{cur.lines} lines of PHP
-            </div>
-          </div>
-        </div>
+        <ol className="home-code-ui">
+          <li className="home-code-ui__step">
+            <p className="home-code-ui__label">
+              <span className="home-code-ui__no">1</span> Declare the resource
+            </p>
+            <CodeBlock lang="php" filename="app/Martis/Resources/ClientResource.php" code={CLIENT_RESOURCE} />
+          </li>
+          <li className="home-code-ui__step">
+            <p className="home-code-ui__label">
+              <span className="home-code-ui__no">2</span> Martis renders the index
+            </p>
+            <MediaFigure
+              src={RESULT.src}
+              alt={RESULT.alt}
+              caption={RESULT.caption}
+              width={RESULT.width}
+              height={RESULT.height}
+            />
+          </li>
+        </ol>
       </div>
     </section>
   )

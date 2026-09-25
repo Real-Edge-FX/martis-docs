@@ -47,12 +47,11 @@ it('hydrates / under reduced motion without discarding the server-rendered <main
   expect(consoleError).not.toHaveBeenCalled()
   expect(container.querySelector('main')).toBe(serverMain)
   expect(hasReactFiber(serverMain!)).toBe(true)
-  // Reveal renders plain, never-hidden elements under reduced motion: none
-  // of the server's `initial` styles (opacity 0) may survive hydration on
-  // the content it wraps, like the stats strip.
+  // Nothing on the homepage waits on motion: after hydration under
+  // reduced motion no element in <main> may be transparent or hidden.
   await act(async () => {})
-  const hiddenStats = [...container.querySelectorAll('[style*="opacity:0"]')].filter((el) =>
-    el.textContent?.includes('Field types'),
+  const hidden = [...container.querySelectorAll('main [style]')].filter((el) =>
+    /opacity:\s*0(?![.\d])|visibility:\s*hidden/.test(el.getAttribute('style') ?? ''),
   )
-  expect(hiddenStats).toEqual([])
+  expect(hidden).toEqual([])
 })
