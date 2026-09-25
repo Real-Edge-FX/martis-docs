@@ -57,5 +57,6 @@ for (const url of ['/', '/product', '/for-agencies'] as const) {
       /opacity:\s*0(?![.\d])|visibility:\s*hidden/.test(el.getAttribute('style') ?? ''),
     )
     expect(hidden).toEqual([])
-  })
+    // Same budget as client-app.test.tsx's hydration tests.
+  }, 20_000)
 }

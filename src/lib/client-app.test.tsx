@@ -27,6 +27,13 @@ afterEach(() => {
   document.body.innerHTML = ''
 })
 
+// Hydration imports each page's lazy chunk and hydrates a full page:
+// under the load of the whole suite that can exceed Vitest's 5000ms
+// default. 20s matches the SSR route tests (src/entry-server.test.tsx)
+// and RENDER_TIMEOUT_MS, and applies only to these tests, so a hang
+// anywhere else still fails fast.
+const HYDRATION_TIMEOUT_MS = 20_000
+
 describe('client hydration reuses the server markup', () => {
   it.each(HYDRATION_URLS)('hydrates %s without discarding the server-rendered <main>', async (url) => {
     const { root, container, serverMain, onRecoverableError } = await hydrateServerHtml(url, serverResults[url].html)
@@ -39,7 +46,7 @@ describe('client hydration reuses the server markup', () => {
     // discard and replace the boundary with a freshly client-rendered one.
     expect(container.querySelector('main')).toBe(serverMain)
     expect(hasReactFiber(serverMain!)).toBe(true)
-  })
+  }, HYDRATION_TIMEOUT_MS)
 })
 
 describe('docs scroll handling', () => {
@@ -71,7 +78,7 @@ describe('docs scroll handling', () => {
 
     expect(window.scrollTo).not.toHaveBeenCalled()
     expect(scrollIntoView).not.toHaveBeenCalled()
-  })
+  }, HYDRATION_TIMEOUT_MS)
 
   it('scrolls a newly opened page to the top, and to the hash target, after hydration', async () => {
     const { root, container } = await hydrateServerHtml(docsUrl, serverResults[docsUrl].html)
