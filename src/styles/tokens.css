@@ -119,6 +119,11 @@
   --site-container-max: 1280px;
   --site-gutter: clamp(16px, 4vw, 32px);
   --site-header-height: 64px;
+  /* The sticky header's bottom border, kept as a token so the header's
+     full sticky box (`--site-header-offset`: bar plus border) is what
+     every scroll offset and the ChapterNav's own `top` measure from. */
+  --site-header-border: 1px;
+  --site-header-offset: calc(var(--site-header-height) + var(--site-header-border));
   --site-touch-target: 44px;
 
   /* Spacing scale (4 px base) */

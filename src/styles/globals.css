@@ -61,13 +61,15 @@ body {
   overflow-x: clip;
 }
 
-/* Anchored sections in MDX (every heading is wrapped in an `<a>` by
-   rehype-autolink-headings with `behavior: 'wrap'`). Add a scroll-
-   margin-top so the sticky topbar never overlaps the heading the
-   browser just scrolled to. */
-:where(h1, h2, h3, h4, h5, h6)[id],
-article :where(h1, h2, h3, h4, h5, h6) {
-  scroll-margin-top: 80px;
+/* Every scroll the browser makes to bring something into view (a
+   fragment link, an MDX heading anchor, and keyboard focus moving onto
+   an element above the fold) stops below the sticky header instead of
+   flush with the viewport top, underneath it (WCAG 2.2 2.4.11, Focus
+   Not Obscured). One rule on the root scroller covers every page and
+   every target; the /product page adds its sticky ChapterNav to it in
+   marketing.css. The docs TopBar is the same 64px bar plus border. */
+html {
+  scroll-padding-top: calc(var(--site-header-offset) + var(--space-4));
 }
 
 /* ============================================================

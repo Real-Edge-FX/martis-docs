@@ -174,25 +174,31 @@
 /* ---- Chapter ------------------------------------------------------------ */
 
 :root {
-  /* Same box model as `.chapter-nav__list` below (padding-block
-     `--space-3` around a `--site-touch-target` link), kept as its own
-     token instead of a repeated calc so the two never drift apart. */
-  --chapter-nav-height: calc(var(--site-touch-target) + (var(--space-3) * 2));
+  /* Same box model as `.chapter-nav` below (padding-block `--space-3`
+     around a `--site-touch-target` link, plus the bar's 1px bottom
+     border), kept as its own token instead of a repeated calc so the
+     two never drift apart. */
+  --chapter-nav-border: 1px;
+  --chapter-nav-height: calc(var(--site-touch-target) + (var(--space-3) * 2) + var(--chapter-nav-border));
+}
+
+/* On the page that carries the sticky ChapterNav (/product), the root
+   scroller's padding (globals.css) also clears that second bar, so a
+   chapter fragment link and keyboard focus both land below it (WCAG 2.2
+   2.4.11). Chromium, Safari and Firefox all support `:has()`. */
+html:has(.chapter-nav) {
+  scroll-padding-top: calc(var(--site-header-offset) + var(--chapter-nav-height) + var(--space-4));
 }
 
 .chapter {
   display: grid;
   gap: var(--space-8);
   padding-block: var(--space-12);
-  /* The fragment target for both ChapterNav's own links and the
-     homepage's `/product#<id>` deep links is this `<article id>`
-     itself (globals.css's heading `scroll-margin-top` rule only
-     matches `h1`-`h6`). Without it, the sticky site header
-     (`--site-header-height`) plus the sticky ChapterNav
-     (`--chapter-nav-height`) hide the chapter's H2 after navigating
-     here. Derived from those two tokens, not a magic number, so it
-     tracks either one changing. */
-  scroll-margin-top: calc(var(--site-header-height) + var(--chapter-nav-height));
+  /* No scroll-margin of its own: the fragment target for ChapterNav's
+     links and the homepage's `/product#<id>` deep links is this
+     `<article id>`, and the root scroller's `scroll-padding-top` above
+     already clears both sticky bars for it. A margin here would add to
+     that padding and double the offset. */
 }
 
 .chapter__title {
@@ -278,11 +284,11 @@
 
 .chapter-nav {
   position: sticky;
-  top: var(--site-header-height);
+  top: var(--site-header-offset);
   z-index: 20;
   background: var(--surface-header);
   backdrop-filter: blur(8px);
-  border-bottom: 1px solid var(--border-subtle);
+  border-bottom: var(--chapter-nav-border) solid var(--border-subtle);
 }
 
 .chapter-nav__list {

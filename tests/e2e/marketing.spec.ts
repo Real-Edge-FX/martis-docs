@@ -123,3 +123,82 @@ test.describe('mobile navigation menu', () => {
     })
   }
 })
+
+// WCAG 2.2 2.4.11 (Focus Not Obscured, Minimum): a keyboard user moving
+// backwards through the page makes the browser scroll each newly focused
+// element into view from above, which is exactly where the sticky site
+// header (and, on /product, the sticky ChapterNav under it) sits. Without
+// `scroll-padding-top` on the root scroller the browser scrolls the
+// element flush to the viewport top, under those bars.
+test.describe('focus not obscured by sticky bars (WCAG 2.4.11)', () => {
+  const FOCUS_VIEWPORTS = [
+    { name: '375x844', width: 375, height: 844 },
+    { name: '1440x900', width: 1440, height: 900 },
+  ] as const
+
+  for (const route of ['/', '/product'] as const) {
+    for (const viewport of FOCUS_VIEWPORTS) {
+      test(`keeps every element focused with Shift+Tab below the sticky bars at ${route} ${viewport.name}`, async ({
+        page,
+      }) => {
+        await page.setViewportSize({ width: viewport.width, height: viewport.height })
+        await page.goto(route)
+        await page.waitForLoadState('networkidle')
+        await expect(page.getByRole('heading', { level: 1 })).toBeVisible()
+
+        // From a blank focus state, Shift+Tab starts at the last tab stop
+        // on the page (the footer) and walks back up to the skip link.
+        await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur())
+
+        const checked: string[] = []
+        for (let step = 0; step < 300; step += 1) {
+          await page.keyboard.press('Shift+Tab')
+          // `html { scroll-behavior: smooth }` animates the scroll focus
+          // triggers: measure the position the reader ends up at, once
+          // the page has stopped moving for a few frames.
+          await page.evaluate(
+            () =>
+              new Promise<void>((resolve) => {
+                let last = window.scrollY
+                let still = 0
+                const tick = () => {
+                  still = window.scrollY === last ? still + 1 : 0
+                  last = window.scrollY
+                  if (still >= 5) resolve()
+                  else requestAnimationFrame(tick)
+                }
+                requestAnimationFrame(tick)
+              }),
+          )
+          const state = await page.evaluate(() => {
+            const active = document.activeElement as HTMLElement | null
+            if (!active || active === document.body) return { done: true as const }
+            const label = `${active.tagName.toLowerCase()} "${(active.getAttribute('aria-label') ?? active.textContent ?? '').trim().slice(0, 40)}"`
+            if (active.classList.contains('skip-link')) return { done: true as const, label }
+            const bars = [...document.querySelectorAll<HTMLElement>('.site-header, .chapter-nav')]
+            // A tab stop inside a sticky bar is the bar itself, not obscured by it.
+            if (bars.some((bar) => bar.contains(active))) return { done: false as const, label, obscuredBy: null }
+            const rect = active.getBoundingClientRect()
+            for (const bar of bars) {
+              const barRect = bar.getBoundingClientRect()
+              const overlaps = rect.top < barRect.bottom && rect.bottom > barRect.top
+              if (overlaps) {
+                return {
+                  done: false as const,
+                  label,
+                  obscuredBy: `${bar.className} (element top ${rect.top.toFixed(1)}, bar ${barRect.top.toFixed(1)}-${barRect.bottom.toFixed(1)})`,
+                }
+              }
+            }
+            return { done: false as const, label, obscuredBy: null }
+          })
+          if (state.done) break
+          checked.push(state.label)
+          expect(state.obscuredBy, `${state.label} is hidden under ${state.obscuredBy}`).toBeNull()
+        }
+        // The walk must actually have covered the page, not stopped early.
+        expect(checked.length).toBeGreaterThan(10)
+      })
+    }
+  }
+})
