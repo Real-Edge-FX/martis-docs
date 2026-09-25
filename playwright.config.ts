@@ -17,13 +17,20 @@ export default defineConfig({
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
-  reporter: 'list',
+  // CI also writes the HTML report so a failing run has something to
+  // upload as an artifact (.github/workflows/ci.yml's browser-checks job).
+  reporter: process.env.CI ? [['list'], ['html', { open: 'never' }]] : 'list',
   use: {
     baseURL: 'http://127.0.0.1:4180',
     trace: 'on-first-retry',
   },
   projects: [
-    { name: 'chromium', use: { ...devices['Desktop Chrome'] } },
+    // `visual.spec.ts`'s pixel baselines are platform-specific (see that
+    // file), so it is split into its own project, run only by
+    // `pnpm test:visual`, and excluded from the `chromium` project that
+    // `pnpm test:e2e`/CI run.
+    { name: 'chromium', use: { ...devices['Desktop Chrome'] }, testIgnore: /visual\.spec\.ts/ },
+    { name: 'visual', use: { ...devices['Desktop Chrome'] }, testMatch: /visual\.spec\.ts/ },
   ],
   webServer: {
     command: 'node scripts/serve-dist.mjs dist 4180',

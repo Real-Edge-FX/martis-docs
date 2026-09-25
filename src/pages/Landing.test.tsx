@@ -130,7 +130,7 @@ it(
     const images = within(main).getAllByRole('img')
     expect(images.length).toBeGreaterThan(0)
     for (const image of images) {
-      expect(image.getAttribute('src'), image.outerHTML).toMatch(/^\/screenshots\/.+\.png$/)
+      expect(image.getAttribute('src'), image.outerHTML).toMatch(/^\/screenshots\/.+\.webp$/)
       expect(image).toHaveAttribute('width')
       expect(image).toHaveAttribute('height')
       expect(image.getAttribute('alt')).toBeTruthy()

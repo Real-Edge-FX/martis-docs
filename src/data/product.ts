@@ -61,42 +61,42 @@ export const PRODUCT_MEDIA_VERSION = '1.2.1'
 // this table once Phase 4 lands the capture pipeline).
 export const PRODUCT_MEDIA: Record<ProductMediaId, ProductMediaEntry> = {
   'resource-create': {
-    src: '/screenshots/resource-create.png',
+    src: '/screenshots/resource-create.webp',
     alt: 'A Martis resource create form with reactive fields',
     caption: 'Fields declared once in PHP render a validated, reactive React form.',
     width: 1280,
     height: 800,
   },
   'resource-index': {
-    src: '/screenshots/resource-index.png',
+    src: '/screenshots/resource-index.webp',
     alt: 'A Martis resource index table with filters and bulk actions',
     caption: 'Sortable, searchable tables with filters and bulk actions out of the box.',
     width: 1280,
     height: 800,
   },
   profile: {
-    src: '/screenshots/profile.png',
+    src: '/screenshots/profile.webp',
     alt: 'A Martis user profile page with two-factor authentication settings',
     caption: 'Login, 2FA and SSO ship enabled; policies gate every write.',
     width: 1280,
     height: 800,
   },
   dashboard: {
-    src: '/screenshots/dashboard.png',
+    src: '/screenshots/dashboard.webp',
     alt: 'The Martis dashboard with navigation, metrics and a branded theme',
     caption: 'Navigation, layout and theme tokens adapt to each client without a fork.',
     width: 1280,
     height: 800,
   },
   'tool-system-status': {
-    src: '/screenshots/tool-system-status.png',
+    src: '/screenshots/tool-system-status.webp',
     alt: 'A custom Martis Tool page showing system status',
     caption: 'Custom Tools and field components extend the panel with application code.',
     width: 1280,
     height: 800,
   },
   login: {
-    src: '/screenshots/login.png',
+    src: '/screenshots/login.webp',
     alt: 'The Martis login page',
     caption: 'One install command, then a working admin login for the next client.',
     width: 1280,

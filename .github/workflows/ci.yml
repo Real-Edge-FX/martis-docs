@@ -1,9 +1,14 @@
 name: CI
 
-# Gates every pull request and every push to a release-relevant branch
-# on the full local verification chain: lint, typecheck, unit tests,
-# the prerender build, and the distribution smoke check over its
-# output. See README "CI gate".
+# Gates every pull request and every push to a release-relevant branch on
+# the full local verification chain: lint, typecheck, unit tests, the
+# prerender build, the distribution smoke check over its output
+# (build-and-test), then a second job (browser-checks) that installs a
+# real Chromium and runs the Playwright E2E suite (axe + responsive
+# checks) and the Lighthouse CI performance budgets against that same
+# build. See README "CI gate". Pixel visual regression (`pnpm
+# test:visual`) is not part of CI: its baselines are platform-specific
+# (see tests/e2e/visual.spec.ts) and only ever run locally.
 
 on:
   pull_request:
@@ -60,3 +65,52 @@ jobs:
 
       - name: Distribution smoke check
         run: pnpm smoke:dist
+
+  browser-checks:
+    name: E2E and performance budgets
+    needs: build-and-test
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Set up Node 22
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: '22'
+
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Playwright Chromium
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Build (client + SSR + prerender)
+        run: pnpm build
+
+      - name: E2E (axe + responsive checks across the four validation breakpoints)
+        run: pnpm test:e2e
+
+      - name: Performance budgets (Lighthouse CI)
+        run: pnpm test:performance
+
+      - name: Upload Playwright report
+        if: failure()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 7
+
+      - name: Upload Lighthouse CI results
+        if: failure()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: lighthouse-results
+          path: .lighthouseci/
+          retention-days: 7

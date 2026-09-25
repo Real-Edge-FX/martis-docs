@@ -14,6 +14,16 @@ import http from 'node:http'
 import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
+import zlib from 'node:zlib'
+
+// Text assets are gzipped when the client sends `Accept-Encoding: gzip`,
+// matching the compression a real Apache/LiteSpeed host applies to text
+// responses by default (mod_deflate/LiteSpeed's built-in compression;
+// see public/.htaccess). Skipping this here would make the Lighthouse CI
+// performance budget (lighthouserc.cjs, which serves through this same
+// script) measure an artificially heavier, uncompressed transfer than
+// production actually ships.
+const COMPRESSIBLE_EXTENSIONS = new Set(['.html', '.css', '.js', '.json', '.svg', '.xml', '.txt'])
 
 const CONTENT_TYPES = {
   '.html': 'text/html; charset=utf-8',
@@ -91,10 +101,21 @@ export function createRequestListener(root) {
       res.end('Not found')
       return
     }
+    const ext = path.extname(resolved.file)
+    const acceptsGzip = (req.headers['accept-encoding'] ?? '').includes('gzip')
+    const shouldCompress = acceptsGzip && COMPRESSIBLE_EXTENSIONS.has(ext)
+
     res.writeHead(resolved.status, {
-      'Content-Type': CONTENT_TYPES[path.extname(resolved.file)] ?? 'application/octet-stream',
+      'Content-Type': CONTENT_TYPES[ext] ?? 'application/octet-stream',
+      ...(shouldCompress ? { 'Content-Encoding': 'gzip', Vary: 'Accept-Encoding' } : {}),
     })
-    fs.createReadStream(resolved.file).pipe(res)
+
+    const source = fs.createReadStream(resolved.file)
+    if (shouldCompress) {
+      source.pipe(zlib.createGzip()).pipe(res)
+    } else {
+      source.pipe(res)
+    }
   }
 }
 

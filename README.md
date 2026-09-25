@@ -145,9 +145,22 @@ Validated against a local Apache 2.4 with `mod_rewrite`, `mod_dir` and `mod_head
 
 ### CI gate
 
-`.github/workflows/ci.yml` runs on every pull request and on pushes to `main`/`release/**` (Node 22): `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm build`, `pnpm test:prerender`, then `pnpm smoke:dist` — `scripts/smoke-dist.mjs`, which checks that `dist/` is complete and correct (every route has its own title/description/canonical/Open Graph tags and real content, referenced `/assets/` files exist, `search-index.json`/`sitemap.xml`/`robots.txt`/`.htaccess` are consistent with the route registry, and nothing leaks a local hostname or a machine path) before anything can merge. Runnable locally the same way: `pnpm smoke:dist`.
+`.github/workflows/ci.yml` runs on every pull request and on pushes to `main`/`release/**` (Node 22), as two jobs:
+
+1. **`build-and-test`**: `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm build`, `pnpm test:prerender`, then `pnpm smoke:dist` — `scripts/smoke-dist.mjs`, which checks that `dist/` is complete and correct (every route has its own title/description/canonical/Open Graph tags and real content, referenced `/assets/` files exist, `search-index.json`/`sitemap.xml`/`robots.txt`/`.htaccess` are consistent with the route registry, and nothing leaks a local hostname or a machine path) before anything can merge. Runnable locally the same way: `pnpm smoke:dist`.
+2. **`browser-checks`** (depends on `build-and-test`): installs Chromium (`pnpm exec playwright install --with-deps chromium`), rebuilds `dist/`, then runs `pnpm test:e2e` (Playwright + axe, see below) and `pnpm test:performance` (Lighthouse CI budgets, see below) against it. On failure it uploads the Playwright HTML report and the raw Lighthouse CI results as build artifacts.
 
 > The previous LAN setup (`192.168.50.21` + Caddy + Nginx Proxy Manager + `martis-docs.realedgefx.com`, driven by `.github/workflows/deploy.yml`) is retired. That workflow targets a self-hosted runner that no longer applies.
+
+### Browser gates (E2E, visual, performance)
+
+Three Playwright-driven suites cover the three redesigned marketing pages (`/`, `/product`, `/for-agencies`), all served through `scripts/serve-dist.mjs` against a real `pnpm build` output (not `vite preview`; see that script's and `playwright.config.ts`'s own comments for why: preview's SPA fallback would hide a slash-less route resolving to its own prerendered file).
+
+- **`pnpm test:e2e`** (`tests/e2e/marketing.spec.ts`, the `chromium` Playwright project): at the four validation breakpoints (375, 768, 1024, 1440 px) checks no horizontal overflow, the primary CTA is visible, zero critical/serious axe violations, no console errors, and that the mobile navigation menu opens, exposes every primary link and closes on Escape. This is the suite CI runs.
+- **`pnpm test:visual`** (`tests/e2e/visual.spec.ts`, the `visual` Playwright project): one full-page pixel snapshot per route per validation breakpoint (12 total), with reduced motion and `animations: 'disabled'`, `maxDiffPixelRatio: 0.005`. **Local-only, not run in CI**: Playwright's screenshots are platform-specific (font rendering and anti-aliasing differ per OS), so a baseline captured on macOS never byte-matches a Linux CI runner. Baselines live in `tests/e2e/visual.spec.ts-snapshots/`; regenerate an approved change with `pnpm exec playwright test tests/e2e/visual.spec.ts --project=visual --update-snapshots` and review every changed image against the approved mockups before committing.
+- **`pnpm test:performance`** (`lighthouserc.cjs`, Lighthouse CI): budgets `largest-contentful-paint` ≤ 2500 ms, `cumulative-layout-shift` ≤ 0.1, `interactive` ≤ 3500 ms, `categories:accessibility` ≥ 0.95 and `categories:seo` ≥ 0.95, for `/`, `/product` and `/for-agencies`, 5 runs per URL (LHCI asserts against the median run — a single headless Chrome launch shows real first-paint jitter of a second or more between otherwise identical runs on a shared/sandboxed machine, most likely GPU/compositor warm-up variance with no GPU acceleration available; the median absorbs that instead of gating on one noisy sample). Uses `startServerCommand`/`scripts/serve-dist.mjs` rather than Lighthouse CI's built-in `staticDistDir`, for the same routing-fidelity reason `test:e2e` does.
+
+  INP (Interaction to Next Paint) is a field metric — real users' interaction latency — and cannot be measured by a lab tool like Lighthouse, so it is out of scope for `lighthouserc.cjs`. It is measured in production only by Real User Monitoring (RUM), once an analytics provider is authorised; the 200 ms threshold is then configured on that provider, without introducing cookies by default.
 
 ## Source of truth
 
