@@ -44,12 +44,15 @@ Most docs are mirrored from `martis-package/docs/*.md` so the site cannot drift 
 ```bash
 pnpm sync-docs           # copies + transforms package docs into src/content/
 pnpm sync-docs --check   # exits non-zero if any synced page is stale (CI gate)
+pnpm sync-docs --package-dir ../martis-package   # package checkout to read (default: the sibling ../martis-package)
+pnpm sync-docs --content-dir /tmp/out            # write somewhere other than src/content/
+pnpm test                # unit tests for the sync transforms (node:test)
 ```
 
 Each `.md` is rewritten into `.mdx` with:
 
-- a frontmatter block (title, description, sourcePath),
-- relative `[link](other.md)` rewritten to `/docs/<slug>`,
+- a frontmatter block (title, description, sourcePath): YAML-escaped, the description skips markdown tables, and `sourcePath` keeps a doc's subfolder (`docs/api/overview.md`),
+- relative links resolved against the page's folder: a link to another synced page becomes `/docs/<slug>`, any other relative link (`../src/...`, `../CHANGELOG.md`, an unpublished doc) becomes a GitHub URL on `Real-Edge-FX/martis-package` (branch `main`),
 - self-closing void HTML (`<br>`, `<hr>`, `<img>`, ...) so MDX is happy,
 - escaped `{` outside fenced code blocks (avoid spurious JSX expressions).
 
