@@ -12,9 +12,17 @@
 // already reproduces that behaviour for Playwright (see
 // playwright.config.ts) and is reused here via `startServerCommand`.
 //
-// INP is a field metric (real user interaction latency) and cannot be
-// measured by a lab tool like Lighthouse; it is out of scope for this
-// budget file. See README's CI gate section for where INP is measured.
+// The spec budgets LCP, CLS and INP. INP is a field metric (real user
+// interaction latency) and cannot be measured by a lab tool like
+// Lighthouse; it is out of scope for this budget file. See README's CI
+// gate section for where INP is measured. There is deliberately no
+// time-to-interactive (`interactive`) assertion: it is not a spec budget.
+//
+// Every assertion uses `aggregationMethod: 'median-run'`: it is checked
+// against the median of the runs below. LHCI's default (`optimistic`)
+// would check the most favorable run instead, so one fast run out of
+// five would pass a page whose typical load misses the budget.
+// scripts/lighthouserc.test.mjs (`pnpm test:prerender`) pins all of this.
 module.exports = {
   ci: {
     collect: {
@@ -26,8 +34,8 @@ module.exports = {
         'http://127.0.0.1:4190/product',
         'http://127.0.0.1:4190/for-agencies',
       ],
-      // Five runs, asserted against the median, for ordinary machine-to-
-      // machine timing variance between runs.
+      // Five runs (odd, so the median is a real run), asserted against
+      // the median for ordinary run-to-run timing variance.
       numberOfRuns: 5,
       // Lighthouse's default `simulate` throttling method does not replay
       // the page load under throttled conditions; it runs once
@@ -54,11 +62,10 @@ module.exports = {
     },
     assert: {
       assertions: {
-        'largest-contentful-paint': ['error', { maxNumericValue: 2500 }],
-        'cumulative-layout-shift': ['error', { maxNumericValue: 0.1 }],
-        interactive: ['error', { maxNumericValue: 3500 }],
-        'categories:accessibility': ['error', { minScore: 0.95 }],
-        'categories:seo': ['error', { minScore: 0.95 }],
+        'largest-contentful-paint': ['error', { maxNumericValue: 2500, aggregationMethod: 'median-run' }],
+        'cumulative-layout-shift': ['error', { maxNumericValue: 0.1, aggregationMethod: 'median-run' }],
+        'categories:accessibility': ['error', { minScore: 0.95, aggregationMethod: 'median-run' }],
+        'categories:seo': ['error', { minScore: 0.95, aggregationMethod: 'median-run' }],
       },
     },
     upload: {

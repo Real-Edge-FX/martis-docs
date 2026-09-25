@@ -3,7 +3,7 @@
   "private": true,
   "type": "module",
   "version": "1.0.0",
-  "description": "Documentation site for the Martis admin engine — getmartis.com",
+  "description": "Documentation site for the Martis admin foundation (getmartis.com)",
   "scripts": {
     "dev": "node scripts/build-search-index.mjs && vite",
     "build:client": "vite build",
@@ -17,7 +17,7 @@
     "typecheck": "tsc -b",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:prerender": "node scripts/prerender-unit.test.mjs && node scripts/smoke-dist-unit.test.mjs && node scripts/sync-docs-unit.test.mjs && node scripts/deploy-script.test.mjs && node scripts/build-search-index.test.mjs && node scripts/serve-dist.test.mjs && node scripts/prerender.test.mjs",
+    "test:prerender": "node scripts/prerender-unit.test.mjs && node scripts/smoke-dist-unit.test.mjs && node scripts/sync-docs-unit.test.mjs && node scripts/deploy-script.test.mjs && node scripts/build-search-index.test.mjs && node scripts/serve-dist.test.mjs && node scripts/lighthouserc.test.mjs && node scripts/prerender.test.mjs",
     "smoke:dist": "node scripts/smoke-dist.mjs",
     "test:e2e": "playwright test --project=chromium",
     "test:visual": "playwright test --project=visual",
