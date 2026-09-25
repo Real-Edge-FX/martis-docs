@@ -9,9 +9,7 @@ export function DocsSidebar() {
   // matching loose against trailing slashes.
   const currentSlug = pathname.replace(/^\/docs\/?/, '').replace(/\/$/, '')
 
-  return (
-    <aside className="hidden lg:block w-[260px] shrink-0 sticky top-16 self-start max-h-[calc(100vh-4rem)] overflow-y-auto py-8 pr-4">
-      {DOC_NAV.map((g) => (
+  const navigation = DOC_NAV.map((g) => (
         <div key={g.group} className="mb-6">
           <div className="px-2 pb-2 text-[10px] font-mono uppercase tracking-[0.18em] text-ink-400">
             {g.group}
@@ -24,7 +22,7 @@ export function DocsSidebar() {
                 <li key={item.slug}>
                   <Link
                     to={`/docs/${item.slug}`}
-                    title={item.tooltip}
+                    aria-label={item.tooltip}
                     className={`flex items-center gap-2.5 h-8 px-2 rounded-md text-[13px] transition-colors ${
                       active
                         ? 'bg-cobalt-500/15 text-white'
@@ -38,9 +36,8 @@ export function DocsSidebar() {
                     <span className="flex-1">{item.label}</span>
                     {item.badge && (
                       <span
-                        title={item.tooltip}
                         aria-label={item.tooltip}
-                        className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-ink-800 text-ink-300"
+                        className="docs-nav-badge text-[10px] font-mono px-1.5 py-0.5 rounded bg-ink-800 text-ink-300"
                       >
                         {item.badge}
                       </span>
@@ -51,7 +48,20 @@ export function DocsSidebar() {
             })}
           </ul>
         </div>
-      ))}
-    </aside>
+      ))
+
+  return (
+    <>
+      <details className="docs-mobile-nav">
+        <summary>
+          Documentation menu
+          <Icons.ChevronDown size={15} />
+        </summary>
+        <nav aria-label="Documentation navigation">{navigation}</nav>
+      </details>
+      <aside className="hidden lg:block w-[260px] shrink-0 sticky top-16 self-start max-h-[calc(100vh-4rem)] overflow-y-auto py-8 pr-4">
+        {navigation}
+      </aside>
+    </>
   )
 }

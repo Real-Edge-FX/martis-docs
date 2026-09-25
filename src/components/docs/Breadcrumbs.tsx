@@ -9,7 +9,7 @@ interface BreadcrumbsProps {
 export function DocsBreadcrumbs({ slug }: BreadcrumbsProps) {
   const item = findBySlug(slug)
   return (
-    <div className="flex items-center gap-1.5 text-[12px] text-ink-300 font-mono mb-6">
+    <div className="docs-breadcrumbs flex items-center gap-1.5 text-[12px] text-ink-300 font-mono mb-6">
       <Link to="/" className="hover:text-white">
         Home
       </Link>
@@ -22,7 +22,7 @@ export function DocsBreadcrumbs({ slug }: BreadcrumbsProps) {
           <Icons.ChevronRight size={11} className="text-ink-500" />
           <span className="text-ink-200">{item.group}</span>
           <Icons.ChevronRight size={11} className="text-ink-500" />
-          <span className="text-white">{item.label}</span>
+          <span className="docs-breadcrumbs__current text-white">{item.label}</span>
         </>
       )}
     </div>

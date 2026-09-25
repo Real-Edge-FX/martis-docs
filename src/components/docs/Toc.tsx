@@ -70,7 +70,7 @@ export function Toc({ slug }: TocProps) {
 
   if (headings.length === 0) {
     return (
-      <aside className="hidden xl:block w-[200px] shrink-0 sticky top-16 self-start max-h-[calc(100vh-4rem)] overflow-y-auto py-8 pl-4">
+      <aside className="docs-toc hidden xl:block w-[200px] shrink-0 sticky top-16 self-start max-h-[calc(100vh-4rem)] overflow-y-auto py-8 pl-4">
         <div className="space-y-2">
           <a
             href={githubUrl}
@@ -86,7 +86,7 @@ export function Toc({ slug }: TocProps) {
   }
 
   return (
-    <aside className="hidden xl:block w-[200px] shrink-0 sticky top-16 self-start max-h-[calc(100vh-4rem)] overflow-y-auto py-8 pl-4">
+    <aside className="docs-toc hidden xl:block w-[200px] shrink-0 sticky top-16 self-start max-h-[calc(100vh-4rem)] overflow-y-auto py-8 pl-4">
       <div className="text-[10px] font-mono uppercase tracking-[0.18em] text-ink-400 pb-3">
         On this page
       </div>

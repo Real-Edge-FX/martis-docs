@@ -144,3 +144,24 @@
   border: 1px solid #1F1F2E;
   margin: 1rem 0;
 }
+
+/* Light documentation surface. Code blocks intentionally stay dark so
+   syntax colours retain the same contrast in both themes. */
+[data-theme="light"] .site-shell[data-surface="docs"] .prose-martis a {
+  color: #4f62c4;
+  text-decoration-color: rgba(79, 98, 196, 0.35);
+}
+
+[data-theme="light"] .site-shell[data-surface="docs"] .prose-martis blockquote {
+  color: #51545d;
+  border-left-color: #657cff;
+  background: #e9edf8;
+}
+
+[data-theme="light"] .site-shell[data-surface="docs"] .prose-martis blockquote p { color: inherit; }
+[data-theme="light"] .site-shell[data-surface="docs"] .prose-martis thead { border-bottom-color: #c7c3b9; }
+[data-theme="light"] .site-shell[data-surface="docs"] .prose-martis th { color: #24252b; }
+[data-theme="light"] .site-shell[data-surface="docs"] .prose-martis td { color: #5e6068; border-bottom-color: #d8d5cd; }
+[data-theme="light"] .site-shell[data-surface="docs"] .prose-martis :is(ul, ol) li::marker { color: #85817a; }
+[data-theme="light"] .site-shell[data-surface="docs"] .prose-martis hr { border-top-color: #d8d5cd; }
+[data-theme="light"] .site-shell[data-surface="docs"] .prose-martis img { border-color: #d8d5cd; }

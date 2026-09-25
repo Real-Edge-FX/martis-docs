@@ -1,16 +1,16 @@
 import { useEffect, useState, type ComponentType } from 'react'
-import { Navigate, Routes, Route, useParams, useLocation, Link } from 'react-router-dom'
+import { Routes, Route, useParams, useLocation, Link } from 'react-router-dom'
 import { MDXProvider } from '@mdx-js/react'
-import { TopBar } from '@/components/landing/TopBar'
-import { Footer } from '@/components/landing/Footer'
 import { DocsSidebar } from '@/components/docs/Sidebar'
 import { Toc } from '@/components/docs/Toc'
 import { DocsBreadcrumbs } from '@/components/docs/Breadcrumbs'
 import { DocsPagination } from '@/components/docs/Pagination'
 import { LoadingScreen } from '@/components/LoadingScreen'
 import { mdxComponents } from '@/components/docs/MdxComponents'
-import { DOC_DEFAULT_SLUG, findBySlug } from '@/lib/docs-tree'
+import { findBySlug } from '@/lib/docs-tree'
 import { loadMdx } from '@/lib/mdx-loader'
+import { SiteShell } from '@/components/site/SiteShell'
+import DocsHome from '@/pages/DocsHome'
 
 /**
  * `/docs/*` route. Renders the doc shell (sidebar + breadcrumbs +
@@ -19,17 +19,15 @@ import { loadMdx } from '@/lib/mdx-loader'
  */
 export default function Docs() {
   return (
-    <div className="min-h-screen bg-ink-900 text-ink-100">
-      <TopBar />
-      <div className="max-w-[1280px] mx-auto px-6 flex gap-8">
+    <SiteShell surface="docs">
+      <div className="site-container docs-layout">
         <DocsSidebar />
         <Routes>
-          <Route index element={<Navigate to={DOC_DEFAULT_SLUG} replace />} />
+          <Route index element={<DocsHome />} />
           <Route path="*" element={<DocPage />} />
         </Routes>
       </div>
-      <Footer />
-    </div>
+    </SiteShell>
   )
 }
 
@@ -94,7 +92,7 @@ function DocPage() {
 
   if (!Component) {
     return (
-      <main className="flex-1 min-w-0 py-12">
+      <main id="main-content" className="docs-article-main">
         <LoadingScreen />
       </main>
     )
@@ -102,7 +100,7 @@ function DocPage() {
 
   return (
     <>
-      <main className="flex-1 min-w-0 py-12">
+      <main id="main-content" className="docs-article-main">
         <DocsBreadcrumbs slug={slug} />
         <article className="prose-martis max-w-3xl">
           <MDXProvider components={mdxComponents}>
@@ -118,7 +116,7 @@ function DocPage() {
 
 function DocNotFound({ slug }: { slug: string }) {
   return (
-    <main className="flex-1 min-w-0 py-12">
+    <main id="main-content" className="docs-article-main">
       <h1 className="text-3xl font-medium text-white tracking-tight">Doc not found</h1>
       <p className="mt-3 text-ink-200">
         No MDX file is registered at <code>/src/content/{slug}.mdx</code>.
