@@ -1,7 +1,8 @@
-import { fireEvent, render, screen, within } from '@testing-library/react'
+import { act, fireEvent, render, screen, within } from '@testing-library/react'
+import { hydrateRoot } from 'react-dom/client'
 import { renderToString } from 'react-dom/server'
 import { MemoryRouter } from 'react-router-dom'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { ROUTER_FUTURE } from '@/routes'
 import { SiteShell } from './SiteShell'
 
@@ -193,5 +194,46 @@ describe('server HTML (no JavaScript)', () => {
       expect(el.getAttribute('style'), el.outerHTML).not.toMatch(/opacity\s*:\s*0(?![.\d]*[1-9])|visibility\s*:\s*hidden|display\s*:\s*none/)
     }
     expect(doc.querySelectorAll('[hidden], [inert], [aria-hidden="true"] a')).toHaveLength(0)
+  })
+})
+
+describe('menu opened before hydration', () => {
+  it('keeps its links and a consistent state when React takes over an open <details>', async () => {
+    const tree = (
+      <MemoryRouter future={ROUTER_FUTURE}>
+        <SiteShell>
+          <main id="main-content">Content</main>
+        </SiteShell>
+      </MemoryRouter>
+    )
+    const container = document.createElement('div')
+    container.innerHTML = renderToString(tree)
+    document.body.appendChild(container)
+    // The reader opens the native disclosure while the JavaScript is
+    // still loading.
+    container.querySelector('details')!.open = true
+
+    const onRecoverableError = vi.fn()
+    const root = await act(async () => hydrateRoot(container, tree, { onRecoverableError }))
+    try {
+      expect(onRecoverableError).not.toHaveBeenCalled()
+      const { toggle, details } = menu()
+      expect(details.open).toBe(true)
+      expect(toggle).toHaveAttribute('aria-expanded', 'true')
+      const panel = within(details).getByRole('navigation', { name: 'Primary' })
+      expect(within(panel).getAllByRole('link')).toHaveLength(5)
+
+      fireEvent.keyDown(within(panel).getByRole('link', { name: 'Product' }), { key: 'Escape' })
+      expect(details.open).toBe(false)
+      expect(toggle).toHaveAttribute('aria-expanded', 'false')
+      expect(toggle).toHaveFocus()
+
+      fireEvent.click(toggle)
+      expect(details.open).toBe(true)
+      expect(toggle).toHaveAttribute('aria-expanded', 'true')
+    } finally {
+      act(() => root.unmount())
+      container.remove()
+    }
   })
 })

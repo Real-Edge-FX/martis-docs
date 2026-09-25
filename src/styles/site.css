@@ -95,7 +95,7 @@
 .site-button--secondary {
   background: var(--action-secondary-bg);
   color: var(--action-secondary-fg);
-  box-shadow: inset 0 0 0 1px var(--border-default);
+  box-shadow: inset 0 0 0 1px var(--border-control);
 }
 
 .site-button--secondary:hover {
@@ -190,7 +190,7 @@
   min-width: var(--site-touch-target);
   min-height: 40px;
   padding: 0 var(--space-3);
-  border: 1px solid var(--border-default);
+  border: 1px solid var(--border-control);
   border-radius: var(--site-radius-md);
   color: var(--fg-primary);
   font-size: 14px;

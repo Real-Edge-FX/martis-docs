@@ -155,6 +155,10 @@
   --surface-header: rgb(8 10 16 / 0.92);
   --border-default: var(--color-line);
   --border-subtle: rgb(255 255 255 / 0.06);
+  /* Boundary of an interactive control (WCAG 1.4.11 needs 3:1): Line
+     alone is 1.55:1 on Night, so controls use a lighter Line-to-Muted
+     step, 3.6:1 on Night, 3.4:1 on Surface, 3.1:1 on Elevated. */
+  --border-control: #62697B;
   --fg-primary: var(--color-primary);
   --fg-muted: var(--color-muted);
   --fg-accent: var(--color-cobalt);
@@ -183,6 +187,8 @@
   --surface-header: rgb(242 240 233 / 0.92);
   --border-default: #D9D5C9;
   --border-subtle: rgb(20 21 26 / 0.08);
+  /* 3.5:1 on paper, 4.0:1 on white. */
+  --border-control: #7A7F8B;
   --fg-primary: var(--color-editorial-ink);
   /* 7.1:1 on paper. */
   --fg-muted: #4A5060;
@@ -209,6 +215,7 @@
     --surface-header: rgb(242 240 233 / 0.92);
     --border-default: #D9D5C9;
     --border-subtle: rgb(20 21 26 / 0.08);
+    --border-control: #7A7F8B;
     --fg-primary: var(--color-editorial-ink);
     --fg-muted: #4A5060;
     --fg-accent: #3448C0;

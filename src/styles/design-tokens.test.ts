@@ -32,6 +32,44 @@ describe('palette', () => {
   })
 })
 
+/** WCAG 2.x contrast ratio between two #RRGGBB colours. */
+function contrast(a: string, b: string): number {
+  const luminance = (hex: string) => {
+    const [r, g, bl] = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255)
+      .map((c) => (c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4))
+    return 0.2126 * r + 0.7152 * g + 0.0722 * bl
+  }
+  const [hi, lo] = [luminance(a), luminance(b)].sort((x, y) => y - x)
+  return (hi + 0.05) / (lo + 0.05)
+}
+
+describe('interactive control boundaries (WCAG 1.4.11)', () => {
+  const controlBorders = Array.from(tokens.matchAll(/--border-control:\s*(#[0-9A-F]{6});/gi), (m) => m[1])
+
+  it('defines a control border for the dark and the light token sets', () => {
+    expect(controlBorders).toHaveLength(3)
+  })
+
+  it.each([
+    ['dark', '#080A10'],
+    ['dark', '#10131C'],
+    ['dark', '#171B27'],
+  ])('reaches 3:1 on the %s surface %s', (_, surface) => {
+    expect(contrast(controlBorders[0], surface)).toBeGreaterThanOrEqual(3)
+  })
+
+  it.each(['#F2F0E9', '#FBFAF6', '#FFFFFF', '#F7F5EF'])('reaches 3:1 on the light surface %s', (surface) => {
+    expect(contrast(controlBorders[1], surface)).toBeGreaterThanOrEqual(3)
+    expect(controlBorders[2]).toBe(controlBorders[1])
+  })
+
+  it('is what the bordered shell controls use', () => {
+    const site = read('src/styles/site.css')
+    expect(site).toMatch(/\.site-menu__toggle \{[^}]*border: 1px solid var\(--border-control\);/)
+    expect(site).toMatch(/\.site-button--secondary \{[^}]*box-shadow: inset 0 0 0 1px var\(--border-control\);/)
+  })
+})
+
 describe('self-hosted fonts', () => {
   it('no longer loads anything from Google Fonts', () => {
     expect(indexHtml).not.toMatch(/fonts\.(googleapis|gstatic)\.com/)

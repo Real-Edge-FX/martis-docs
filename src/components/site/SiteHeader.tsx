@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useSyncExternalStore, type MouseEvent } from 'react'
+import { useEffect, useRef, useState, type MouseEvent, type SyntheticEvent } from 'react'
 import { Link } from 'react-router-dom'
 import { Logo } from '@/components/Logo'
 import { Icons } from '@/components/icons'
@@ -7,23 +7,6 @@ import { INSTALL_PATH, PRIMARY_LINKS, type SiteLink } from './site-links'
 /** Width at which the inline navigation replaces the menu disclosure.
  *  Keep in sync with the `@media (min-width: 900px)` rules in site.css. */
 const DESKTOP_QUERY = '(min-width: 900px)'
-
-const noopSubscribe = () => () => {}
-
-/**
- * False in the server render and during hydration, true in the browser
- * afterwards. The server HTML must work without JavaScript, so it puts
- * the menu links inside the closed `<details>` (the browser hides them
- * and shows them natively on toggle). Once React runs, the menu is
- * state-driven and only renders its links while open.
- */
-function useIsHydrated(): boolean {
-  return useSyncExternalStore(
-    noopSubscribe,
-    () => true,
-    () => false,
-  )
-}
 
 function ExternalArrow() {
   return (
@@ -68,21 +51,39 @@ interface SiteHeaderProps {
  * in the bar at every width.
  */
 export function SiteHeader({ surface = 'marketing' }: SiteHeaderProps) {
-  const hydrated = useIsHydrated()
+  // `enhanced` is false in the server render and during hydration, so
+  // the server HTML (and the first client render that must match it)
+  // keeps the menu links inside the closed <details>, where the browser
+  // shows them natively on toggle. Once React runs, the menu is
+  // state-driven and only renders its links while open.
+  const [enhanced, setEnhanced] = useState(false)
   const [open, setOpen] = useState(false)
   const detailsRef = useRef<HTMLDetailsElement>(null)
   const toggleRef = useRef<HTMLElement>(null)
 
+  useEffect(() => {
+    // Take over from the native disclosure: the reader may have opened
+    // it while the JavaScript was loading, so adopt the DOM's real state
+    // in the same render that enables the enhancement. The links never
+    // unmount from an open panel, and state and DOM never disagree.
+    setOpen(detailsRef.current?.open ?? false)
+    setEnhanced(true)
+  }, [])
+
   const onToggleClick = (event: MouseEvent<HTMLElement>) => {
-    // React owns the open state once it runs. Read the DOM rather than the
-    // state: a reader may have opened the menu natively before hydration,
-    // while the state still says closed. React would not write the
-    // unchanged `open={false}` back, so close that one directly.
+    // React owns the open state once enhanced; the native toggle is
+    // replaced so the panel renders in the same commit that opens it.
+    if (!enhanced) return
     event.preventDefault()
-    const details = detailsRef.current
-    const next = !details?.open
-    if (!next && !open && details) details.open = false
-    setOpen(next)
+    setOpen((current) => !current)
+  }
+
+  // Anything else that toggles the element natively (the browser's
+  // find-in-page, for one) still ends up in state: the DOM stays the
+  // single source of truth.
+  const onToggle = (event: SyntheticEvent<HTMLDetailsElement>) => {
+    const domOpen = event.currentTarget.open
+    setOpen((current) => (current === domOpen ? current : domOpen))
   }
 
   useEffect(() => {
@@ -152,18 +153,18 @@ export function SiteHeader({ surface = 'marketing' }: SiteHeaderProps) {
             Install Martis
           </Link>
 
-          <details ref={detailsRef} className="site-menu" open={open}>
+          <details ref={detailsRef} className="site-menu" open={open} onToggle={onToggle}>
             <summary
               ref={toggleRef}
               className="site-menu__toggle"
-              aria-expanded={hydrated ? open : undefined}
+              aria-expanded={enhanced ? open : undefined}
               onClick={onToggleClick}
             >
               <Icons.Menu aria-hidden="true" size={18} className="site-menu__icon site-menu__icon--open" />
               <Icons.Close aria-hidden="true" size={18} className="site-menu__icon site-menu__icon--close" />
               <span>Menu</span>
             </summary>
-            {(!hydrated || open) && (
+            {(!enhanced || open) && (
               <nav aria-label="Primary" className="site-menu__panel">
                 <ul>
                   {PRIMARY_LINKS.map((link) => (
