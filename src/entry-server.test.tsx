@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { readFileSync } from 'node:fs'
-import { afterEach, beforeEach, describe, expect, it, vi, type MockInstance } from 'vitest'
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi, type MockInstance } from 'vitest'
 import { loadPackagistStats, loadReleaseManifest, formatCount, formatVersion } from '@/lib/generated-data'
 import { DOC_NAV } from '@/lib/docs-tree'
 import { serializeMeta } from '@/lib/seo'
@@ -219,25 +219,31 @@ it('renders the docs index as a list of every docs page', async () => {
 // routes.tsx) can drift for any one of them. The "Loading…" and U+0000
 // checks over the same HTML run in `pnpm smoke:dist` (checkRoute in
 // scripts/smoke-dist.mjs), against the files that actually ship.
-it(
-  'renders every public route with its own page and status',
-  async () => {
-    const notFound = await render('/404')
-    for (const route of PUBLIC_ROUTES) {
+//
+// One test per route, not one sweep: a real SSR render of every public
+// route in a single test ran past its budget under the load of the rest
+// of the suite. Split, each route gets the full 20s (RENDER_TIMEOUT_MS
+// in src/entry-server.tsx) to itself, a failure names its route, and a
+// hang anywhere else in the suite still fails fast.
+describe('every public route', () => {
+  let notFoundHtml: string
+  beforeAll(async () => {
+    notFoundHtml = (await render('/404')).html
+  }, 20_000)
+
+  it.each(PUBLIC_ROUTES)(
+    'renders %s with its own page and status',
+    async (route) => {
       const { html, status } = await render(route)
       expect(status, route).toBe(route === '/404' ? 404 : 200)
       expect(html, route).toContain('<main')
       // A route the router does not know renders the 404 page with a 200
       // head: the registries in site-routes.ts and routes.tsx disagree.
-      if (route !== '/404') expect(html === notFound.html, `${route} renders the 404 page`).toBe(false)
-    }
-  },
-  // Vitest's 5000ms default is tight for a real SSR render of every
-  // public route under the load of the rest of the suite. 20s matches
-  // RENDER_TIMEOUT_MS in src/entry-server.tsx, and applies to this test
-  // only, so a hang anywhere else still fails fast.
-  20_000,
-)
+      if (route !== '/404') expect(html === notFoundHtml, `${route} renders the 404 page`).toBe(false)
+    },
+    20_000,
+  )
+})
 
 it('renders the same URL to the same markup every time', async () => {
   const first = await render('/docs/core/fields')
