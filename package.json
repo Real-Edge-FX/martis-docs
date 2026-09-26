@@ -7,8 +7,9 @@
   "scripts": {
     "dev": "node scripts/build-search-index.mjs && vite",
     "build": "node scripts/build-search-index.mjs && tsc -b && vite build",
+    "release:stats": "node scripts/release-stats.mjs --write",
     "preview": "vite preview --port 4173",
-    "test": "vitest run && node --test scripts/sync-docs.test.mjs",
+    "test": "vitest run && node --test scripts/sync-docs.test.mjs scripts/release-stats.test.mjs",
     "test:watch": "vitest",
     "typecheck": "tsc -b",
     "sync-docs": "node scripts/sync-docs.mjs",
