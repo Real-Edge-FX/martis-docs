@@ -48,6 +48,17 @@ else
   PNPM=(npx -y pnpm@9.15.9)
 fi
 
+# The release numbers the site shows (version, test count, installs) are
+# read from their sources for every deploy: the latest martis-package
+# release, the README total at that tag, and Packagist. A source that does
+# not answer stops the deploy. site.ts is put back afterwards, so the
+# checkout stays at origin/main.
+echo "==> Release numbers"
+trap 'git checkout -- src/data/site.ts 2>/dev/null || true' EXIT
+node scripts/release-stats.mjs --write
+EXPECTED_VERSION=$(node -e "import('./scripts/release-stats.mjs').then(m=>{const r=m.readSiteRelease(require('fs').readFileSync('src/data/site.ts','utf8'));console.log(r.version+' '+r.tests)})")
+read -r EXPECTED_VERSION EXPECTED_TESTS <<< "$EXPECTED_VERSION"
+
 echo "==> Building docs site"
 "${PNPM[@]}" build
 
@@ -109,5 +120,20 @@ for path in / /docs /compare /contact /search-index.json; do
   printf '  %-22s HTTP %s\n' "$path" "$code"
   [ "$code" = "200" ] || fail=1
 done
+# The published chunks must carry the numbers this deploy built.
+found=0
+for asset in $(curl -s --max-time 25 "${SITE_URL}/" | grep -oE '/assets/[A-Za-z0-9_.-]+\.js' | sort -u) \
+             $(grep -lE "version:\"${EXPECTED_VERSION}\"" dist/assets/*.js 2>/dev/null | sed 's#^dist##'); do
+  body=$(curl -s --max-time 25 "${SITE_URL}${asset}" || true)
+  if printf '%s' "$body" | grep -q "version:\"${EXPECTED_VERSION}\"" && printf '%s' "$body" | grep -q "tests:${EXPECTED_TESTS}"; then
+    found=1; break
+  fi
+done
+if [ "$found" -eq 1 ]; then
+  echo "  release numbers          v${EXPECTED_VERSION}, ${EXPECTED_TESTS} tests"
+else
+  echo "  release numbers          NOT FOUND (v${EXPECTED_VERSION}, ${EXPECTED_TESTS} tests)" >&2
+  fail=1
+fi
 [ "$fail" -eq 0 ] && echo "✅ Deployed and verified: ${SITE_URL}" \
   || { echo "⚠️  Deploy uploaded but a smoke check did not return 200." >&2; exit 1; }

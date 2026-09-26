@@ -104,6 +104,8 @@ bash scripts/deploy.sh
 3. Publishes `dist/` with `rsync --delete` to `domains/getmartis.com/public_html/`.
 4. Smoke-tests `/`, `/docs`, `/compare`, `/contact`, and `/search-index.json` on production.
 
+Guarantees, in order: the checkout must be clean and at `origin/main` (`MARTIS_DOCS_DEPLOY_ANY_REF=1` for a deliberate preview); the release numbers the site shows (`RELEASE.version`, `RELEASE.tests`, `RELEASE.downloads`, `RELEASE.monthlyDownloads` in `src/data/site.ts`) are rewritten from their sources by `node scripts/release-stats.mjs --write` (the latest martis-package GitHub release, the README "Test coverage" total at that tag, and Packagist) and restored after the deploy; a source that does not answer stops it; and after the upload the live chunks must carry that version and test count. `node scripts/release-stats.mjs --check` tells whether the committed values are current (run `--write` and open a PR when they are not).
+
 The deploy prefers the dedicated SSH key and falls back to a password read at runtime or supplied through `MARTIS_DOCS_SSH_PASS`. Credentials are never written by the script. Deep links are handled by `public/.htaccess`.
 
 > The old Caddy deployment at `martis-docs.realedgefx.com` is retired. `.github/workflows/deploy.yml` is kept as dispatch-only historical reference and does not run on pushes.
