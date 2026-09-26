@@ -1,8 +1,12 @@
 import { describe, expect, it } from 'vitest'
 import { RELEASE } from '@/data/site'
 
+// The deploy writes RELEASE from the latest martis-package release
+// (scripts/release-stats.mjs); the committed values only have to be well formed.
 describe('release metadata', () => {
-  it('points every public release label at Martis v2.0.1', () => {
-    expect(RELEASE.version).toBe('2.0.1')
+  it('holds a release version and positive counts', () => {
+    expect(RELEASE.version).toMatch(/^\d+\.\d+\.\d+$/)
+    expect(RELEASE.tests).toBeGreaterThan(0)
+    expect(RELEASE.downloads).toBeGreaterThan(0)
   })
 })
