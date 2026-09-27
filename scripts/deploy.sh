@@ -7,6 +7,11 @@
 # allows SSH password auth unless a key is registered in hPanel. The
 # static site is built locally and synced into the domain docroot.
 #
+# The deploy also syncs the docs pages of the release it publishes: it
+# fetches martis-package/docs/ at the tag matching the resolved
+# EXPECTED_VERSION and runs scripts/sync-docs.mjs against it before the
+# build, so a release's docs never need a separate martis-docs PR.
+#
 # Usage:
 #   bash scripts/deploy.sh
 #   MARTIS_DOCS_SSH_PASS='...' bash scripts/deploy.sh
@@ -54,10 +59,35 @@ fi
 # not answer stops the deploy. site.ts is put back afterwards, so the
 # checkout stays at origin/main.
 echo "==> Release numbers"
-trap 'git checkout -- src/data/site.ts 2>/dev/null || true' EXIT
+DOCS_PKG_TMPDIR=""
+trap 'git checkout -- src/data/site.ts 2>/dev/null || true
+      git checkout -- src/content 2>/dev/null || true
+      git clean -fdq -- src/content 2>/dev/null || true
+      [ -n "$DOCS_PKG_TMPDIR" ] && rm -rf "$DOCS_PKG_TMPDIR"' EXIT
 node scripts/release-stats.mjs --write
 EXPECTED_VERSION=$(node -e "import('./scripts/release-stats.mjs').then(m=>{const r=m.readSiteRelease(require('fs').readFileSync('src/data/site.ts','utf8'));console.log(r.version+' '+r.tests)})")
 read -r EXPECTED_VERSION EXPECTED_TESTS <<< "$EXPECTED_VERSION"
+
+# Pull martis-package/docs/ at the tag this deploy is publishing and sync
+# it into src/content before the build, so the docs site never trails the
+# release by a separate PR. A failure here stops the deploy loudly, same
+# as release-stats: there is no stale-docs fallback.
+echo "==> Docs from martis-package v${EXPECTED_VERSION}"
+DOCS_PKG_TMPDIR="$(mktemp -d)"
+TARBALL_URL="https://codeload.github.com/Real-Edge-FX/martis-package/tar.gz/refs/tags/v${EXPECTED_VERSION}"
+if curl -fsSL "$TARBALL_URL" -o "$DOCS_PKG_TMPDIR/pkg.tar.gz" 2>/dev/null; then
+  tar -xzf "$DOCS_PKG_TMPDIR/pkg.tar.gz" -C "$DOCS_PKG_TMPDIR"
+elif command -v gh >/dev/null 2>&1; then
+  echo "    codeload fetch failed (repo private or tag missing); trying gh api."
+  gh api "repos/Real-Edge-FX/martis-package/tarball/v${EXPECTED_VERSION}" > "$DOCS_PKG_TMPDIR/pkg.tar.gz"
+  tar -xzf "$DOCS_PKG_TMPDIR/pkg.tar.gz" -C "$DOCS_PKG_TMPDIR"
+else
+  echo "ERROR: could not fetch martis-package v${EXPECTED_VERSION} (codeload failed, gh not installed)." >&2
+  exit 1
+fi
+PKG_DIR="$(find "$DOCS_PKG_TMPDIR" -mindepth 1 -maxdepth 1 -type d -name 'martis-package-*' | head -1)"
+[ -n "$PKG_DIR" ] || { echo "ERROR: extracted martis-package tarball has no martis-package-* directory." >&2; exit 1; }
+node scripts/sync-docs.mjs --package-dir "$PKG_DIR"
 
 echo "==> Building docs site"
 "${PNPM[@]}" build

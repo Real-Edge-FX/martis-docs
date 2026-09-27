@@ -39,7 +39,7 @@ Outputs to `dist/`. The build runs:
 
 ## Content sync
 
-Most docs are mirrored from `martis-package/docs/*.md` so the site cannot drift from the package source. The mapping is declared explicitly in `scripts/sync-docs.mjs`:
+Most docs are mirrored from `martis-package/docs/*.md` so the site cannot drift from the package source. The mapping is declared explicitly in `scripts/sync-docs.mjs`. `scripts/deploy.sh` runs this against the docs of the release it publishes, so `src/content` is never committed out of sync with the live site and no separate docs PR is needed for a release; use the commands below only for local iteration on a doc page (against the sibling `martis-package` checkout) or to check a work-in-progress package doc before it's tagged:
 
 ```bash
 pnpm sync-docs           # copies + transforms package docs into src/content/
@@ -99,12 +99,13 @@ bash scripts/deploy.sh
 
 `scripts/deploy.sh`:
 
-1. Runs `pnpm build` and verifies that the SPA rewrite file reached `dist/`.
-2. Creates `dist/404.html` as an additional SPA fallback.
-3. Publishes `dist/` with `rsync --delete` to `domains/getmartis.com/public_html/`.
-4. Smoke-tests `/`, `/docs`, `/compare`, `/contact`, and `/search-index.json` on production.
+1. Resolves the release numbers (see below), then fetches `martis-package/docs/` at the matching tag and runs `scripts/sync-docs.mjs` against it, so the deploy always publishes the docs of the release it's shipping. **No separate docs PR is needed**: this replaces the old flow where a docs sync landed on `main` ahead of the deploy.
+2. Runs `pnpm build` and verifies that the SPA rewrite file reached `dist/`.
+3. Creates `dist/404.html` as an additional SPA fallback.
+4. Publishes `dist/` with `rsync --delete` to `domains/getmartis.com/public_html/`.
+5. Smoke-tests `/`, `/docs`, `/compare`, `/contact`, and `/search-index.json` on production.
 
-Guarantees, in order: the checkout must be clean and at `origin/main` (`MARTIS_DOCS_DEPLOY_ANY_REF=1` for a deliberate preview); the release numbers the site shows (`RELEASE.version`, `RELEASE.tests`, `RELEASE.downloads`, `RELEASE.monthlyDownloads` in `src/data/site.ts`) are rewritten from their sources by `node scripts/release-stats.mjs --write` (the latest martis-package GitHub release, the README "Test coverage" total at that tag, and Packagist) and restored after the deploy; a source that does not answer stops it; and after the upload the live chunks must carry that version and test count. `node scripts/release-stats.mjs --check` tells whether the committed values are current (run `--write` and open a PR when they are not).
+Guarantees, in order: the checkout must be clean and at `origin/main` (`MARTIS_DOCS_DEPLOY_ANY_REF=1` for a deliberate preview); the release numbers the site shows (`RELEASE.version`, `RELEASE.tests`, `RELEASE.downloads`, `RELEASE.monthlyDownloads` in `src/data/site.ts`) are rewritten from their sources by `node scripts/release-stats.mjs --write` (the latest martis-package GitHub release, the README "Test coverage" total at that tag, and Packagist); `src/content` is synced from the martis-package docs at that same tag (fetched from `codeload.github.com`, or `gh api .../tarball/...` if the repo is private); both `src/data/site.ts` and `src/content` are restored to their committed state after the deploy (the EXIT trap also removes the temp tarball dir); a source that does not answer stops the deploy; and after the upload the live chunks must carry that version and test count. `node scripts/release-stats.mjs --check` tells whether the committed values are current (run `--write` and open a PR when they are not).
 
 The deploy prefers the dedicated SSH key and falls back to a password read at runtime or supplied through `MARTIS_DOCS_SSH_PASS`. Credentials are never written by the script. Deep links are handled by `public/.htaccess`.
 
