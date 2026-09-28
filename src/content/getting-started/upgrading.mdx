@@ -9,6 +9,65 @@ sourcePath: "martis-package/docs/upgrading.md"
 
 The sections below list the breaking changes of each major version and what to change in an app.
 
+## Upgrading to v2.1.1 from v2.1.0
+
+Nothing is required. The optional checks below concern apps set up with an earlier version.
+
+### Migrations that add a column to Spatie's tables
+
+`martis:roles --with-categories` and `martis:sso --with-migration` could date their migration at or before Spatie's `create_permission_tables`, which Spatie dates one second ahead. On a database built from scratch (CI, a new machine, a first deploy), the Martis migration then ran first, found no table and skipped its column. Check the order:
+
+```bash
+ls database/migrations | grep -E 'create_permission_tables|add_category_column_to_permissions_table|_group_name_to_roles_table'
+```
+
+If a Martis file is listed before `create_permission_tables`, rename it with a later timestamp, for example the current date and time (`2026_10_01_120000_add_category_column_to_permissions_table.php`). Laravel runs it once more under the new name: where the column exists, its `hasColumn()` check makes that run a no-op; where it is missing, the column is added. The old name stays recorded in the `migrations` table and the renamed file is recorded in a new batch, so do not roll that batch back with `migrate:rollback`: its `down()` would drop the column. On a database that already has the column, you can instead rename the row in the `migrations` table to the new file name.
+
+### The extensions Vite config
+
+`vite.extensions.config.ts`, which `martis:install` publishes, resolved its paths from `__dirname`, so with Vite 8 every `npm run build:extensions` warned that Vite's native config loader (announced as the default of a future major) does not support it. New installs resolve the paths from `import.meta.url`, which works with Vite 4 to 9, both config loaders and any Node version. To update an existing app, edit the file:
+
+```diff
+ import path from 'node:path'
++import {fileURLToPath} from 'node:url'
++
++// The directory of this file. `__dirname` only exists while Vite bundles
++// the config; Vite's native config loader does not define it.
++const rootDir = fileURLToPath(new URL('.', import.meta.url))
+ 
+-const shimsDir = path.resolve(__dirname, 'resources/js/martis-extensions/.shims')
++const shimsDir = path.resolve(rootDir, 'resources/js/martis-extensions/.shims')
+```
+
+and, in `build.lib`:
+
+```diff
+-      entry: path.resolve(__dirname, 'resources/js/martis-extensions/index.ts'),
++      entry: path.resolve(rootDir, 'resources/js/martis-extensions/index.ts'),
+```
+
+Nothing breaks until Vite switches loaders, so the edit can wait. `php artisan martis:install --force` also writes the new file, but it rewrites every other scaffold file too.
+
+## Upgrading to v2.1.0 from v2.0.x
+
+v2.1.0 adds optional features and fixes. Nothing needs changing unless one of the two cases at the end of this section applies. There are three visible changes:
+
+- **Dates and numbers follow the user's Martis language.** The following format in the language the user picked in Martis, not the browser's: Date, DateTime and Currency values, metric values, menu count badges and notification dates. With `pt_PT` a date reads `27/09/2026` and a number `1234,5`. The bundled `en` locale formats with US rules (`9/27/2026`, `1,234.5`) on every browser, where it used to follow the browser (`27/09/2026` on an `en-GB` browser). The Currency and Number inputs take the same decimal separator, and the metric charts their axes and tooltips. A Currency field with `locale()` keeps that locale. See [Internationalisation → Number and date formatting](/docs/customization/i18n#number-and-date-formatting).
+- **The `aggregateVia()` tile shows a number, not EUR.** A column named like `amount`, `price` or `total` was shown as euros whatever the app's currency. It is now a plain number with up to two decimals.
+- **A fresh install stops logging a 404 for the extensions bundle.** The shell leaves `/vendor/martis-user/extensions.js` out while the file does not exist, and `npm run build:extensions` brings it back with no other step. Any other `MARTIS_EXTENSIONS` URL is still loaded as configured.
+
+New and optional:
+
+- **Restrict the panel** with the `viewMartis` gate ([Authorization → Panel access](/docs/auth/authorization#panel-access-viewmartis)). Without it every signed-in user gets in, as before.
+- **Install without migrating:** `php artisan martis:install --no-migrate`, then `php artisan migrate`.
+- **Add palette commands** with `Martis::commandPalette()` ([Components → App commands](/docs/customization/components#app-commands-v210)).
+- **Scope the notification centre** with `Martis::scopeNotificationsUsing()` ([Notifications → Scoping the notification centre](/docs/reference/notifications#scoping-the-notification-centre)).
+
+When to act:
+
+- **Your users expect another English format.** Add a regional code such as `en_GB` to `martis.preferences.locales` (and a label to `locale_labels`), and let those users pick it: it translates through `en` and formats with its region. See [Internationalisation → Number and date formatting](/docs/customization/i18n#number-and-date-formatting).
+- **You published the shell template** (`vendor:publish --tag=martis-views`, `resources/views/vendor/martis/app.blade.php`). Your copy wins over the package's, so it keeps loading the unbuilt extensions bundle (the 404), and a user the `viewMartis` gate refuses gets the full SPA instead of the standalone screen. Republish it, or port three changes of the package's `resources/views/app.blade.php` into it: `panelForbidden` and `panelForbiddenImpersonating` in `window.MartisConfig`, `extensions: {!! json_encode(\Martis\Support\ExtensionBundles::urls()) !!}`, and the `scoped` key of `notifications`.
+
 ## Upgrading to v2.0.1 from v2.0.0
 
 The action log, the throttle buckets, the Gate cache's `lookup()` the Tool route warning, the grouped user hooks, the relatable checks on writes, the relationship panels, the Action Events panel, the action log's columns and React Router 7 apply to every app; the other changes concern an app with a custom `MARTIS_GUARD`.
