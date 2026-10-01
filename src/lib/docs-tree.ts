@@ -66,6 +66,8 @@ export const DOC_NAV: DocGroup[] = [
       { slug: 'customization/tools',              label: 'Custom Tools',           icon: 'Plug' },
       { slug: 'customization/tool-fields',        label: 'Fields in Tools',         icon: 'Plug' },
       { slug: 'customization/tool-boot-patterns', label: 'Tool boot patterns',     icon: 'Plug' },
+      { slug: 'customization/custom-pages',       label: 'Custom pages',           icon: 'Layers' },
+      { slug: 'customization/testing-extensions', label: 'Testing extensions',     icon: 'Bolt' },
       { slug: 'customization/loader',             label: 'Loader screen',          icon: 'Layers' },
       { slug: 'customization/generators',         label: 'Customising generators', icon: 'Bolt',      badge: '18', tooltip: '18 Artisan generators (martis:resource, martis:action, …)' },
       { slug: 'customization/i18n',               label: 'Internationalisation',   icon: 'Translate', badge: '3',  tooltip: '3 bundled locales: en, pt_PT, pt_BR' },

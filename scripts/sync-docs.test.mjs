@@ -1,5 +1,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
+import fs from 'node:fs'
+import os from 'node:os'
 import path from 'node:path'
 import { compile } from '@mdx-js/mdx'
 import remarkFrontmatter from 'remark-frontmatter'
@@ -12,6 +14,7 @@ import {
   parseArgs,
   rewriteLinks,
   transformMarkdown,
+  unpublishedPackageDocs,
   yamlString,
 } from './sync-docs.mjs'
 
@@ -150,4 +153,32 @@ test('a pipe-less table is skipped too', () => {
 test('a fenced block with blank lines is skipped whole', () => {
   const md = '# T\n\n```php\n$a = 1;\n\n$b = 2;\n```\n\nAfter the code.\n'
   assert.equal(deriveTitleAndDescription(md).description, 'After the code.')
+})
+
+// A martis-package doc the site never maps is never published (v2.3.0 shipped
+// docs/testing-extensions.md, and v2.2.0 docs/custom-pages.md, with no page).
+
+function packageDocsFixture(files) {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'martis-docs-'))
+  for (const rel of files) {
+    fs.mkdirSync(path.dirname(path.join(dir, rel)), { recursive: true })
+    fs.writeFileSync(path.join(dir, rel), '# Page\n')
+  }
+  return dir
+}
+
+test('lists a package doc that is neither mapped nor set aside', () => {
+  const dir = packageDocsFixture(['fields.md', 'api/overview.md', 'quick-start.md', 'brand-new-page.md', 'api/new-endpoint.md'])
+  assert.deepEqual(unpublishedPackageDocs(dir), ['api/new-endpoint.md', 'brand-new-page.md'])
+})
+
+test('leaves the docs index, the roadmap and superpowers notes alone (control)', () => {
+  const dir = packageDocsFixture(['README.md', 'v1-roadmap.md', 'superpowers/plans/x.md', 'superpowers/specs/y.md', 'testing-extensions.md', 'custom-pages.md'])
+  assert.deepEqual(unpublishedPackageDocs(dir), [])
+})
+
+test('maps every page of the real martis-package docs', () => {
+  const docs = path.join(DEFAULT_PACKAGE_DIR, 'docs')
+  if (!fs.existsSync(docs)) return
+  assert.deepEqual(unpublishedPackageDocs(docs), [])
 })
