@@ -83,6 +83,8 @@ export const MAP = {
   'customization/tools': 'tools.md',
   'customization/tool-fields': 'tool-fields.md',
   'customization/tool-boot-patterns': 'tool-boot-patterns.md',
+  'customization/custom-pages': 'custom-pages.md',
+  'customization/testing-extensions': 'testing-extensions.md',
   'customization/loader': 'loader.md',
   'customization/generators': 'customizing-generators.md',
   'customization/i18n': 'i18n.md',
@@ -114,6 +116,14 @@ export const LINK_ONLY = {
   'auth/roles': 'roles.md',
   'core/gates': 'gates.md',
 }
+
+// Package docs that are deliberately not pages of the site: the package's
+// own docs index (the site has its navigation), and the design notes, specs
+// and plans under `superpowers/`. Every other `martis-package/docs/**/*.md`
+// must be in MAP or LINK_ONLY: a new package page the site never maps is
+// never published, and its links on the site point at GitHub instead.
+export const NOT_PUBLISHED = new Set(['README.md', 'v1-roadmap.md'])
+export const NOT_PUBLISHED_DIRS = ['superpowers/']
 
 // Inverse map of package path → public slug. Used to rewrite
 // inter-doc relative links during the sync.
@@ -467,6 +477,39 @@ async function validateAll(contentDir) {
   return true
 }
 
+// The package docs (relative to martis-package/docs/, `/` separators) that
+// the site never publishes although they are not set aside as NOT_PUBLISHED.
+export function unpublishedPackageDocs(packageDocs) {
+  const found = []
+  const walk = (dir) => {
+    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+      const full = path.join(dir, entry.name)
+      if (entry.isDirectory()) walk(full)
+      else if (entry.isFile() && full.endsWith('.md')) found.push(path.relative(packageDocs, full).split(path.sep).join('/'))
+    }
+  }
+  walk(packageDocs)
+
+  return found
+    .filter((rel) => !(rel in INVERSE) && !NOT_PUBLISHED.has(rel) && !NOT_PUBLISHED_DIRS.some((dir) => rel.startsWith(dir)))
+    .sort()
+}
+
+// Guard against the "new package page never reaches the site" class of bug:
+// fails the sync (and so the pre-tag check and the deploy), not only --check.
+function checkPackageDocsPublished(packageDocs) {
+  const unpublished = unpublishedPackageDocs(packageDocs)
+  if (unpublished.length) {
+    console.error(`\n${unpublished.length} martis-package doc(s) are not pages of the site:`)
+    for (const rel of unpublished) {
+      console.error(`  ✗ docs/${rel}: add it to MAP (and to src/lib/docs-tree.ts), or to NOT_PUBLISHED in scripts/sync-docs.mjs`)
+    }
+    return false
+  }
+  console.log('✓ every martis-package doc is a page of the site (or deliberately not published).')
+  return true
+}
+
 // Guard against the "hand-authored page silently drifts" class of bug: any
 // page that declares a `sourcePath` (i.e. is meant to mirror a
 // martis-package/docs/*.md) MUST be in MAP (or HAND_AUTHORED_SOURCEPATH),
@@ -533,6 +576,7 @@ export async function main(argv = process.argv.slice(2)) {
   }
   fs.mkdirSync(contentDir, { recursive: true })
 
+  if (!checkPackageDocsPublished(packageDocs)) return 4
   const stale = syncAll({ packageDocs, contentDir, check })
   if (!leakSweep(contentDir)) return 3
   if (!(await validateAll(contentDir))) return 2
