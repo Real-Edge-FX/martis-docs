@@ -197,7 +197,7 @@ $this->canSee(fn (Request $request) =>
 );
 ```
 
-`canSee()` controls **both** menu visibility and route access. Tools that fail `authorizedToSee()` are silently dropped from the menu, and `GET /martis/api/tools/{uriKey}` returns **404** (not 403), intentionally indistinguishable from "tool does not exist" so an unauthorised user cannot probe which tools the app ships. The tool's own routes answer the same 404 to that user when they run [`ToolRoutes::middleware()`](#tool-routes-and-their-middleware), which `loadRoutes()` applies by default (v2.0). To show a user a permission state instead of hiding the tool, keep it visible and lock it with a soft gate, `lockedFor()` with `lockModal()` or `lockPreset()` ([Soft-gates](/docs/core/gates#soft-gates)): the menu shows it with a lock, and a direct visit renders the lock modal as a full page.
+`canSee()` controls **both** menu visibility and route access. Tools that fail `authorizedToSee()` are silently dropped from the menu, and `GET /martis/api/tools/{uriKey}` returns **404** (not 403), intentionally indistinguishable from "tool does not exist" so an unauthorised user cannot probe which tools the app ships. The tool's own routes answer the same 404 to that user when they run [`ToolRoutes::middleware()`](#tool-routes-and-their-middleware), which `loadRoutes()` applies by default (v2.0). To show a user a permission state instead of hiding the tool, keep it visible and lock it with a soft gate, `lockedFor()` with `lockModal()` or `lockPreset()` ([Soft-gates](/docs/core/gates#soft-gates)): the menu shows it with a lock, and a direct visit renders the lock modal as a full page. The tool's data is withheld too (v2.4.0): its field schema, its option search and every route it loads itself answer `403` with the lock, as [What a lock stops on the server](/docs/core/gates#what-a-lock-stops-on-the-server) lists.
 
 | Method | Purpose |
 |---|---|
@@ -288,9 +288,10 @@ A tool's routes run `ToolRoutes::middleware($tool)` (v2.0; `Martis\Tools\ToolRou
 | `martis.verified` | package | when `MARTIS_AUTH_EMAIL_VERIFICATION_ENABLED=true`, an unverified user: `409` (JSON) or a redirect to the notice |
 | `martis.authorize` | package | when the app defines the `viewMartis` gate, a user it refuses: `403` (see [Authorization → Panel access](/docs/auth/authorization#panel-access-viewmartis)) |
 | `throttle:{max},{decay},martis-api:{guard}:` | config, `martis.throttle.*` | past `MARTIS_THROTTLE_MAX` requests per `MARTIS_THROTTLE_DECAY` minutes per user, shared with the Martis API: `429`. Left out when `MARTIS_THROTTLE_ENABLED=false` |
-| `martis.tool:{uriKey}` | package | a user this tool is hidden from (`canSee()`, its policy): `404` `{"message": "Tool not found."}`, as `GET /api/tools/{uriKey}` answers them |
+| `martis.password.changed` | package | when `MARTIS_AUTH_PASSWORD_CHANGE_ENABLED=true`, a user the app flags: `409 {"password_change_required": true}` (JSON) or a redirect to the change page (see [Authentication → Forced password change](/docs/auth/authentication#forced-password-change)) |
+| `martis.tool:{uriKey}` | package | a user this tool is hidden from (`canSee()`, its policy): `404` `{"message": "Tool not found."}`, as `GET /api/tools/{uriKey}` answers them; then a user this tool is soft-locked for (`lockedFor()`, `requirePlan()`, v2.4.0): `403` with `{"locked": true, "lock": {...}}` (a plain `403` for a request that does not expect JSON) |
 
-The first eight are built in one place, `Martis\Http\RouteMiddleware::api()`, which the package's own routes use too, so a tool's route answers a request exactly as `GET /api/tools` does. They are also a middleware group, `martis.api`, built when the application boots, for a route of your own: `Route::middleware(['martis.api', 'can:viewReports'])`.
+The first nine are built in one place, `Martis\Http\RouteMiddleware::api()`, which the package's own routes use too, so a tool's route answers a request exactly as `GET /api/tools` does. They are also a middleware group, `martis.api`, built when the application boots, for a route of your own: `Route::middleware(['martis.api', 'can:viewReports'])`.
 
 The routes live under `ToolRoutes::prefix($tool)`, `{martis.path}/api/tools/{uriKey}` (`martis/api/tools/{uriKey}` by default): the SPA's `api` client prefixes every path with the panel's base path (`window.MartisConfig.basePath`, `/{martis.path}`), so `api.post('/api/tools/finance-imports/upload')` reaches them whatever `MARTIS_PATH` is.
 
@@ -335,7 +336,7 @@ $this->loadRoutes(
 
 **Do not pass a middleware list** unless the routes need another stack. Leave the argument out (skip it with a named argument, `prefix: ...`, to set only the prefix) and the routes run `ToolRoutes::middleware($this)`. A list is used exactly as given, as before v2.0: `[...ToolRoutes::middleware($this), 'can:imports.run']` adds an ability, `Martis\Http\RouteMiddleware::api()` keeps the API guard without the tool gate, a list without `martis.auth` keeps a route public (a webhook).
 
-A list that leaves out a guard which is on logs a warning (`Log::warning`, the default channel) naming the tool and telling it not to pass middleware: the 2FA challenge, `martis.2fa`, while `MARTIS_2FA_ENABLED` is true (the default), and `martis.verified` while email verification is on, read through the router's aliases and groups, so `martis.api` counts. The v1.x default `['web', 'martis.auth']` always warns: the v1.x docs showed it, and a tool that passes it, or overrides `loadRoutes()` with the v1.x signature and forwards its default, keeps that weaker stack. The warning is logged once per tool and PHP process: once per worker on Octane or a queue worker, on every request that boots the application on PHP-FPM.
+A list that leaves out a guard which is on logs a warning (`Log::warning`, the default channel) naming the tool and telling it not to pass middleware: the 2FA challenge, `martis.2fa`, while `MARTIS_2FA_ENABLED` is true (the default), and `martis.verified` while email verification is on, the panel gate, `martis.authorize`, while the app defines `viewMartis`, and `martis.password.changed` while the forced password change is on, read through the router's aliases and groups, so `martis.api` counts. The v1.x default `['web', 'martis.auth']` always warns: the v1.x docs showed it, and a tool that passes it, or overrides `loadRoutes()` with the v1.x signature and forwards its default, keeps that weaker stack. The warning is logged once per tool and PHP process: once per worker on Octane or a queue worker, on every request that boots the application on PHP-FPM.
 
 ### Routes a tool registers in `boot()`
 
@@ -482,6 +483,10 @@ The Martis `ToolPage` shell (route `/tools/:uriKey`) fetches `/api/tools/{uriKey
 If your tool's `component()` returns a key that has no registration in `componentRegistry`, `ToolPage` renders a developer-friendly error UI (the tool name as the heading, then a translated message pointing you at the missing `componentRegistry.register(...)` call). The error is rendered to the DOM, not the console — it is hard to miss during local dev and is harmless in production beyond the visible message. To ship a config-only tool without a React body, simply do not call `withComponent()`; `ToolPage` then renders just the standard header and no content panel.
 
 > **Navigating between tools.** Switching from one Tool to another (`/tools/:uriKey` → `/tools/:otherUriKey`) fully unmounts and remounts `ToolPage`, so the outgoing tool's state and in-flight fetch are torn down cleanly instead of flashing stale data from the previous tool. A top progress bar (mounted once in the shell layout) reflects any in-flight navigation or query across the whole app, tool pages included.
+
+### Pages at URLs of your own (v2.2.0+)
+
+A Tool's page lives at `/tools/{uriKey}`. For a product URL (`/findings`, `/findings/{finding}`), register the page with `routeRegistry` and bind it to the Tool with `tool: '{uriKey}'`: the page renders inside the shell, and the Tool's `canSee()` and soft lock guard it exactly as they guard `/tools/{uriKey}`. See [Custom pages](/docs/customization/custom-pages).
 
 ## The `martis:tool` generator
 
@@ -700,6 +705,8 @@ class ProjectResource extends Resource
 ```
 
 With that in place, projects surface in the ⌘K palette and any `BelongsTo`/breadcrumb/search-result link to a project opens `/tools/project-knowledge?id={id}` instead of a 404. See [`recordUrl()`](/docs/core/resources#recordurl) in the Resources reference for the full contract (the dual role, the `routable()`/`globallySearchable()` interaction table, and the authorization guarantee).
+
+A [registered page](/docs/customization/custom-pages) is a valid target too: once a page is registered at `projects/:projectId`, `recordUrl()` can return `'/projects/{id}'`.
 
 ## Anti-patterns
 

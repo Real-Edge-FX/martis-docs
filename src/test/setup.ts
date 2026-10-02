@@ -24,6 +24,10 @@ Object.defineProperty(window, 'matchMedia', {
 
 window.scrollTo = vi.fn()
 
+// No test reaches the network: a component that fetches (the landing's live
+// Packagist count) keeps its fallback unless the test stubs `fetch` itself.
+globalThis.fetch = vi.fn(() => Promise.reject(new TypeError('Network access is disabled in tests')))
+
 class ResizeObserverStub {
   observe() {}
   unobserve() {}
