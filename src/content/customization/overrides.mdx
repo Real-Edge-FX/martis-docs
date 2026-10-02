@@ -602,6 +602,7 @@ Since v1.14.0, `@martis/runtime` exposes:
 |---|---|
 | `FieldInput` | The form-mode renderer. Receives the same `FieldInputProps` documented in section 5. |
 | `FieldDisplay` | The read-mode renderer. Receives `FieldDisplayProps`. |
+| `apiPath`, `pathSegment`, `routePath`, `withQuery` (v2.4.0) | The path builders the panel's own pages use. `api.get(apiPath`/api/findings/$\{id}`)` encodes every interpolated value as one path segment (a slash is spelt `%252F`, since Laravel decodes `%2F` before it routes), `pathSegment(id)` encodes one value, `withQuery(path, query)` appends a built query string and `routePath` builds a link of the SPA's own router. Use them instead of `encodeURIComponent()`. A path value that holds a literal `%2F` throws an `ApiError` (status 400). See [Custom pages](/docs/customization/custom-pages). |
 | `FieldDefinition` (type) | Re-exported so you can type your `field` payload without reaching into internal paths. |
 | `FieldDisplayProps`, `FieldInputProps` (types) | Re-exported for the same reason. |
 | `DrawerShell` | Generic slide-over drawer shell. Host edit/add/detail forms (composed from `FieldInput`) in a native drawer; you control open/close from your own state, like a modal. |
@@ -778,7 +779,7 @@ upgrade](/docs/getting-started/installation#refreshing-the-extension-scaffold-af
 
 **1. Relation pickers take their scope from the props you pass.**
 
-`BelongsTo`, `MorphTo` and `Tag` load their options from `/api/resources/{resource}/{id}/relatable/{attribute}`. `{resource}` is `resourceKey`, else the resource of the page. `{id}` is `recordId`; without one, `context="create"` sends `_` (the create forms), and any other input uses the page's record only when it is scoped to the page's own resource (`_` otherwise). In a custom Action component, pass `actionEndpoint` so the pickers read the Action's own declaration of the field:
+`BelongsTo`, `MorphTo` and `Tag` load their options from `/api/resources/{resource}/{id}/relatable/{attribute}`. `{resource}` is `resourceKey`, else the resource of the page. `{id}` is `recordId`; without one, `context="create"` sends `_` (the create forms), and any other input uses the page's record only when it is scoped to the page's own resource (`_` otherwise). In a custom Action component, pass `actionEndpoint` (built with `apiPath` from `@martis/runtime`, v2.4.0+) so the pickers read the Action's own declaration of the field:
 
 ```tsx
 <FieldInput
@@ -786,7 +787,7 @@ upgrade](/docs/getting-started/installation#refreshing-the-extension-scaffold-af
     value={values[field.attribute] ?? null}
     onChange={(v) => setValue(field.attribute, v)}
     context="create"
-    actionEndpoint={`/api/resources/${encodeURIComponent(resource)}/actions/${encodeURIComponent(action.uriKey)}`}
+    actionEndpoint={apiPath`/api/resources/${resource}/actions/${action.uriKey}`}
 />
 ```
 
