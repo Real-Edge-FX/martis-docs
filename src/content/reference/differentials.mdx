@@ -297,9 +297,9 @@ toggle `showCreateRelationButton` by hand.
 
 ### Optional panel gate (`viewMartis`)
 
-A `viewMartis` gate decides who may open the panel, as Nova's `viewNova` does, with four differences:
+A `viewMartis` gate decides who may open the panel, as Nova's `viewNova` does, with three differences:
 
-- **Open by default.** Undefined, every signed-in user gets in; Nova lets only `local` in until the gate is defined.
+- **Closed outside `local` and `testing` by default (v2.4.0).** Undefined, every signed-in user gets in only in the environments of `martis.panel_access.open_environments` (default `local` and `testing`, a documented config key); anywhere else the panel stays shut until the gate is defined, like Nova. `martis:install` publishes the gate active.
 - **No `local` bypass.** Defined, it applies in every environment, so the restriction can be tried locally.
 - **No policy interception.** The user is not passed as a gate argument, so a policy of the user model is never consulted for it.
 - **A way out.** A refused page request gets a standalone 403 screen with a **Sign out** button, and impersonating a refused user answers `422`.
@@ -329,6 +329,11 @@ authentication ([nova-issues#5495](https://github.com/laravel/nova-issues/issues
 Coming from Nova, expect `404` where the tool is hidden, and `423` / `409` /
 `429` from the 2FA challenge, email verification and the throttle. See
 [Tools → Tool routes and their middleware](/docs/customization/tools#tool-routes-and-their-middleware).
+
+
+### Pages at URLs of your own
+
+Nova declares a tool's pages in PHP (`Nova::router()` with `routes/inertia.php`) and registers their components in JS (`Nova.inertia()`); the tool's `Authorize` middleware answers `403` to a user `canSee()` refuses, and a tool page shows no breadcrumb ([Nova → Tools](https://nova.laravel.com/docs/v5/customization/tools)). Martis routes on the client, so an app registers the path and the component in one call, `routeRegistry.register()` (v2.2.0+). Bound to a Tool, the page answers as `/tools/{uriKey}` does: `404` where the Tool is hidden, the lock page where it is locked. The page gets a breadcrumb, and a registered path can never take a URL Martis uses. See [Custom pages](/docs/customization/custom-pages).
 
 ---
 
@@ -430,13 +435,13 @@ uniformly to every field via the base class — Panel, Section, TabGroup,
 ResourceCreate, ResourceUpdate, and detail labels rendered inside
 Sections/TabGroups.
 
-The label renderer sets `data-pr-tooltip-html="true"` on the `(?)`
-icon, and the global `MartisTooltip` provider renders any trigger with
-that attribute as HTML: a field tooltip, a metric's `help()`, or a
-trigger of your own. A trigger without it keeps the plain-text escape.
-The markup is not sanitised, so it must be trusted: authors are
-responsible for producing safe markup, and user or record data never
-goes into it.
+The label renderer registers the `(?)` icon with `htmlTooltip()`, and the
+global `MartisTooltip` provider renders a registered trigger as HTML: a
+field tooltip, a metric's `help()`, or a trigger of your own (see
+[Tooltip Standard](/docs/customization/components#tooltip-standard-primereact)). Any other
+trigger keeps the plain-text escape, whatever attributes it carries. The
+markup is sanitised before it is shown, but authors are still responsible
+for producing it: user or record data never goes into it.
 
 A `Tooltip` field class was deliberately rejected — a `Field`
 represents a value, not a decoration. See
@@ -998,7 +1003,7 @@ the `martisEventBus` singleton on `@martis/runtime`:
 import { martisEventBus } from '@martis/runtime'
 
 // Emit an event
-martisEventBus.emit('martis:record-created', { resourceKey: 'users', id: 42 })
+martisEventBus.emit('martis:record-created', { resourceKey: 'users', id: '42' })
 
 // Listen for events, and stop with the same handler
 const onCreated = (payload) => console.log('New record:', payload)
@@ -1013,6 +1018,8 @@ singleton, which drops its handlers on unmount (see
 Built-in events: `martis:record-created`, `martis:record-updated`,
 `martis:record-deleted`, `martis:record-restored`,
 `martis:action-executed`, `martis:refresh-index`.
+
+Since v2.3.0 the record events fire from every page, drawer, panel and inline create that writes, and `martis:action-executed` after every action run; dashboard metrics refetch on it, as Nova's metric cards refetch on `action-executed`. A record `id` (and each of the `ids`) is always a string.
 
 ### Configurable loader
 
@@ -1112,6 +1119,10 @@ See [Components → App commands](/docs/customization/components#app-commands-v2
 ### Skip link
 
 The sidebar and topnav layouts start with a translated "Skip to main content" link that moves focus to the `<main id="martis-main">` landmark (WCAG 2.2, 2.4.1). Nova's layout has no skip link.
+
+### Test kit for extensions
+
+`vendor/martis/martis/dist/testing/` is a development build of the runtime that renders your Tools, cards, fields and overrides in Vitest or a Playwright page, through the published shims, with `MartisTestProvider` for the user, preferences, config, locale, translations and route (v2.3.0). Nova has no test runtime for its tools' Vue components. See [Testing extensions](/docs/customization/testing-extensions).
 
 ---
 

@@ -91,7 +91,7 @@ All six unauthenticated surfaces (Login, Register, 2FA challenge, 404, 403, 500)
 - **Login** — email + password + `Keep me signed in` toggle. SSO, Google, Forgot password, and "Create an account" render only when the matching `config.auth.*.enabled` flag is set.
 - **Register** — `/register` route gated by `config.auth.registration.enabled`. Posts to `/{martis-path}/api/auth/register` (consumer-provided endpoint).
 - **2FA challenge** — 6-cell OTP row with auto-advance + paste-to-fill, a 30 s visual countdown, and a backup-code toggle that swaps the OTP grid for a plain recovery-code input.
-- **Error pages** — `ErrorScreen.tsx` drives 404 / 403 / 500 with a faded watermark code, accent icon, optional `incidentId` chip with copy button, and primary + secondary CTAs.
+- **Error pages** — `ErrorScreen.tsx` drives 404 / 403 / 500 with a faded watermark code, accent icon, optional `incidentId` chip with copy button, and primary + secondary CTAs. `ForbiddenPage` and `NotFoundPage` are on `@martis/runtime` (v2.2.0+), so a custom page shows the 403 or 404 screen in place.
 
 See [Authentication](/docs/auth/authentication) for the full config surface (`config.auth`), backend recipes for SSO / Google, and the registration contract.
 
@@ -152,7 +152,7 @@ Ordered sections:
 | Resources | `/api/command-palette` → `resources` | Always (filtered by query). Each row is the resource label + its navigation group as a hint. |
 | Tools | `/api/command-palette` → `tools` | Every Tool the user may see. |
 | Commands | `/api/command-palette` → `commands` | The entries the app registers with `Martis::commandPalette()` (v2.1.0), with their group as a hint. |
-| Actions | `/api/command-palette` → `actions` | When any registered resource exposes a standalone action (`Action::standalone()`). The hint column shows the owning resource. |
+| Actions | `/api/command-palette` → `actions` | When any registered resource exposes a standalone action (`Action::standalone()`) the user may see. The hint column shows the owning resource. |
 | Recent activity | `/api/command-palette` → `recent` | Only when the query is empty. The user's latest 5 `martis_action_events` rows, when the user may read the log. Clicking jumps to the affected record when `model_id` is set. |
 | Records | `/api/search?q=…` | When the query has 2+ characters. Uses the existing unified record-search endpoint. |
 
@@ -191,7 +191,7 @@ Martis::commandPalette(fn (Request $request) => [
 - The closure may return an array or a Collection. Any other return value (a single `MenuItem`, `null`) throws an `InvalidArgumentException` naming its type, and so does an entry other than a `MenuItem` or a `MenuGroup`.
 - Resolving a resource or Tool item may compute its menu count, as the menu does.
 
-A standalone action on any resource also appears in the palette, under Actions.
+A standalone action on any resource also appears in the palette, under Actions, with the gates the sidebar and the action endpoints apply: the user must pass the resource's `viewAny`, the action's `canSee()` (an action it hides is not named in the payload), and the resource must be one the sidebar lists, that is `displayInNavigation()` is true and no `lockedFor()` soft gate locks it for the user. A locked resource shows its lock in the sidebar and opens the lock modal on click; the palette does not offer a shortcut that skips it.
 
 ### Skip link
 
@@ -337,7 +337,7 @@ The resource index and lens pages share a single card surface (`.martis-index-su
 
 ### Breadcrumbs
 
-Navigation breadcrumbs showing the current path (Dashboard > Resource > Record).
+Navigation breadcrumbs showing the current path (Dashboard > Resource > Record). A package route names its crumb with an i18n key; a page your app [registered](/docs/customization/custom-pages) shows its `crumb` as given. A page replaces the last crumb with `useDynamicCrumb(label)` from `@martis/runtime` (v2.2.0+), as a Tool page shows the tool's name.
 
 ### ResourceIcon
 
@@ -362,7 +362,7 @@ Accepts kebab-case (`shopping-cart`), PascalCase (`ShoppingCart`), snake_case (`
 2. **Curated built-ins** — 130 most-used Phosphor icons bundled eagerly with the main app chunk (synchronous, no network roundtrip).
 3. **Dynamic CSR import** — every other Phosphor icon (1380+) loads on demand from `@phosphor-icons/react/dist/csr/<Name>.es.js`. Each becomes its own ~1-3 KB chunk wrapped in `<Suspense fallback={null}>`. Only icons actually rendered ship to the browser.
 
-Names that don't match any Phosphor export fall back silently to `DatabaseIcon` so the page never crashes on a typo.
+Names that don't match any Phosphor export fall back silently to `DatabaseIcon` so the page never crashes on a typo. Only the registry's own entries resolve: a stored name that is spelled like something every JavaScript object inherits (`constructor`, `__proto__`) falls back too instead of crashing the page that renders it (v2.4.0).
 
 #### Registering custom icons
 
@@ -578,6 +578,7 @@ await api.upload('POST', '/api/posts', formValues) // handles file uploads
 **Features:**
 - Automatic CSRF token injection (cookie or meta tag)
 - Same-origin credentials
+- Refuses a path with a dot segment (`.` or `..`, also spelt `%2e`) before it sends anything, with an `ApiError` (status 400): the browser would resolve it to another endpoint. Encode every value you put in a path with `encodeURIComponent()`, so a route param or a record key such as `../users/5` stays one segment (v2.4.0)
 - File detection and FormData conversion (`hasFileValues()` / `buildFormData()`): on the multipart path booleans travel as `1` / `0` and arrays or plain objects as JSON strings, which the resource controllers decode back for structured fields, so a Repeater, MultiSelect, BooleanGroup, KeyValue, Tag, MorphTo or Sparkline value saved alongside a file keeps its shape (see [Fields → Structured values and file uploads](/docs/core/fields#structured-values-and-file-uploads))
 - Laravel validation error normalization
 - `ApiError` class with `errorsByField()` for inline display
@@ -665,7 +666,7 @@ useEffect(() => {
 }, [])
 
 // Emit:
-martisEventBus.emit('martis:record-created', { resourceKey: 'posts', id: 1 })
+martisEventBus.emit('martis:record-created', { resourceKey: 'posts', id: '1' })
 ```
 
 A built-in event types its payload in `on`, `once`, `off` and `emit` (`EventBusEvents`, v1.38.0): a handler written inline, `martisEventBus.on('martis:record-created', ({ resourceKey, id }) => …)`, gets both typed.
@@ -689,14 +690,18 @@ useEffect(() => {
 
 | Event | Payload | Fired when |
 |-------|---------|------------|
-| `martis:record-created` | `{ resourceKey, id }` | After a record is created |
-| `martis:record-updated` | `{ resourceKey, id }` | After a record is updated |
-| `martis:record-deleted` | `{ resourceKey, id }` | After a record is deleted |
-| `martis:record-restored` | `{ resourceKey, id }` | After a soft-deleted record is restored |
-| `martis:action-executed` | `{ actionKey, resourceKey }` | After an action completes |
+| `martis:record-created` | `{ resourceKey, id }` | After a record is created, by the page, drawer, panel or inline create that wrote it (v2.3.0) |
+| `martis:record-updated` | `{ resourceKey, id }` | After a record is updated, by the page, drawer, panel or inline create that wrote it (v2.3.0) |
+| `martis:record-deleted` | `{ resourceKey, id }` | After a record is deleted, by the page, drawer, panel or inline create that wrote it (v2.3.0) |
+| `martis:record-restored` | `{ resourceKey, id }` | After a soft-deleted record is restored, by the page, drawer, panel or inline create that wrote it (v2.3.0) |
+| `martis:action-executed` | `{ resourceKey, action, ids }` | After an action run that is not a dry run (v2.3.0); dashboard metrics refetch on it |
 | `martis:refresh-index` | `{ resourceKey? }` | Request a Resource index to revalidate. Any transport (a consumer's own ws-gateway, SSE, or an Echo listener) can emit this to tell a `ResourceIndexPage` "another session mutated this resource — refetch." The index invalidates its `['resources', <uriKey>]` query when the payload's `resourceKey` matches its own resource, or on every index when `resourceKey` is omitted. |
 | `martis:notification-received` | `{ id?, title?, message? }` | Pluggable real-time feed for the notification bell — emit this from any transport (a consumer's own ws-gateway, SSE, or an Echo listener) to push a notification into the bell instantly. See `docs/notifications.md` "Real-time delivery". |
 | `martis:notifications-changed` | `{}` (no payload) | Ask the notification bell to re-fetch its unread count + open list (reconcile after a read / read-all / delete happened elsewhere — the down-direction mirror of `martis:notification-received`). See `docs/notifications.md` "Reconciling reads across sessions". |
+
+The `id` of a record event, and each of the `ids` of `martis:action-executed`, is always a string (v2.3.0), as the route param of a record page is: an integer key arrives as `'42'`, and a UUID or ULID key as it is. Compare it with `String(record.id)`.
+
+An override that writes a record through its own API call emits the event itself, with the id as a string: `martisEventBus.emit('martis:record-created', { resourceKey: 'reports', id: String(id) })`.
 
 Custom events can use any string key. Martis prefixes built-in events with `martis:`.
 
@@ -910,23 +915,38 @@ The global provider renders `data-pr-tooltip` as plain text, so markup in it
 shows literally. Rich content takes one of two routes, depending on what it
 is made of:
 
-- **Markup you write: add `data-pr-tooltip-html="true"`.** The global provider
-  then renders the attribute as HTML (line breaks, bold, lists) in the same
-  bubble, with the same placement and delay as a plain tooltip and a roomier
-  layout for paragraphs. The field label tooltips (`->tooltip()`), the metric
-  help and the cache page use it. The markup goes into the page as is, without
-  sanitising: use it for markup you control (your own strings, translations),
-  never for text that comes from users or records.
+- **Markup you write: spread `htmlTooltip()` onto the trigger.** The global
+  provider then renders the text as HTML (line breaks, bold, lists, links) in
+  the same bubble, with the same placement and delay as a plain tooltip and a
+  roomier layout for paragraphs. The field label tooltips (`->tooltip()`), the
+  metric help and the cache page use it. The markup is sanitised before it is
+  shown (scripts, handlers, unsafe URLs and `data-*` attributes are removed),
+  but it is still markup you author: use your own strings and translations,
+  never text that comes from users or records.
 
   ```tsx
-  <span
-    data-pr-tooltip="<strong>Re-index</strong><br/>Rebuilds the search index."
-    data-pr-tooltip-html="true"
-    data-pr-position="top"
-  >
+  import \{ htmlTooltip } from '@martis/runtime'
+
+  <span \{...htmlTooltip('<strong>Re-index</strong><br/>Rebuilds the search index.', 'top')}>
     <InfoIcon size=\{14} />
   </span>
   ```
+
+  `htmlTooltip(markup, position?)` returns the `data-pr-tooltip`,
+  `data-pr-tooltip-html` and `data-pr-position` props plus a `ref` that
+  registers the element. An element that already has a ref of its own sets
+  the three attributes itself and registers itself with `trustHtmlTooltip`
+  (also from `@martis/runtime`) inside its ref callback.
+
+  **The `data-pr-tooltip-html="true"` attribute alone no longer renders HTML**
+  (v2.4.0). Record content rendered as HTML (a Markdown or Trix value) can
+  write that attribute, so the provider shows `data-pr-tooltip` as plain text
+  for every element that was not registered by the code that rendered it, and
+  such an element can only be registered by code, never by markup. An
+  extension that set the attribute by hand switches to `htmlTooltip()`; an
+  extension scaffolded before v2.4.0 refreshes its runtime shim first, since
+  the shim it was published with does not export the two helpers (see
+  [Refreshing the extension scaffold after an upgrade](/docs/getting-started/installation#refreshing-the-extension-scaffold-after-an-upgrade)).
 
 - **React content: the ref-based `Tooltip` with JSX `content`.** For content
   made of components (an icon, a formatted value, a small table), content
@@ -957,7 +977,7 @@ import { Tooltip } from '@martis/runtime' // shim → window.Martis.runtime.Tool
 
 <button ref={ref}>Re-index</button>
 <Tooltip target={ref} position="top"
-  content={<div className="martis-…"><b>Re-index</b><br/>Rebuilds the index.</div>} />
+  content={<div><b>Re-index</b><br/>Rebuilds the index.</div>} />
 ```
 
 ### Long text and viewport edges
@@ -977,7 +997,7 @@ before placing it, so any trigger can carry a sentence (v1.38.0+):
   closes when the trigger scrolls out of view.
 
 No escaping workaround is needed for a long plain-text tooltip: keep it on
-`data-pr-tooltip` and reserve `data-pr-tooltip-html="true"` for real markup.
+`data-pr-tooltip` and reserve `htmlTooltip()` for real markup.
 
 ### Rules
 
@@ -986,7 +1006,7 @@ No escaping workaround is needed for a long plain-text tooltip: keep it on
 | ❌ Never use `title=` | Native browser tooltips are inconsistent across themes |
 | ❌ Never build custom tooltip divs | Breaks dark/light mode consistency |
 | ✅ Always use `data-pr-tooltip` for simple text | Covered by global provider |
-| ✅ Add `data-pr-tooltip-html="true"` for markup you write | Same bubble and placement; not sanitised, so never for user or record data |
+| ✅ Spread `htmlTooltip(markup)` for markup you write | Same bubble and placement; sanitised, but never for user or record data. The bare `data-pr-tooltip-html="true"` attribute renders text since v2.4.0 |
 | ✅ Use the ref-based `<Tooltip>` for React content | JSX `content` (escaped), full PrimeReact API |
 | ✅ Use `data-pr-position` to control placement | `"top"` \| `"bottom"` \| `"left"` \| `"right"` |
 

@@ -436,7 +436,9 @@ public function afterSave(Model $model, Request $request, bool $creating): void
 public function beforeDelete(Model $model, Request $request): void
 {
     if ($model->status === 'published') {
-        throw new \RuntimeException('Cannot delete published posts.');
+        // The message reaches the user as it is. A plain \RuntimeException
+        // would answer a generic message in production.
+        throw new \Martis\Exceptions\UserFacingException('Cannot delete published posts.');
     }
     parent::beforeDelete($model, $request); // fires BeforeDelete event
 }
@@ -604,7 +606,9 @@ Since v1.14.0, `@martis/runtime` exposes:
 | `FieldDisplayProps`, `FieldInputProps` (types) | Re-exported for the same reason. |
 | `DrawerShell` | Generic slide-over drawer shell. Host edit/add/detail forms (composed from `FieldInput`) in a native drawer; you control open/close from your own state, like a modal. |
 | `DrawerShellProps` (type) | Props for `DrawerShell`: `title`, `subtitle?`, `icon?`, `onClose`, `children`, … |
-| `Tooltip` | The PrimeReact `Tooltip` component, for React content in a tooltip (JSX `content`), since the extension build doesn't alias `primereact`. The global `[data-pr-tooltip]` provider renders plain text, or markup you write when the trigger sets `data-pr-tooltip-html="true"` (unsanitised): see [Tooltip Standard](/docs/customization/components#tooltip-standard-primereact). |
+| `Tooltip` | The PrimeReact `Tooltip` component, for React content in a tooltip (JSX `content`), since the extension build doesn't alias `primereact`. The global `[data-pr-tooltip]` provider renders plain text, or markup you write when the trigger is registered with `htmlTooltip()` (sanitised): see [Tooltip Standard](/docs/customization/components#tooltip-standard-primereact). |
+| `htmlTooltip`, `trustHtmlTooltip` (v2.4.0) | `htmlTooltip(markup, position?)` returns the props (`data-pr-tooltip`, `data-pr-tooltip-html`, `data-pr-position` and a registering `ref`) that make an element a trigger of the global tooltip that shows HTML. `trustHtmlTooltip` is the ref callback for an element that has a ref of its own. An element that is not registered shows its `data-pr-tooltip` as plain text, whatever `data-pr-tooltip-html` says. |
+| `HtmlTooltipProps` (type) | The props `htmlTooltip()` returns. |
 | `Dropdown`, `MultiSelect` (v1.29.0) | The exact PrimeReact controls Martis's own filters use. Apply the `martis-filter-dropdown` class for the compact filter look. Lets a Tool render pixel-identical single/multi filters without bundling a second copy of PrimeReact. |
 | `createPortal` (v1.29.0) | `react-dom`'s `createPortal`, for overlays: the host's, so the portal renders with the host's React DOM. Since v1.38.0 `import { createPortal } from 'react-dom'` reaches the same function: the extension build sends `react-dom` to a shim that carries it and `flushSync`, nothing else of `react-dom`. |
 | `flushSync` (v1.38.2) | `react-dom`'s synchronous flush, the host's. Third-party libraries import it from `react-dom` (`@tanstack/react-virtual` calls it while scrolling a virtualised list), and the `react-dom` shim re-exports it; in v1.38.0 and v1.38.1 the shim did not, and such a library stopped the build. |
@@ -634,7 +638,7 @@ const docTypeField = {
 export function CandidateReview() {
     const [docType, setDocType] = useState<string>('note')
     return (
-        <div className="martis-action-form">
+        <div className="martis-form-stack">
             <FieldInput
                 field={docTypeField as any}
                 value={docType}
@@ -666,7 +670,7 @@ export function ReviewTool() {
     if (!open) return <button onClick={() => setOpen(true)}>Review</button>
     return (
         <DrawerShell title="Review candidate" onClose={() => setOpen(false)}>
-            <div className="martis-action-form">
+            <div className="martis-form-body martis-form-stack">
                 <FieldInput
                     field={{ type: 'select', attribute: 'document_type', label: 'Document type', options: [] } as any}
                     value={docType}
@@ -782,7 +786,7 @@ upgrade](/docs/getting-started/installation#refreshing-the-extension-scaffold-af
     value={values[field.attribute] ?? null}
     onChange={(v) => setValue(field.attribute, v)}
     context="create"
-    actionEndpoint={`/api/resources/${resource}/actions/${action.uriKey}`}
+    actionEndpoint={`/api/resources/${encodeURIComponent(resource)}/actions/${encodeURIComponent(action.uriKey)}`}
 />
 ```
 
@@ -819,6 +823,7 @@ Use the `martis:component` artisan command to scaffold an override TSX (alias: `
 > | `ForgotPasswordPage.tsx` | `auth:forgot-password` |
 > | `ResetPasswordPage.tsx` | `auth:reset-password` |
 > | `EmailVerifyNoticePage.tsx` | `auth:email-verify-notice` |
+> | `PasswordChangePage.tsx` | `auth:password-change` |
 > | *(no fixed-filename scaffold yet)* | `auth:invitation-accept` |
 >
 > The SPA router resolves these hard-coded strings, so the map cannot be filename-derived. `auth:invitation-accept` has no `martis:component --type=` scaffold yet — register a replacement under this key directly from your extension bundle (`componentRegistry.register('auth:invitation-accept', MyScreen)`); the resolution mechanism is identical to the scaffolded slots above, it just skips the auto-discovery step. See [invitations.md § Overriding the screen](/docs/auth/invitations#overriding-the-screen).
@@ -900,9 +905,10 @@ The command:
 | `forgot-password-page` | Custom "forgot password" page | `auth:forgot-password` |
 | `reset-password-page` | Custom "reset password" page | `auth:reset-password` |
 | `email-verify-notice-page` | Custom email verification notice page | `auth:email-verify-notice` |
+| `password-change-page` | Custom forced password change page (v2.3.0) | `auth:password-change` |
 | `generic` | Free-form component | `{kebab-name}` |
 
-The five auth-page types follow the same wiring as the shell pieces — generate the TSX, build, and the bundled login / register / password-reset / email-verify pages are automatically replaced. The router resolves exactly the keys in the table (`auth:login`, `auth:register`, `auth:forgot-password`, `auth:reset-password`, `auth:email-verify-notice`, plus `auth:invitation-accept` for the invitation page), so a hand-written `register()` call must use them as they are. Each type writes a fixed file name (`overrides/LoginPage.tsx`, ...), whatever name you pass. See [authentication.md](/docs/auth/authentication) for the broader auth customisation surface (backend handlers, blade templates, OAuth providers).
+The six auth-page types follow the same wiring as the shell pieces — generate the TSX, build, and the bundled login / register / password-reset / email-verify pages are automatically replaced. The router resolves exactly the keys in the table (`auth:login`, `auth:register`, `auth:forgot-password`, `auth:reset-password`, `auth:email-verify-notice`, `auth:password-change`, plus `auth:invitation-accept` for the invitation page), so a hand-written `register()` call must use them as they are. Each type writes a fixed file name (`overrides/LoginPage.tsx`, ...), whatever name you pass. See [authentication.md](/docs/auth/authentication) for the broader auth customisation surface (backend handlers, blade templates, OAuth providers). The router reads these keys when it is built, after the extension bundles load (v2.2.0+; before, it read them ahead of the bundle and the bundled page always rendered). To check an override, load its page: `componentRegistry.has()` only shows that the key is registered.
 
 After creating a component, rebuild the consumer extension bundle:
 
@@ -911,6 +917,8 @@ npm run build:extensions
 ```
 
 That runs `vite build --config vite.extensions.config.ts`, which is published into your app by `martis:install`. The bundle is emitted at `public/vendor/martis-user/extensions.js` and Martis loads it at runtime through the URL listed in `MARTIS_EXTENSIONS` (also set by `martis:install`). The auto-discovery entry walks the four buckets under `resources/js/martis-extensions/` and registers every `.tsx` against `window.Martis.componentRegistry` — no manual `boot.ts`, no `MARTIS_USER_DIR`, no symlink.
+
+**No source map by default (v2.4.0+).** The bundle lands under `public/`, the web root, so a source map written beside it (`extensions.js.map`) would be served to everyone and hand them the original TSX of every tool, field, card and override, comments included. The published config sets `build.sourcemap: false`. To debug a build, set it to `true` (the map is written and linked from the bundle) or to `'hidden'` (the map is written, the bundle does not link it: upload it to your error tracker, then delete it from `public/vendor/martis-user/` before deploying). An app that published the config before v2.4.0 keeps `sourcemap: true` (the scaffold is copied once): set `build.sourcemap` to `false` in `vite.extensions.config.ts`, rebuild, and delete the `extensions.js.map` already under `public/vendor/martis-user/`.
 
 ### Shell piece-by-piece overrides
 
