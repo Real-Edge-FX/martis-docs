@@ -5,6 +5,7 @@ import { InstallCommand } from '@/components/site/InstallCommand'
 import { SiteShell } from '@/components/site/SiteShell'
 import { ProductVisual } from '@/components/marketing/ProductVisual'
 import { AGENCY_VALUE, PRODUCT_CHAPTERS, RELEASE } from '@/data/site'
+import { usePackagistDownloads } from '@/hooks/usePackagistDownloads'
 
 const code = `class ClientResource extends Resource
 {
@@ -117,11 +118,12 @@ export default function Landing() {
 }
 
 function ProofStrip() {
+  const downloads = usePackagistDownloads()
   const stats = [
     [`v${RELEASE.version}`, 'Current release'],
     [RELEASE.tests.toLocaleString('en-US'), 'Tests passing'],
     [RELEASE.laravel, 'Supported'],
-    [RELEASE.downloads.toLocaleString('en-US'), 'Packagist installs'],
+    [downloads.total.toLocaleString('en-US'), 'Packagist installs'],
   ]
   return <section className="proof-strip" aria-label="Product proof"><div className="site-container proof-strip__inner">{stats.map(([value, label]) => <div key={label}><strong>{value}</strong><span>{label}</span></div>)}<a href="https://github.com/Real-Edge-FX/martis-package"><Icons.GitHub size={16} /> Inspect the source</a></div></section>
 }
