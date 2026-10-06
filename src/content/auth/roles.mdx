@@ -16,8 +16,8 @@ php artisan martis:roles
 
 The command:
 
-1. Runs `composer require spatie/laravel-permission` if it is missing.
-2. Publishes Spatie's config + migrations and runs them.
+1. Runs `composer require spatie/laravel-permission` if it is missing, and loads it in the same run. If it still cannot be loaded, the command exits with an error asking you to re-run it.
+2. Publishes Spatie's config + migrations and runs them (with `--with-categories`, after publishing the category migration too, so one run adds the column).
 3. Adds the `HasRoles` trait to your `User` model.
 4. Scaffolds three resources: `UserResource`, `RoleResource`, `PermissionResource`.
 5. Generates three policies: `UserPolicy`, `RolePolicy`, `PermissionPolicy` (admin-only by default).
@@ -296,7 +296,7 @@ php artisan martis:roles --with-categories
 
 Effects:
 
-- Publishes `database/migrations/{ts}_add_category_column_to_permissions_table.php` (re-runs are idempotent — only the first publish writes; subsequent runs skip with a yellow `already published` row).
+- Publishes `database/migrations/{ts}_add_category_column_to_permissions_table.php` (re-runs are idempotent — only the first publish writes; subsequent runs skip with a yellow `already published` row). Its timestamp is later than every migration already in `database/migrations`, Spatie's `create_permission_tables` included, so a database built from scratch creates the table before it adds the column.
 - Renders `Text::make('Category', 'category')` inside the PermissionResource fields list.
 - Scaffolds `app/Martis/Filters/PermissionCategoryFilter.php` — a concrete `SelectFilter` subclass that pulls every distinct category currently in use as the dropdown options. The PermissionResource's `filters()` method references it. Customise the column / source freely; the file is yours, not the package's. (v1.8.17+)
 
@@ -319,7 +319,14 @@ Spatie 5+ fires `RoleAttachedEvent`, `RoleDetachedEvent`, `PermissionAttachedEve
 
 Each row carries the acting user (the Martis guard's user when the change is made in a panel request, `null` when it is made elsewhere: a site request, a job, a command), the target model FQCN + id, and the list of role / permission ids in the `fields.ids` JSON column. Browse the log under `/martis/system/action-events`, once the `view-martis-action-events` gate lets you (see [Actions → Who can read the audit log](/docs/core/actions#who-can-read-the-audit-log-v201)).
 
-The listener is gated on a single config knob:
+Spatie fires these events only when they are enabled in its own config, and they are off by default. Without this the listener has nothing to record and the log stays empty:
+
+```php
+// config/permission.php (php artisan vendor:publish --provider="Spatie\Permission\PermissionServiceProvider")
+'events_enabled' => true,
+```
+
+On the Martis side the listener is gated on a single config knob:
 
 ```dotenv
 # Set false to silence the Martis-side audit row entirely. Your own
@@ -333,7 +340,9 @@ When the audit table is missing (apps that opted out of the v0.7 install migrati
 
 The generated `UserResource` now ships an action — `BulkAssignRole` — that exposes a single Role dropdown in its confirmation modal and assigns the chosen role to every selected user in one click. The action lives at `app/Martis/Resources/Actions/BulkAssignRole.php`; it is yours to customise (rename the role pool, broadcast a notification, deny self-assignment, etc.).
 
-The Role picker excludes any role whose `provider_group_name` is set — those are owned by an SSO provider and would be overwritten on the next sign-in. Drop the clause in the action's `fields()` method to expose every role, or tighten the predicate further to scope per tenant.
+The Role picker excludes any role whose `provider_group_name` is set — those are owned by an SSO provider and would be overwritten on the next sign-in. The exclusion is enforced on the server too (v2.4.0+), not only by the dropdown: the `role_id` the modal posts is client input, so the action's `assignableRoles()` method holds the query once and the picker, the Select's [`validateAgainstOptions()`](/docs/core/fields#validating-against-the-options) rule and the lookup in `handle()` all read it. A request that names an SSO-managed role, or an id that is not in the list, answers `422` on the field and assigns nothing. To expose every role, drop the `whereNull('provider_group_name')` clause from `assignableRoles()` (one place); to scope per tenant, tighten the same query.
+
+An action generated before v2.4.0 keeps the old behaviour (the lookup took any id): regenerate it with `php artisan martis:roles --force` after merging your edits, or add the two changes by hand (`->validateAgainstOptions()` on the Select, and the `whereNull('provider_group_name')` clause on the `Role::query()->find($roleId)` lookup in `handle()`).
 
 Each `assignRole()` call inside the action fires Spatie's `RoleAttachedEvent`, which the audit listener captures into `martis_action_events`. A bulk run of 50 users assigning `editor` produces 50 audit rows tagged with the operator and the role id — perfect for compliance review.
 
