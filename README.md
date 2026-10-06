@@ -97,6 +97,8 @@ The official production host is **getmartis.com**, on Hostinger shared hosting (
 bash scripts/deploy.sh
 ```
 
+Four pages are hand-authored and never synced (`LINK_ONLY` in `scripts/sync-docs.mjs`): `auth/roles`, `getting-started/quick-start`, `getting-started/troubleshooting` and `core/gates`. `scripts/hand-authored-sources.json` holds the sha256 of the package doc each one was last reviewed against, and the sync fails when a source no longer matches. When it stops, read the package diff (`git log -p <old-tag>..<tag> -- docs/<file>`), carry every user-facing change into `src/content/<slug>.mdx`, then run `node scripts/sync-docs.mjs --package-dir <package> --accept-hand-authored` and commit the updated JSON with the page.
+
 `scripts/deploy.sh`:
 
 1. Resolves the release numbers (see below), then fetches `martis-package/docs/` at the matching tag and runs `scripts/sync-docs.mjs` against it, so the deploy always publishes the docs of the release it's shipping. **No separate docs PR is needed**: this replaces the old flow where a docs sync landed on `main` ahead of the deploy.

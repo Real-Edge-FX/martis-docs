@@ -45,7 +45,7 @@ php artisan martis:install --force-config
 php artisan martis:install --force-provider
 ```
 
-Every run, with or without `--force`, also rewrites the profile / 2FA flags and `MARTIS_EXTENSIONS` in `.env` and ends with `php artisan migrate --force`.
+Every run, with or without `--force`, also rewrites the profile / 2FA flags and `MARTIS_EXTENSIONS` in `.env` and ends with `php artisan migrate --force` (skip that step with `--no-migrate`).
 
 To re-run the full installer including the optional avatar and 2FA migrations:
 
@@ -91,7 +91,7 @@ A blank/black admin with a `404` on `assets/app-<hash>.js` in the browser consol
 php artisan martis:publish-assets
 ```
 
-Since **v1.29.1** this command fails **loudly** on an incomplete copy: instead of reporting success it prints the count of missing files and exits non-zero, so a partial publish (an interrupted run, a full disk, restrictive filesystem permissions) is caught at publish time rather than surfacing as a black screen. If it does report missing files, check disk space and the writability of `public/vendor/martis/`, then re-run.
+Since v1.29.1 this command fails **loudly** on an incomplete copy: instead of reporting success it prints the count of missing files and exits non-zero, so a partial publish (an interrupted run, a full disk, restrictive filesystem permissions) is caught at publish time rather than surfacing as a black screen. If it does report missing files, check disk space and the writability of `public/vendor/martis/`, then re-run.
 
 If you sit behind a reverse proxy (Nginx Proxy Manager, Cloudflare, custom Nginx), set `ASSET_URL` in `.env` to the public origin:
 
@@ -190,7 +190,7 @@ The next login will treat 2FA as un-enrolled. Re-enable it from the user's profi
 Resources are auto-discovered from the directory configured in `config/martis.php` (`resources_path`, default `app_path('Martis')`) and mapped to classes under `resources_namespace` (default `null`: derived from Composer's PSR-4 map, falling back to `App\Martis`). There is no `resources` array to maintain. If a resource exists on disk but Martis cannot find it:
 
 1. Check it lives under the configured path. Move it back into `app/Martis/`, or change `resources_path` in the config.
-2. Check the namespace matches the path. With `resources_namespace` left `null`, the file at `app/Martis/Customer/Resources/OrganizationResource.php` must declare `App\Martis\Customer\Resources` (whatever Composer's PSR-4 map says for that directory). If the directory is not autoloaded, set `resources_namespace` explicitly to the namespace the files declare. Before v1.36.0 the namespace was always `App\Martis`, so a `resources_path` outside `app/Martis` found nothing. See [Configuration → Resources path and namespace](/docs/reference/configuration#resources-path-and-namespace).
+2. Check the namespace matches the path. With `resources_namespace` left `null`, the file at `app/Martis/Customer/Resources/OrganizationResource.php` must declare `App\Martis\Customer\Resources` (whatever Composer's PSR-4 map says for that directory). If the directory is not autoloaded, set `resources_namespace` explicitly to the namespace the files declare. Before v1.36.0 the namespace was always `App\Martis`, so a `resources_path` outside `app/Martis` found nothing. See [Configuration → Resources path and namespace](/docs/reference/configuration#resources-path-and-namespace). See [Configuration → Resources path and namespace](/docs/reference/configuration#resources-path-and-namespace).
 3. Check the class autoloads:
    ```bash
    composer dump-autoload
@@ -256,17 +256,17 @@ Do not run `php artisan martis:theme` again to refresh the published file: it as
 
 ### Custom override not picked up
 
-Almost always a key mismatch between the PHP layer (which declares "I want a component called `<key>`") and your consumer extension bundle (`resources/js/martis-extensions/`) (which registers the actual React component under that key). The `martis:list-overrides` command shows every key the PHP layer expects:
+Almost always a key mismatch between the PHP layer (which declares "I want a component called `<key>`") and your consumer extension bundle (`resources/js/martis-extensions/`) (which registers the actual React component under that key). The `martis:list-overrides` command shows the keys the PHP layer declares (the component key of each Tool and of each Action with a custom component, and each resource's URI key):
 
 ```bash
 php artisan martis:list-overrides
 ```
 
-Confirm that every key in the output is registered by your extension: the auto-discovery entry registers each file of the four buckets, and `resources/js/martis-extensions/index.ts` holds any `register()` call of your own. To inspect the live registry, run `window.Martis.componentRegistry.keys()` in the browser console once the SPA has booted: it is the registry the SPA resolves from (the same instance `@martis/runtime` exports as `componentRegistry`), so no rebuild is needed. `php artisan martis:list-overrides --frontend` runs the same cross-check statically against your `index.ts`.
+Confirm that every Tool and Action key in the output is registered by your extension (a resource needs no component): the auto-discovery entry registers each file of the four buckets, and `resources/js/martis-extensions/index.ts` holds any `register()` call of your own. To inspect the live registry, run `window.Martis.componentRegistry.keys()` in the browser console once the SPA has booted: it is the registry the SPA resolves from (the same instance `@martis/runtime` exports as `componentRegistry`), so no rebuild is needed. `php artisan martis:list-overrides --frontend` runs the same cross-check statically: it derives the key of each file in the four buckets and reads the literal key of each `register()` call in `index.ts` (v1.38.0), and exits `2` when a Tool or Action key is missing. A computed key, or a call in another module, is not read: check it in the console.
 
 Common culprits when an override is missing:
 
-- **`MARTIS_EXTENSIONS` env var unset.** v1.8.19+ loads the consumer extension bundle dynamically from the comma-separated URLs listed in `MARTIS_EXTENSIONS`. The config default is an empty list; `martis:install` writes `MARTIS_EXTENSIONS=/vendor/martis-user/extensions.js` to `.env` (on every run, so re-add any extra URLs afterwards). Confirm it is set in `.env` and that the URL returns 200.
+- **`MARTIS_EXTENSIONS` env var unset.** v1.8.19+ loads the consumer extension bundle dynamically from the comma-separated URLs listed in `MARTIS_EXTENSIONS`. The config default is an empty list; `martis:install` writes `MARTIS_EXTENSIONS=/vendor/martis-user/extensions.js` to `.env` (on every run, so re-add any extra URLs afterwards). Confirm it is set in `.env`. The shell leaves the conventional `/vendor/martis-user/extensions.js` out while the file does not exist (v2.1.0), so build it first; any other URL is loaded as configured and must return 200.
 - **Bundle not built.** Re-run `npm run build:extensions` and check `public/vendor/martis-user/extensions.js` exists. The deploy script runs this automatically; local dev iterations need it manually.
 - **TSX file in the wrong bucket.** Auto-discovery only walks `resources/js/martis-extensions/{tools,fields,cards,overrides}/`. A file in any other folder is invisible to the loop.
 - **Key typo.** Keys are case-sensitive and colon-separated: `tool:seo-report`, `card:revenue-gauge`, `field:display:<type>` / `field:input:<type>`, `auth:login`. The entry derives them from the file name (`tools/SEOReport.tsx` → `tool:seo-report`); on the PHP side use `Martis\Stubs\ExtensionKey::kebab()`, not `Str::kebab()` (which turns `SEOReport` into `s-e-o-report`).
