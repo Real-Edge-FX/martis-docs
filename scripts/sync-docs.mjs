@@ -11,7 +11,12 @@
 //   pnpm sync-docs                              # copies + transforms
 //   pnpm sync-docs --check                      # exits non-zero if anything is stale
 //   pnpm sync-docs --package-dir ../martis-package
+//   pnpm sync-docs --accept-hand-authored       # record the hand-authored pages as reviewed
 //   pnpm sync-docs --content-dir /tmp/out       # write somewhere other than src/content
+//
+// The hand-authored pages (LINK_ONLY) are never synced, so the sync instead
+// fails when their package source changed since the page was last reviewed:
+// `scripts/hand-authored-sources.json` holds the sha256 of each source.
 //
 // `--package-dir` is the martis-package checkout (default: the sibling
 // `../martis-package`); its `docs/` folder is read. `--content-dir`
@@ -33,6 +38,7 @@
 // The pure transforms are exported for `scripts/sync-docs.test.mjs`
 // (`pnpm test`); the sync itself only runs when the file is executed.
 
+import crypto from 'node:crypto'
 import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -46,6 +52,7 @@ const __dirname = path.dirname(__filename)
 const ROOT = path.resolve(__dirname, '..')
 export const DEFAULT_PACKAGE_DIR = path.resolve(ROOT, '..', 'martis-package')
 export const DEFAULT_CONTENT_DIR = path.resolve(ROOT, 'src', 'content')
+export const DEFAULT_HASHES_FILE = path.resolve(__dirname, 'hand-authored-sources.json')
 
 // Where relative links that leave the synced docs point to.
 export const GITHUB_REPO = 'Real-Edge-FX/martis-package'
@@ -145,14 +152,20 @@ const HAND_AUTHORED_SOURCEPATH = new Set([
 export function parseArgs(argv, cwd = process.cwd()) {
   const options = {
     check: false,
+    acceptHandAuthored: false,
+    hashesFile: DEFAULT_HASHES_FILE,
     packageDir: DEFAULT_PACKAGE_DIR,
     contentDir: DEFAULT_CONTENT_DIR,
   }
-  const valued = { '--package-dir': 'packageDir', '--content-dir': 'contentDir' }
+  const valued = { '--package-dir': 'packageDir', '--content-dir': 'contentDir', '--hashes-file': 'hashesFile' }
   for (let i = 0; i < argv.length; i++) {
     const arg = argv[i]
     if (arg === '--check') {
       options.check = true
+      continue
+    }
+    if (arg === '--accept-hand-authored') {
+      options.acceptHandAuthored = true
       continue
     }
     const [flag, inline] = arg.split(/=(.*)/s)
@@ -538,6 +551,54 @@ function checkPortedPagesMapped(contentDir) {
   return true
 }
 
+export function sha256File(file) {
+  return crypto.createHash('sha256').update(fs.readFileSync(file)).digest('hex')
+}
+
+// Current sha256 of the package source of every hand-authored page, by slug.
+export function handAuthoredHashes(packageDocs) {
+  return Object.fromEntries(
+    Object.entries(LINK_ONLY).map(([slug, file]) => {
+      const full = path.join(packageDocs, file)
+      if (!fs.existsSync(full)) throw new Error(`hand-authored page ${slug}: docs/${file} is missing from the package`)
+      return [slug, sha256File(full)]
+    }),
+  )
+}
+
+// Guard against the "hand-authored page lags its package doc" class of bug:
+// these pages are never synced, so nothing else notices when the package
+// source changes. Fails the sync (and so the pre-tag check and the deploy)
+// until the page is updated and the new hash recorded.
+export function checkHandAuthoredPages(packageDocs, hashesFile = DEFAULT_HASHES_FILE) {
+  const recorded = fs.existsSync(hashesFile) ? JSON.parse(fs.readFileSync(hashesFile, 'utf8')) : {}
+  const current = handAuthoredHashes(packageDocs)
+  const problems = []
+  for (const [slug, hash] of Object.entries(current)) {
+    const file = LINK_ONLY[slug]
+    if (recorded[slug] === undefined) {
+      problems.push(`  ✗ ${slug}: no reviewed hash recorded for docs/${file}. Check src/content/${slug}.mdx against docs/${file} and run \`node scripts/sync-docs.mjs --accept-hand-authored\` to record it.`)
+    } else if (recorded[slug] !== hash) {
+      problems.push(`  ✗ ${slug}: docs/${file} changed since src/content/${slug}.mdx was last reviewed. Update src/content/${slug}.mdx to match docs/${file} and run \`node scripts/sync-docs.mjs --accept-hand-authored\` to record the new hash.`)
+    }
+  }
+  for (const slug of Object.keys(recorded)) {
+    if (!(slug in LINK_ONLY)) problems.push(`  ✗ ${slug}: recorded in ${path.relative(ROOT, hashesFile)} but no longer a hand-authored page. Run \`node scripts/sync-docs.mjs --accept-hand-authored\` to drop it.`)
+  }
+  if (problems.length) {
+    console.error(`\n${problems.length} hand-authored page(s) out of date with their martis-package source:`)
+    for (const p of problems) console.error(p)
+    return false
+  }
+  console.log('✓ every hand-authored page was reviewed against its current package source.')
+  return true
+}
+
+export function acceptHandAuthored(packageDocs, hashesFile = DEFAULT_HASHES_FILE) {
+  fs.writeFileSync(hashesFile, `${JSON.stringify(handAuthoredHashes(packageDocs), null, 2)}\n`)
+  console.log(`✓ recorded the hand-authored sources in ${path.relative(ROOT, hashesFile)}.`)
+}
+
 // A relative `.md` link on the site is a 404: the pages live under
 // /docs/<slug>. The porter rewrites every relative link, so one that
 // survives sits in a hand-authored page that must use the /docs/<slug>
@@ -569,14 +630,19 @@ function checkRelativeMdLinks(contentDir) {
 }
 
 export async function main(argv = process.argv.slice(2)) {
-  const { check, packageDir, contentDir } = parseArgs(argv)
+  const { check, packageDir, contentDir, acceptHandAuthored: accept, hashesFile } = parseArgs(argv)
   const packageDocs = path.join(packageDir, 'docs')
   if (!fs.existsSync(packageDocs) || !fs.statSync(packageDocs).isDirectory()) {
     throw new Error(`--package-dir: no docs/ folder in ${packageDir}`)
   }
+  if (accept) {
+    acceptHandAuthored(packageDocs, hashesFile)
+    return 0
+  }
   fs.mkdirSync(contentDir, { recursive: true })
 
   if (!checkPackageDocsPublished(packageDocs)) return 4
+  if (!checkHandAuthoredPages(packageDocs, hashesFile)) return 5
   const stale = syncAll({ packageDocs, contentDir, check })
   if (!leakSweep(contentDir)) return 3
   if (!(await validateAll(contentDir))) return 2

@@ -8,8 +8,12 @@ import remarkFrontmatter from 'remark-frontmatter'
 import remarkMdxFrontmatter from 'remark-mdx-frontmatter'
 import remarkGfm from 'remark-gfm'
 import {
+  acceptHandAuthored,
+  checkHandAuthoredPages,
   DEFAULT_CONTENT_DIR,
+  DEFAULT_HASHES_FILE,
   DEFAULT_PACKAGE_DIR,
+  LINK_ONLY,
   deriveTitleAndDescription,
   parseArgs,
   rewriteLinks,
@@ -109,6 +113,8 @@ test('reference-style link definitions are rewritten too', () => {
 test('parseArgs defaults to the sibling package and src/content', () => {
   assert.deepEqual(parseArgs([]), {
     check: false,
+    acceptHandAuthored: false,
+    hashesFile: DEFAULT_HASHES_FILE,
     packageDir: DEFAULT_PACKAGE_DIR,
     contentDir: DEFAULT_CONTENT_DIR,
   })
@@ -117,7 +123,11 @@ test('parseArgs defaults to the sibling package and src/content', () => {
 
 test('parseArgs reads --package-dir and --content-dir in both forms', () => {
   const opts = parseArgs(['--check', '--package-dir', 'pkg', '--content-dir=/tmp/out'], '/work')
-  assert.deepEqual(opts, { check: true, packageDir: '/work/pkg', contentDir: '/tmp/out' })
+  assert.equal(opts.check, true)
+  assert.equal(opts.packageDir, '/work/pkg')
+  assert.equal(opts.contentDir, '/tmp/out')
+  assert.equal(parseArgs(['--accept-hand-authored']).acceptHandAuthored, true)
+  assert.equal(parseArgs(['--hashes-file=h.json'], '/work').hashesFile, '/work/h.json')
 })
 
 test('parseArgs rejects unknown options and a missing path', () => {
@@ -181,4 +191,59 @@ test('maps every page of the real martis-package docs', () => {
   const docs = path.join(DEFAULT_PACKAGE_DIR, 'docs')
   if (!fs.existsSync(docs)) return
   assert.deepEqual(unpublishedPackageDocs(docs), [])
+})
+
+// 6. Hand-authored pages: the sync stops when their package source changed.
+
+function handAuthoredFixture() {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'hand-authored-'))
+  const docs = path.join(dir, 'docs')
+  fs.mkdirSync(docs)
+  for (const file of Object.values(LINK_ONLY)) fs.writeFileSync(path.join(docs, file), `# ${file}\n`)
+  return { docs, hashes: path.join(dir, 'hashes.json') }
+}
+
+function quietly(fn) {
+  const log = console.log
+  const error = console.error
+  const lines = []
+  console.log = console.error = (line) => lines.push(String(line))
+  try {
+    return { ok: fn(), lines }
+  } finally {
+    console.log = log
+    console.error = error
+  }
+}
+
+test('hand-authored sources: pass once recorded, fail naming the page and the fix after a change', () => {
+  const { docs, hashes } = handAuthoredFixture()
+  quietly(() => acceptHandAuthored(docs, hashes))
+  assert.equal(quietly(() => checkHandAuthoredPages(docs, hashes)).ok, true)
+
+  fs.appendFileSync(path.join(docs, 'roles.md'), 'x')
+  const { ok, lines } = quietly(() => checkHandAuthoredPages(docs, hashes))
+  assert.equal(ok, false)
+  const text = lines.join('\n')
+  assert.match(text, /auth\/roles: docs\/roles\.md changed/)
+  assert.match(text, /src\/content\/auth\/roles\.mdx/)
+  assert.match(text, /--accept-hand-authored/)
+  assert.doesNotMatch(text, /quick-start/)
+
+  quietly(() => acceptHandAuthored(docs, hashes))
+  assert.equal(quietly(() => checkHandAuthoredPages(docs, hashes)).ok, true)
+})
+
+test('hand-authored sources: a missing hash file or entry fails', () => {
+  const { docs, hashes } = handAuthoredFixture()
+  assert.equal(quietly(() => checkHandAuthoredPages(docs, hashes)).ok, false)
+  fs.writeFileSync(hashes, JSON.stringify({ stale: 'x' }))
+  const { ok, lines } = quietly(() => checkHandAuthoredPages(docs, hashes))
+  assert.equal(ok, false)
+  assert.match(lines.join('\n'), /stale: recorded .* no longer a hand-authored page/)
+})
+
+test('the committed hash file lists exactly the hand-authored pages', () => {
+  const recorded = JSON.parse(fs.readFileSync(DEFAULT_HASHES_FILE, 'utf8'))
+  assert.deepEqual(Object.keys(recorded).sort(), Object.keys(LINK_ONLY).sort())
 })
