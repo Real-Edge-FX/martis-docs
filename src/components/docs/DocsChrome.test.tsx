@@ -22,5 +22,6 @@ describe('documentation chrome', () => {
     expect(container.querySelector('.docs-pagination__link')).toBeInTheDocument()
     expect(container.querySelector('.docs-pagination__title')).toBeInTheDocument()
     expect(container.querySelector('.docs-toc')).toBeInTheDocument()
+    expect(container.querySelector('.docs-toc a[href="https://ko-fi.com/luizmoura"]')).toHaveTextContent('Buy Martis a coffee')
   })
 })
