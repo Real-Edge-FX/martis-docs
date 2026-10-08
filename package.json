@@ -11,6 +11,7 @@
     "preview": "vite preview --port 4173",
     "test": "vitest run && node --test scripts/sync-docs.test.mjs scripts/release-stats.test.mjs",
     "test:watch": "vitest",
+    "test:contact": "composer install --quiet --working-dir=server/contact && php server/contact/tests/run.php",
     "typecheck": "tsc -b",
     "sync-docs": "node scripts/sync-docs.mjs",
     "build-search": "node scripts/build-search-index.mjs"

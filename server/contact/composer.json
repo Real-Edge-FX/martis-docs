@@ -1,0 +1,19 @@
+{
+    "name": "martis/docs-contact",
+    "description": "Contact form delivery for getmartis.com (team notification and sender confirmation over SMTP).",
+    "type": "project",
+    "license": "proprietary",
+    "require": {
+        "php": "^8.3",
+        "phpmailer/phpmailer": "^6.10"
+    },
+    "autoload": {
+        "files": ["src/contact.php"]
+    },
+    "config": {
+        "platform": {
+            "php": "8.3.0"
+        },
+        "optimize-autoloader": true
+    }
+}

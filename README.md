@@ -37,6 +37,19 @@ Outputs to `dist/`. The build runs:
 
 `pnpm preview` serves the built site at <http://localhost:4173>.
 
+## Contact form
+
+The contact page and the timed "Any questions about Martis?" prompt (shown at most once a day per browser, after 20 seconds of browsing, never on `/contact`, and not for 30 days after a message was sent from it) post JSON to the same-origin endpoint `/api/contact.php`.
+
+That file is a shim: the handler lives in `server/contact/` and is deployed by `scripts/deploy.sh` to `domains/getmartis.com/contact-api/`, next to `public_html`, never inside it. Each valid message sends two emails over SMTP from `support@getmartis.com`: a notification to the team (Reply-To the sender) and a confirmation to the sender. Honeypot field, origin check and a per-address rate limit (5 per hour) guard the endpoint.
+
+The SMTP password is never committed. On the server, copy `server/contact/config.example.php` to `domains/getmartis.com/private/contact-config.php` (`chmod 600`) and put the mailbox password in `domains/getmartis.com/private/contact-smtp-password` (`chmod 600`). Without that file the endpoint answers 500 and the deploy's smoke check fails.
+
+```bash
+pnpm test:contact                          # PHP handler checks
+php server/contact/bin/preview.php /tmp    # render both emails to HTML
+```
+
 ## Content sync
 
 Most docs are mirrored from `martis-package/docs/*.md` so the site cannot drift from the package source. The mapping is declared explicitly in `scripts/sync-docs.mjs`. `scripts/deploy.sh` runs this against the docs of the release it publishes, so `src/content` is never committed out of sync with the live site and no separate docs PR is needed for a release; use the commands below only for local iteration on a doc page (against the sibling `martis-package` checkout) or to check a work-in-progress package doc before it's tagged:

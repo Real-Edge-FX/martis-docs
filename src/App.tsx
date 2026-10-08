@@ -5,6 +5,7 @@ import { CmdKProvider } from '@/lib/cmdk-context'
 import { ThemeProvider } from '@/lib/theme'
 import { DocumentMeta } from '@/components/site/DocumentMeta'
 import { ScrollManager } from '@/components/site/ScrollManager'
+import { ContactPrompt } from '@/components/contact/ContactPrompt'
 
 // Lazy-load the two top-level surfaces so the landing's CSS / JS
 // budget does not pay for the docs renderer (and vice-versa). Both
@@ -38,6 +39,7 @@ export function App() {
             <Route path="*" element={<NotFound />} />
           </Routes>
         </Suspense>
+        <ContactPrompt />
       </CmdKProvider>
     </ThemeProvider>
   )
