@@ -24,6 +24,7 @@ SSH_HOST="147.79.113.74"
 SSH_PORT="65002"
 SSH_USER="u498269178"
 DOCROOT="domains/getmartis.com/public_html"
+CONTACT_APP="domains/getmartis.com/contact-api"
 SITE_URL="https://getmartis.com"
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -92,6 +93,13 @@ node scripts/sync-docs.mjs --package-dir "$PKG_DIR"
 echo "==> Building docs site"
 "${PNPM[@]}" build
 
+# The contact endpoint (public/api/contact.php) loads its handler and
+# PHPMailer from server/contact, which is published next to public_html,
+# never inside it. Its config (SMTP password) lives only on the server.
+echo "==> Contact handler"
+composer install --no-dev --no-interaction --quiet --working-dir=server/contact
+php server/contact/tests/run.php >/dev/null || { echo "ERROR: contact handler checks failed (php server/contact/tests/run.php)." >&2; exit 1; }
+
 echo "==> SPA fallback"
 test -f dist/.htaccess || {
   echo "ERROR: dist/.htaccess missing — expected Vite to copy public/.htaccess." >&2
@@ -99,37 +107,37 @@ test -f dist/.htaccess || {
 }
 cp dist/index.html dist/404.html
 
-echo "==> Publishing dist/ -> ${SSH_USER}@${SSH_HOST}:${DOCROOT}"
 KEY="$HOME/.ssh/id_ed25519_martis_docs_vps"
-TARGET="${SSH_USER}@${SSH_HOST}:${DOCROOT}/"
-published=0
+PW=""
 
-if [ -f "$KEY" ]; then
-  if rsync -az --delete --itemize-changes \
+# sync_dir SRC DEST [rsync args...]: key first, then the hPanel password
+# (asked once per deploy).
+sync_dir() {
+  local src="$1" dest="${SSH_USER}@${SSH_HOST}:$2"
+  shift 2
+  if [ -f "$KEY" ] && rsync -az --delete --itemize-changes "$@" \
        -e "ssh -p ${SSH_PORT} -i ${KEY} -o IdentitiesOnly=yes -o BatchMode=yes -o PreferredAuthentications=publickey -o StrictHostKeyChecking=accept-new" \
-       dist/ "$TARGET"; then
-    published=1
+       "$src" "$dest"; then
     echo "    (authenticated with SSH key — no password needed)"
-  else
-    echo "    SSH key not accepted yet; falling back to password."
+    return 0
   fi
-fi
-
-if [ "$published" -ne 1 ]; then
-  if [ -n "${MARTIS_DOCS_SSH_PASS:-}" ]; then
-    PW="$MARTIS_DOCS_SSH_PASS"
-  else
-    read -rsp "Hostinger SSH password for ${SSH_USER}: " PW
-    echo
+  [ -f "$KEY" ] && echo "    SSH key not accepted yet; falling back to password."
+  if [ -z "$PW" ]; then
+    if [ -n "${MARTIS_DOCS_SSH_PASS:-}" ]; then
+      PW="$MARTIS_DOCS_SSH_PASS"
+    else
+      read -rsp "Hostinger SSH password for ${SSH_USER}: " PW
+      echo
+    fi
+    [ -n "$PW" ] || { echo "ERROR: empty password." >&2; exit 1; }
   fi
-  [ -n "$PW" ] || { echo "ERROR: empty password." >&2; exit 1; }
-  export PW SSH_HOST SSH_PORT SSH_USER DOCROOT
-  expect <<'EXP'
+  local rc=0
+  PW="$PW" SSH_PORT="$SSH_PORT" SRC="$src" DEST="$dest" EXTRA="$*" expect <<'EXP' || rc=$?
 set timeout 600
 log_user 1
-spawn rsync -az --delete --itemize-changes \
-  -e "ssh -p $env(SSH_PORT) -o StrictHostKeyChecking=accept-new -o PreferredAuthentications=password -o PubkeyAuthentication=no" \
-  dist/ $env(SSH_USER)@$env(SSH_HOST):$env(DOCROOT)/
+eval spawn rsync -az --delete --itemize-changes $env(EXTRA) \
+  -e {"ssh -p $env(SSH_PORT) -o StrictHostKeyChecking=accept-new -o PreferredAuthentications=password -o PubkeyAuthentication=no"} \
+  $env(SRC) $env(DEST)
 expect {
   -re {(?i)are you sure you want to continue connecting} { send "yes\r"; exp_continue }
   -re {(?i)password:} { log_user 0; send "$env(PW)\r"; log_user 1; exp_continue }
@@ -138,10 +146,15 @@ expect {
 catch wait result
 exit [lindex $result 3]
 EXP
-  RSYNC_RC=$?
-  unset PW MARTIS_DOCS_SSH_PASS
-  [ "$RSYNC_RC" -eq 0 ] || { echo "ERROR: rsync failed (rc=$RSYNC_RC)." >&2; exit "$RSYNC_RC"; }
-fi
+  [ "$rc" -eq 0 ] || { echo "ERROR: rsync of $src failed (rc=$rc)." >&2; exit "$rc"; }
+}
+
+echo "==> Publishing dist/ -> ${SSH_USER}@${SSH_HOST}:${DOCROOT}"
+sync_dir dist/ "${DOCROOT}/"
+
+echo "==> Publishing server/contact/ -> ${SSH_USER}@${SSH_HOST}:${CONTACT_APP}"
+sync_dir server/contact/ "${CONTACT_APP}/" --exclude=tests/ --exclude=bin/ --exclude=.gitignore --exclude=config.example.php
+unset PW MARTIS_DOCS_SSH_PASS
 
 echo "==> Verifying ${SITE_URL}"
 fail=0
@@ -150,6 +163,14 @@ for path in / /docs /compare /contact /search-index.json; do
   printf '  %-22s HTTP %s\n' "$path" "$code"
   [ "$code" = "200" ] || fail=1
 done
+# A GET reaches the handler only once PHPMailer and the server-side config
+# load; it then answers 405. A 500 means the config is missing or invalid.
+code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 25 "${SITE_URL}/api/contact.php" || echo 000)
+printf '  %-22s HTTP %s\n' "/api/contact.php (GET)" "$code"
+if [ "$code" != "405" ]; then
+  echo "  contact endpoint not ready: create domains/getmartis.com/private/contact-config.php from server/contact/config.example.php" >&2
+  fail=1
+fi
 # The published chunks must carry the numbers this deploy built.
 found=0
 for asset in $(curl -s --max-time 25 "${SITE_URL}/" | grep -oE '/assets/[A-Za-z0-9_.-]+\.js' | sort -u) \
