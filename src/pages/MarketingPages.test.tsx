@@ -10,6 +10,7 @@ describe('marketing routes', () => {
       name: 'The admin foundation your agency can ship again.',
     })).toBeInTheDocument()
     expect(screen.getAllByText('MIT licensed · No paid tier').length).toBeGreaterThan(0)
+    expect(screen.getByRole('link', { name: 'Buy Martis a coffee' })).toHaveAttribute('href', 'https://ko-fi.com/luizmoura')
     expect(screen.getAllByRole('link', { name: 'Install Martis' })).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ href: expect.stringContaining('/docs/getting-started/installation') }),

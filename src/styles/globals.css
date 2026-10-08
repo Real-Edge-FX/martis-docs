@@ -463,6 +463,8 @@ button, a { -webkit-tap-highlight-color: transparent; }
 .site-footer__column p { margin: 0 0 7px; color: #6f7788; font: 600 9px var(--font-mono); letter-spacing: .13em; text-transform: uppercase; }
 .site-footer__column a { color: #aab2c1; font-size: 12px; }
 .site-footer__column a:hover { color: white; }
+.site-footer__support { display: inline-flex; align-items: center; gap: 7px; }
+.site-footer__support svg { color: #8ea0ff; }
 .site-footer__bottom { min-height: 62px; display: flex; align-items: center; justify-content: space-between; border-top: 1px solid rgba(255,255,255,.06); color: #5e6675; font: 500 9px var(--font-mono); letter-spacing: .05em; text-transform: uppercase; }
 
 /* Interior marketing pages */

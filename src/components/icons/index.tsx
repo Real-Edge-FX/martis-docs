@@ -164,6 +164,13 @@ export const Icons = {
       <path d="M6 6l12 12M18 6 6 18" />
     </svg>
   ),
+  Coffee: (p: IconProps) => (
+    <svg {...baseProps(p)}>
+      <path d="M4 9h13v5a5 5 0 0 1-5 5H9a5 5 0 0 1-5-5V9Z" />
+      <path d="M17 11h1.5a2.5 2.5 0 0 1 0 5H17" />
+      <path d="M8 3v3M12 3v3" />
+    </svg>
+  ),
   Hash: (p: IconProps) => (
     <svg {...baseProps(p)}>
       <path d="M4 9h16M4 15h16M10 3 8 21M16 3l-2 18" />

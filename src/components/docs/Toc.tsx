@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Icons } from '@/components/icons'
+import { SUPPORT_URL } from '@/data/support'
 
 export interface Heading {
   id: string
@@ -72,14 +73,7 @@ export function Toc({ slug }: TocProps) {
     return (
       <aside className="docs-toc hidden xl:block w-[200px] shrink-0 sticky top-16 self-start max-h-[calc(100vh-4rem)] overflow-y-auto py-8 pl-4">
         <div className="space-y-2">
-          <a
-            href={githubUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center gap-2 text-[12px] text-ink-300 hover:text-white"
-          >
-            <Icons.GitHub size={12} /> Edit on GitHub
-          </a>
+          <TocLinks githubUrl={githubUrl} />
         </div>
       </aside>
     )
@@ -109,15 +103,22 @@ export function Toc({ slug }: TocProps) {
         ))}
       </ul>
       <div className="mt-8 pt-6 border-t border-white/5 space-y-2">
-        <a
-          href={githubUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex items-center gap-2 text-[12px] text-ink-300 hover:text-white"
-        >
-          <Icons.GitHub size={12} /> Edit on GitHub
-        </a>
+        <TocLinks githubUrl={githubUrl} />
       </div>
     </aside>
+  )
+}
+
+function TocLinks({ githubUrl }: { githubUrl: string }) {
+  const link = 'flex items-center gap-2 text-[12px] text-ink-300 hover:text-white'
+  return (
+    <>
+      <a href={githubUrl} target="_blank" rel="noopener noreferrer" className={link}>
+        <Icons.GitHub size={12} /> Edit on GitHub
+      </a>
+      <a href={SUPPORT_URL} target="_blank" rel="noopener noreferrer" className={link}>
+        <Icons.Coffee size={13} /> Buy Martis a coffee
+      </a>
+    </>
   )
 }
