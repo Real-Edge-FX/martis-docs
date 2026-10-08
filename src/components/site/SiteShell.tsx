@@ -54,6 +54,7 @@ function SiteHeader({ surface }: { surface: 'marketing' | 'docs' }) {
         <div className="site-header__actions">
           {surface === 'docs' && <ThemeToggle />}
           <a className="icon-link" href="https://github.com/Real-Edge-FX/martis-package" target="_blank" rel="noreferrer" aria-label="Martis on GitHub"><Icons.GitHub size={17} /></a>
+          <a className="coffee-button" href={SUPPORT_URL} target="_blank" rel="noreferrer" aria-label="Buy Martis a coffee on Ko-fi"><Icons.Coffee size={16} /><span>Buy a coffee</span></a>
           <Link className="button button--small button--primary" to="/docs/getting-started/installation">Install Martis</Link>
           <button ref={toggleRef} className="mobile-menu-button" type="button" aria-label="Toggle navigation" aria-expanded={open} onClick={() => setOpen((value) => !value)}>
             {open ? <Icons.Close size={19} /> : <Icons.Menu size={19} />}
@@ -63,6 +64,7 @@ function SiteHeader({ surface }: { surface: 'marketing' | 'docs' }) {
       {open && <nav className="mobile-nav" aria-label="Mobile navigation">
         {nav.map((item) => <NavLink key={item.to} to={item.to} onClick={() => setOpen(false)}>{item.label}<Icons.ArrowRight size={15} /></NavLink>)}
         <Link to="/docs/getting-started/installation" onClick={() => setOpen(false)}>Install Martis<Icons.ArrowRight size={15} /></Link>
+        <a href={SUPPORT_URL} target="_blank" rel="noreferrer" onClick={() => setOpen(false)}>Buy Martis a coffee<Icons.Coffee size={15} /></a>
       </nav>}
     </header>
   )
