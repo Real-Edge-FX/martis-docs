@@ -1,8 +1,8 @@
 import type { IconName } from '@/components/icons'
 
 export const RELEASE = {
-  version: '2.13.0',
-  tests: 7610,
+  version: '2.14.0',
+  tests: 7619,
   php: 'PHP 8.3+',
   laravel: 'Laravel 12–13',
   downloads: 351,
