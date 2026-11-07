@@ -11,7 +11,7 @@ export interface RouteMeta {
   noIndex?: boolean
 }
 
-const socialImage = (name: string) => `${SITE_URL}/social/${name}.png`
+const socialImage = (name: string) => `${SITE_URL}/social/${name}.jpg`
 
 const ROUTE_META: RouteMeta[] = [
   {
@@ -34,6 +34,13 @@ const ROUTE_META: RouteMeta[] = [
     description: 'A repeatable admin foundation for client delivery.',
     canonical: `${SITE_URL}/for-agencies`,
     image: socialImage('agencies'),
+  },
+  {
+    path: '/showcase',
+    title: 'Showcase · Built with Martis',
+    description: 'Real products running on Martis, with screens from their staging environments and what each one uses from the foundation.',
+    canonical: `${SITE_URL}/showcase`,
+    image: socialImage('showcase'),
   },
   {
     path: '/compare',

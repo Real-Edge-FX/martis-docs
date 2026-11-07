@@ -19,6 +19,14 @@ describe('marketing routes', () => {
     )
   })
 
+  it('shows the products built with Martis, with their screens and what they use', async () => {
+    renderRoute('/showcase')
+    expect(await screen.findByRole('heading', { level: 1, name: /Real products/i })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { level: 2, name: 'Cato Trade' })).toBeInTheDocument()
+    expect(screen.getByText('What it uses from Martis')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /^Overview dashboard/ })).toHaveAttribute('aria-pressed', 'true')
+  })
+
   it('renders the six product chapters', async () => {
     renderRoute('/product')
     expect(await screen.findByRole('heading', { level: 1, name: /One foundation/i })).toBeInTheDocument()

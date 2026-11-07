@@ -11,7 +11,7 @@
 </IfModule>
 
 <IfModule mod_headers.c>
-  <FilesMatch "\.(js|css|woff2?|png|jpg|jpeg|svg|webp|avif|ico)$">
+  <FilesMatch "\.(js|css|woff2?|png|jpg|jpeg|svg|webp|avif|ico|mp4|webm)$">
     Header set Cache-Control "public, max-age=31536000, immutable"
   </FilesMatch>
   <FilesMatch "\.(html|json)$">
