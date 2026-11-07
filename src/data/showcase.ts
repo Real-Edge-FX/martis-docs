@@ -41,9 +41,9 @@ export const SHOWCASE: ShowcaseProject[] = [
       { title: 'Theme and localisation', body: 'Cato’s own palette, typography and logo on the Martis theme variables, in English and Portuguese.' },
     ],
     screens: [
-      { src: '/showcase/cato-trade/dashboard.webp', label: 'Overview dashboard', caption: 'MRR, revenue, Stripe fees and profit with sparklines, a revenue trend and the issues to review.' },
-      { src: '/showcase/cato-trade/conversations.webp', label: 'Support conversations', caption: 'Every chat handled by the AI agents: the path between agents, how it ended, rating, topic and cost.' },
-      { src: '/showcase/cato-trade/conversation-drawer.webp', label: 'Conversation in a drawer', caption: 'A record opened in place over the list, with its transcript, using the Martis detail drawer.' },
+      { src: '/media/showcase/cato-trade/dashboard.webp', label: 'Overview dashboard', caption: 'MRR, revenue, Stripe fees and profit with sparklines, a revenue trend and the issues to review.' },
+      { src: '/media/showcase/cato-trade/conversations.webp', label: 'Support conversations', caption: 'Every chat handled by the AI agents: the path between agents, how it ended, rating, topic and cost.' },
+      { src: '/media/showcase/cato-trade/conversation-drawer.webp', label: 'Conversation in a drawer', caption: 'A record opened in place over the list, with its transcript, using the Martis detail drawer.' },
     ],
   },
 ]

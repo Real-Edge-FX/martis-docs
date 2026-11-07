@@ -1,5 +1,11 @@
 # Martis Docs — Apache/LiteSpeed config for shared hosting (getmartis.com).
 
+<IfModule mod_mime.c>
+  AddType video/webm .webm
+  AddType video/mp4 .mp4
+  AddType image/svg+xml .svg
+</IfModule>
+
 <IfModule mod_rewrite.c>
   RewriteEngine On
   RewriteBase /
