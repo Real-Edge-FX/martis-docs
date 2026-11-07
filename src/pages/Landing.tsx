@@ -204,11 +204,11 @@ function AmbientVideo({ className, name }: { className: string; name: string }) 
         <video ref={videoRef} autoPlay muted loop playsInline preload="auto" poster={`/media/${name}-poster.webp`}>
           {narrow ? (
             // Phones: a light MP4 (about 300 KB).
-            <source src={`/media/${name}-loop-mobile.mp4`} type="video/mp4" />
+            <source src={`/media/loops/${name}-loop-mobile.mp4`} type="video/mp4" />
           ) : (
             <>
-              <source src={`/media/${name}-loop.webm`} type="video/webm" />
-              <source src={`/media/${name}-loop.mp4`} type="video/mp4" />
+              <source src={`/media/loops/${name}-loop.webm`} type="video/webm" />
+              <source src={`/media/loops/${name}-loop.mp4`} type="video/mp4" />
             </>
           )}
         </video>

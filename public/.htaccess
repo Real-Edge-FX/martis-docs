@@ -24,3 +24,17 @@
     Header set Cache-Control "no-cache"
   </FilesMatch>
 </IfModule>
+
+# Video loops: no validators. The CDN answers a range request with If-Range
+# with the whole file (200) instead of the range (206), so Safari, which
+# sends If-Range when it revalidates a cached video on reload, failed to play
+# the loops after a refresh. Without ETag / Last-Modified it never sends one.
+<FilesMatch "\.(mp4|webm)$">
+  FileETag None
+  <IfModule mod_headers.c>
+    Header unset ETag
+    Header unset Last-Modified
+    Header set Cache-Control "public, max-age=31536000"
+  </IfModule>
+</FilesMatch>
+
