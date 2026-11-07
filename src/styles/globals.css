@@ -970,7 +970,8 @@ html[data-theme="light"]:has(.site-shell[data-surface="docs"]) *::-webkit-scroll
   .showcase-entry__uses ul { grid-template-columns: 1fr; }
   .showcase-entry__stats { width: 100%; }
   .showcase-entry__stats div { flex: 1; min-width: 0; }
-  .hero-motion video, .hero-motion img { top: 30px; right: -12%; width: 290%; max-width: none; opacity: .3; -webkit-mask-image: radial-gradient(ellipse 55% 60% at 74% 45%, black 40%, transparent 85%); mask-image: radial-gradient(ellipse 55% 60% at 74% 45%, black 40%, transparent 85%); }
+  .hero-motion video { top: 30px; right: -30%; width: 165%; max-width: none; opacity: .3; -webkit-mask-image: radial-gradient(ellipse 60% 60% at 55% 45%, black 40%, transparent 85%); mask-image: radial-gradient(ellipse 60% 60% at 55% 45%, black 40%, transparent 85%); }
+  .hero-motion img { top: 30px; right: -12%; width: 290%; max-width: none; opacity: .3; -webkit-mask-image: radial-gradient(ellipse 55% 60% at 74% 45%, black 40%, transparent 85%); mask-image: radial-gradient(ellipse 55% 60% at 74% 45%, black 40%, transparent 85%); }
 }
 @media (prefers-reduced-motion: reduce) {
   .reveal-ready .reveal { opacity: 1; transform: none; transition: none; }
@@ -1094,7 +1095,6 @@ html[data-theme="light"]:has(.site-shell[data-surface="docs"]) *::-webkit-scroll
   .ambient__blob--two { background: radial-gradient(circle, rgba(166,116,255,.22), transparent 62%); }
   .ambient__blob--three { background: radial-gradient(circle, rgba(18,198,224,.1), transparent 60%); }
   .chapter-preview__grid, .showcase-entry__uses li, .showcase-entry__stats div, .showcase-stage__thumbs button, .site-shell[data-surface='marketing'] .proof-strip { backdrop-filter: none; -webkit-backdrop-filter: none; }
-  .hero-motion video, .hero-motion img, .final-cta__motion video, .final-cta__motion img { mix-blend-mode: normal; }
   .hero-product::after, .showcase-stage__frame::before { animation: none; filter: none; }
   .showcase-stage__image img[data-active='true'] { animation: none; }
   .hero-copy h1 em, .final-cta h2 em { animation: none; }
