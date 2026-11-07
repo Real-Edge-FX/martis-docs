@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { Icons } from '@/components/icons'
 import { InstallCommand } from '@/components/site/InstallCommand'
@@ -158,13 +158,28 @@ function HeroMotion() {
 /** A muted generated loop (`/media/{name}-loop.*`); reduced motion keeps the poster. */
 function AmbientVideo({ className, name }: { className: string; name: string }) {
   const [reduced] = useState(() => typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches)
+  // Phones get the MP4 alone: Safari is strict about the WebM it is served.
+  const [narrow] = useState(() => typeof window !== 'undefined' && window.matchMedia?.('(max-width: 640px)').matches)
+  const videoRef = useRef<HTMLVideoElement>(null)
+
+  // React sets `muted` as a property, not as the attribute iOS Safari needs
+  // before it allows autoplay; set both and start playback explicitly.
+  useEffect(() => {
+    const video = videoRef.current
+    if (!video) return
+    video.muted = true
+    video.defaultMuted = true
+    video.setAttribute('muted', '')
+    video.play()?.catch(() => undefined)
+  }, [])
+
   return (
     <div className={className} aria-hidden="true">
       {reduced ? (
         <img src={`/media/${name}-poster.webp`} alt="" />
       ) : (
-        <video autoPlay muted loop playsInline preload="metadata" poster={`/media/${name}-poster.webp`}>
-          <source src={`/media/${name}-loop.webm`} type="video/webm" />
+        <video ref={videoRef} autoPlay muted loop playsInline preload="auto" poster={`/media/${name}-poster.webp`}>
+          {!narrow && <source src={`/media/${name}-loop.webm`} type="video/webm" />}
           <source src={`/media/${name}-loop.mp4`} type="video/mp4" />
         </video>
       )}

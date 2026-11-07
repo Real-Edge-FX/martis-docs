@@ -970,7 +970,7 @@ html[data-theme="light"]:has(.site-shell[data-surface="docs"]) *::-webkit-scroll
   .showcase-entry__uses ul { grid-template-columns: 1fr; }
   .showcase-entry__stats { width: 100%; }
   .showcase-entry__stats div { flex: 1; min-width: 0; }
-  .hero-motion video, .hero-motion img { opacity: .32; width: 170%; right: -60%; }
+  .hero-motion video, .hero-motion img { top: 30px; right: -12%; width: 290%; max-width: none; opacity: .55; -webkit-mask-image: radial-gradient(ellipse 55% 60% at 74% 45%, black 40%, transparent 85%); mask-image: radial-gradient(ellipse 55% 60% at 74% 45%, black 40%, transparent 85%); }
 }
 @media (prefers-reduced-motion: reduce) {
   .reveal-ready .reveal { opacity: 1; transform: none; transition: none; }
