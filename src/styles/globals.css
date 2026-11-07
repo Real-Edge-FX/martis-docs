@@ -1083,3 +1083,20 @@ html[data-theme="light"]:has(.site-shell[data-surface="docs"]) *::-webkit-scroll
   .chapter-card:first-child { border-radius: 15px 15px 0 0; }
   .chapter-card:last-child { border-radius: 0 0 15px 15px; }
 }
+
+/* Phones and tablets: keep the look, drop what overwhelms mobile GPUs
+   (animated 90px blurs on a fixed full-screen layer, the animated grain,
+   backdrop blurs and blend modes). */
+@media (max-width: 900px), (pointer: coarse) {
+  .ambient::after { display: none; }
+  .ambient__blob { animation: none; filter: none; opacity: .9; will-change: auto; }
+  .ambient__blob--one { background: radial-gradient(circle, rgba(91,105,232,.28), transparent 62%); }
+  .ambient__blob--two { background: radial-gradient(circle, rgba(166,116,255,.22), transparent 62%); }
+  .ambient__blob--three { background: radial-gradient(circle, rgba(18,198,224,.1), transparent 60%); }
+  .chapter-preview__grid, .showcase-entry__uses li, .showcase-entry__stats div, .showcase-stage__thumbs button, .site-shell[data-surface='marketing'] .proof-strip { backdrop-filter: none; -webkit-backdrop-filter: none; }
+  .hero-motion video, .hero-motion img, .final-cta__motion video, .final-cta__motion img { mix-blend-mode: normal; }
+  .hero-product::after, .showcase-stage__frame::before { animation: none; filter: none; }
+  .showcase-stage__image img[data-active='true'] { animation: none; }
+  .hero-copy h1 em, .final-cta h2 em { animation: none; }
+  .hero-copy > *, .hero-product { animation: none; }
+}
