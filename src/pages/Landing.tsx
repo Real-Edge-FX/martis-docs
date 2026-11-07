@@ -160,9 +160,7 @@ function AmbientVideo({ className, name }: { className: string; name: string }) 
   const [reduced] = useState(() => typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches)
   // Phones get the MP4 alone: Safari is strict about the WebM it is served.
   const [narrow] = useState(() => typeof window !== 'undefined' && window.matchMedia?.('(max-width: 640px)').matches)
-  // Touch devices keep one light loop (the hero) and the still poster elsewhere.
-  const [lite] = useState(() => typeof window !== 'undefined' && window.matchMedia?.('(max-width: 900px), (pointer: coarse)').matches)
-  const still = reduced || (lite && name !== 'hero')
+  const still = reduced
   const videoRef = useRef<HTMLVideoElement>(null)
 
   // React sets `muted` as a property, not as the attribute iOS Safari needs
@@ -181,9 +179,16 @@ function AmbientVideo({ className, name }: { className: string; name: string }) 
       {still ? (
         <img src={`/media/${name}-poster.webp`} alt="" />
       ) : (
-        <video ref={videoRef} autoPlay muted loop playsInline preload={lite ? 'metadata' : 'auto'} poster={`/media/${name}-poster.webp`}>
-          {!narrow && <source src={`/media/${name}-loop.webm`} type="video/webm" />}
-          <source src={`/media/${name}-loop.mp4`} type="video/mp4" />
+        <video ref={videoRef} autoPlay muted loop playsInline preload="auto" poster={`/media/${name}-poster.webp`}>
+          {narrow ? (
+            // Phones: a light MP4 (about 300 KB).
+            <source src={`/media/${name}-loop-mobile.mp4`} type="video/mp4" />
+          ) : (
+            <>
+              <source src={`/media/${name}-loop.webm`} type="video/webm" />
+              <source src={`/media/${name}-loop.mp4`} type="video/mp4" />
+            </>
+          )}
         </video>
       )}
     </div>
