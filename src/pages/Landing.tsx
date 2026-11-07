@@ -164,15 +164,37 @@ function AmbientVideo({ className, name }: { className: string; name: string }) 
   const videoRef = useRef<HTMLVideoElement>(null)
 
   // React sets `muted` as a property, not as the attribute iOS Safari needs
-  // before it allows autoplay; set both and start playback explicitly.
+  // before it allows autoplay; set both and start playback explicitly. iOS
+  // also leaves the loop paused when the page comes back from the
+  // back/forward cache or the app returns to the foreground, pauses it off
+  // screen, and blocks autoplay in Low Power Mode until a gesture: resume it
+  // on each of those moments.
   useEffect(() => {
     const video = videoRef.current
     if (!video || still) return
     video.muted = true
     video.defaultMuted = true
     video.setAttribute('muted', '')
-    video.play()?.catch(() => undefined)
-  }, [])
+    const resume = () => {
+      if (document.visibilityState === 'hidden' || !video.paused) return
+      video.play()?.catch(() => undefined)
+    }
+    resume()
+    const onVisibility = () => resume()
+    const events: Array<[EventTarget, string]> = [
+      [window, 'pageshow'], [window, 'focus'], [document, 'visibilitychange'],
+      [window, 'touchstart'], [window, 'scroll'], [window, 'pointerdown'],
+    ]
+    events.forEach(([target, type]) => target.addEventListener(type, onVisibility, { passive: true }))
+    video.addEventListener('canplay', resume)
+    const observer = typeof IntersectionObserver === 'undefined' ? null : new IntersectionObserver(([entry]) => { if (entry?.isIntersecting) resume() })
+    observer?.observe(video)
+    return () => {
+      events.forEach(([target, type]) => target.removeEventListener(type, onVisibility))
+      video.removeEventListener('canplay', resume)
+      observer?.disconnect()
+    }
+  }, [still])
 
   return (
     <div className={className} aria-hidden="true">
