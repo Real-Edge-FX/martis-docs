@@ -13,6 +13,7 @@ import { ContactPrompt } from '@/components/contact/ContactPrompt'
 const Landing = lazy(() => import('@/pages/Landing'))
 const Product = lazy(() => import('@/pages/Product'))
 const ForAgencies = lazy(() => import('@/pages/ForAgencies'))
+const Showcase = lazy(() => import('@/pages/Showcase'))
 const Compare = lazy(() => import('@/pages/Compare'))
 const CompareProduct = lazy(() => import('@/pages/CompareProduct'))
 const Changelog = lazy(() => import('@/pages/Changelog'))
@@ -31,6 +32,7 @@ export function App() {
             <Route path="/" element={<Landing />} />
             <Route path="/product" element={<Product />} />
             <Route path="/for-agencies" element={<ForAgencies />} />
+            <Route path="/showcase" element={<Showcase />} />
             <Route path="/compare" element={<Compare />} />
             <Route path="/compare/:product" element={<CompareProduct />} />
             <Route path="/changelog" element={<Changelog />} />

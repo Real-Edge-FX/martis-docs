@@ -1,11 +1,13 @@
-import type { ReactNode } from 'react'
+import { useState, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { Icons } from '@/components/icons'
 import { InstallCommand } from '@/components/site/InstallCommand'
 import { SiteShell } from '@/components/site/SiteShell'
 import { ProductVisual } from '@/components/marketing/ProductVisual'
 import { AGENCY_VALUE, PRODUCT_CHAPTERS, RELEASE } from '@/data/site'
+import { SHOWCASE } from '@/data/showcase'
 import { usePackagistDownloads } from '@/hooks/usePackagistDownloads'
+import { useCountUp, useTilt } from '@/hooks/useMotion'
 
 const code = `class ClientResource extends Resource
 {
@@ -27,6 +29,7 @@ export default function Landing() {
     <SiteShell>
       <main id="main-content">
         <section className="hero-section">
+          <HeroMotion />
           <div className="hero-orbit hero-orbit--one" />
           <div className="hero-orbit hero-orbit--two" />
           <div className="site-container hero-grid">
@@ -41,10 +44,7 @@ export default function Landing() {
               <div className="license-proof"><Icons.Check size={14} /><strong>MIT licensed · No paid tier</strong><span>No per-project fee</span></div>
               <InstallCommand />
             </div>
-            <div className="hero-product">
-              <div className="hero-product__badge"><span>Built with Martis</span><strong>Ready for client delivery</strong></div>
-              <ProductVisual />
-            </div>
+            <HeroProduct />
           </div>
         </section>
 
@@ -54,7 +54,7 @@ export default function Landing() {
           <div className="site-container">
             <SectionIntro eyebrow="The agency advantage" title={<>Stop rebuilding the <em>starting line.</em></>} body="Your value is the client-specific work. Martis standardises everything that should already be solved before that work begins." dark />
             <div className="agency-value-grid">
-              {AGENCY_VALUE.map((item) => <article key={item.number} className="agency-value-card"><span>{item.number}</span><h3>{item.title}</h3><p>{item.body}</p></article>)}
+              {AGENCY_VALUE.map((item) => <article key={item.number} className="agency-value-card reveal spotlight"><span>{item.number}</span><h3>{item.title}</h3><p>{item.body}</p></article>)}
             </div>
           </div>
         </section>
@@ -62,7 +62,7 @@ export default function Landing() {
         <section className="section code-product-section">
           <div className="site-container">
             <SectionIntro eyebrow="From resource to interface" title={<>Write the intent.<br /><em>Ship the workflow.</em></>} body="A concise PHP resource becomes a complete React operating surface—searchable, sortable and ready to extend." />
-            <div className="code-product-grid">
+            <div className="code-product-grid reveal">
               <div className="code-window"><div className="code-window__head"><span>app/Martis/ClientResource.php</span><span>PHP</span></div><pre><code>{code}</code></pre></div>
               <ProductVisual image="/screenshots/resource-index.png" label="Clients · Resource index" />
             </div>
@@ -75,7 +75,7 @@ export default function Landing() {
             <div className="chapter-preview__grid">
               {PRODUCT_CHAPTERS.map((chapter) => {
                 const Icon = Icons[chapter.icon]
-                return <Link to={`/product#${chapter.id}`} key={chapter.id} className="chapter-card"><div><span>{chapter.number}</span><Icon size={18} /></div><h3>{chapter.title}</h3><p>{chapter.kicker}</p><Icons.ArrowRight size={15} /></Link>
+                return <Link to={`/product#${chapter.id}`} key={chapter.id} className="chapter-card reveal spotlight"><div><span>{chapter.number}</span><Icon size={18} /></div><h3>{chapter.title}</h3><p>{chapter.kicker}</p><Icons.ArrowRight size={15} /></Link>
               })}
             </div>
           </div>
@@ -94,7 +94,7 @@ export default function Landing() {
         <section className="section gallery-section">
           <div className="site-container">
             <SectionIntro eyebrow="Real product, not a concept" title={<>The operating surface<br /><em>your clients will use.</em></>} body="Captured from the Martis Playground—the same Laravel application used to validate the package." />
-            <div className="gallery-grid">
+            <div className="gallery-grid reveal">
               <ProductVisual image="/screenshots/dashboard.png" label="Executive dashboard" />
               <ProductVisual image="/screenshots/resource-create.png" label="Resource creation" />
               <ProductVisual image="/screenshots/system-cache.png" label="System operations" />
@@ -102,8 +102,23 @@ export default function Landing() {
           </div>
         </section>
 
+        <section className="section built-with">
+          <div className="site-container">
+            <div className="reveal"><SectionIntro eyebrow="Built with Martis" title={<>Already running<br /><em>real businesses.</em></>} body="Products in production use Martis as their operating surface. See their screens, and what each one takes from the foundation." /></div>
+            <div className="built-with__grid">
+              {SHOWCASE.map((project) => (
+                <Link key={project.id} to={`/showcase#${project.id}`} className="built-with__card reveal spotlight">
+                  <div className="built-with__shot"><img src={project.screens[0].src} alt={`${project.name} — ${project.screens[0].label}`} width="1440" height="900" loading="lazy" /></div>
+                  <div className="built-with__meta"><small>{project.kind}</small><strong>{project.name}</strong><p>{project.summary}</p><span>See the project <Icons.ArrowRight size={14} /></span></div>
+                </Link>
+              ))}
+            </div>
+          </div>
+        </section>
+
         <section className="section final-cta">
           <div className="final-cta__glow" />
+          <AmbientVideo className="final-cta__motion" name="cta" />
           <div className="site-container final-cta__inner">
             <p className="eyebrow"><span /> Your next client project</p>
             <h2>Start with the part<br />you would otherwise <em>rebuild.</em></h2>
@@ -119,15 +134,55 @@ export default function Landing() {
 
 function ProofStrip() {
   const downloads = usePackagistDownloads()
-  const stats = [
+  const stats: Array<[string | number, string]> = [
     [`v${RELEASE.version}`, 'Current release'],
-    [RELEASE.tests.toLocaleString('en-US'), 'Tests passing'],
+    [RELEASE.tests, 'Tests passing'],
     [RELEASE.laravel, 'Supported'],
-    [downloads.total.toLocaleString('en-US'), 'Packagist installs'],
+    [downloads.total, 'Packagist installs'],
   ]
-  return <section className="proof-strip" aria-label="Product proof"><div className="site-container proof-strip__inner">{stats.map(([value, label]) => <div key={label}><strong>{value}</strong><span>{label}</span></div>)}<a href="https://github.com/Real-Edge-FX/martis-package"><Icons.GitHub size={16} /> Inspect the source</a></div></section>
+  return <section className="proof-strip" aria-label="Product proof"><div className="site-container proof-strip__inner">{stats.map(([value, label]) => <div key={label}><strong>{typeof value === 'number' ? <CountUp value={value} /> : value}</strong><span>{label}</span></div>)}<a href="https://github.com/Real-Edge-FX/martis-package"><Icons.GitHub size={16} /> Inspect the source</a></div></section>
 }
 
 function SectionIntro({ eyebrow, title, body, dark = false }: { eyebrow: string; title: ReactNode; body: string; dark?: boolean }) {
   return <header className={`section-intro ${dark ? 'section-intro--dark' : ''}`}><p className="eyebrow"><span /> {eyebrow}</p><h2>{title}</h2><p>{body}</p></header>
+}
+
+/**
+ * Ambient loop behind the hero (generated artwork, ping-pong so it loops
+ * without a cut). Reduced motion keeps the still poster.
+ */
+function HeroMotion() {
+  return <AmbientVideo className="hero-motion" name="hero" />
+}
+
+/** A muted generated loop (`/media/{name}-loop.*`); reduced motion keeps the poster. */
+function AmbientVideo({ className, name }: { className: string; name: string }) {
+  const [reduced] = useState(() => typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches)
+  return (
+    <div className={className} aria-hidden="true">
+      {reduced ? (
+        <img src={`/media/${name}-poster.webp`} alt="" />
+      ) : (
+        <video autoPlay muted loop playsInline preload="metadata" poster={`/media/${name}-poster.webp`}>
+          <source src={`/media/${name}-loop.webm`} type="video/webm" />
+          <source src={`/media/${name}-loop.mp4`} type="video/mp4" />
+        </video>
+      )}
+    </div>
+  )
+}
+
+function CountUp({ value }: { value: number }) {
+  const [ref, shown] = useCountUp<HTMLSpanElement>(value)
+  return <span ref={ref} aria-label={value.toLocaleString('en-US')}>{shown.toLocaleString('en-US')}</span>
+}
+
+function HeroProduct() {
+  const ref = useTilt<HTMLDivElement>(5)
+  return (
+    <div className="hero-product" ref={ref}>
+      <div className="hero-product__badge"><span><i className="live-dot" />Built with Martis</span><strong>Ready for client delivery</strong></div>
+      <ProductVisual />
+    </div>
+  )
 }

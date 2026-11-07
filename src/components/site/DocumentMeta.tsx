@@ -21,6 +21,11 @@ export function DocumentMeta() {
     upsertMeta('meta[property="og:title"]', { property: 'og:title', content: meta.title })
     upsertMeta('meta[property="og:description"]', { property: 'og:description', content: meta.description })
     upsertMeta('meta[property="og:image"]', { property: 'og:image', content: meta.image })
+    upsertMeta('meta[property="og:image:secure_url"]', { property: 'og:image:secure_url', content: meta.image })
+    upsertMeta('meta[property="og:url"]', { property: 'og:url', content: meta.canonical })
+    upsertMeta('meta[name="twitter:title"]', { name: 'twitter:title', content: meta.title })
+    upsertMeta('meta[name="twitter:description"]', { name: 'twitter:description', content: meta.description })
+    upsertMeta('meta[name="twitter:image"]', { name: 'twitter:image', content: meta.image })
     upsertMeta('meta[name="robots"]', { name: 'robots', content: meta.noIndex ? 'noindex, nofollow' : 'index, follow' })
 
     let canonical = document.head.querySelector<HTMLLinkElement>('link[rel="canonical"]')
