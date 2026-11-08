@@ -5,6 +5,24 @@ import { App } from '@/App'
 import '@/styles/globals.css'
 import '@/styles/prose.css'
 
+// A deploy replaces the hashed chunks. A page still holding the previous
+// build (Safari's back/forward cache, a tab left open) then fails to load the
+// next lazy chunk and would hang on the loading screen: reload once to pick
+// up the new build. The flag stops a reload loop when the chunk is really
+// missing.
+const RELOAD_FLAG = 'martis-docs:chunk-reload'
+window.addEventListener('vite:preloadError', (event) => {
+  let reloaded = false
+  try { reloaded = sessionStorage.getItem(RELOAD_FLAG) === '1' } catch { /* storage unavailable */ }
+  if (reloaded) return
+  event.preventDefault()
+  try { sessionStorage.setItem(RELOAD_FLAG, '1') } catch { /* storage unavailable */ }
+  window.location.reload()
+})
+window.addEventListener('load', () => {
+  window.setTimeout(() => { try { sessionStorage.removeItem(RELOAD_FLAG) } catch { /* storage unavailable */ } }, 10_000)
+})
+
 const root = document.getElementById('root')
 if (!root) {
   throw new Error('#root element missing — check index.html')
