@@ -3,7 +3,7 @@ import { Link, NavLink } from 'react-router-dom'
 import { Logo } from '@/components/Logo'
 import { Icons } from '@/components/icons'
 import { RELEASE } from '@/data/site'
-import { SUPPORT_URL } from '@/data/support'
+import { SUPPORT_EMAIL, SUPPORT_URL } from '@/data/support'
 import { ThemeToggle } from '@/lib/theme'
 import { useSpotlight } from '@/hooks/useMotion'
 
@@ -85,6 +85,7 @@ function SiteFooter() {
           <span>MIT licensed · No paid tier</span>
         </div>
         <FooterColumn title="Product" links={[["Product", "/product"], ["For Agencies", "/for-agencies"], ["Showcase", "/showcase"], ["Compare", "/compare"], ["Changelog", "/changelog"], ["Contact", "/contact"]]} />
+        <div className="site-footer__column"><p>Company</p><Link to="/about">About</Link><Link to="/contact">Contact</Link><Link to="/legal">Terms and privacy</Link><a href={`mailto:${SUPPORT_EMAIL}`}>{SUPPORT_EMAIL}</a></div>
         <FooterColumn title="Learn" links={[["Installation", "/docs/getting-started/installation"], ["Quick Start", "/docs/getting-started/quick-start"], ["Resources", "/docs/core/resources"], ["Theming", "/docs/customization/theming"]]} />
         <div className="site-footer__column"><p>Open source</p><a href="https://github.com/Real-Edge-FX/martis-package" target="_blank" rel="noreferrer">GitHub</a><a href="https://github.com/Real-Edge-FX/martis-package/blob/main/LICENSE" target="_blank" rel="noreferrer">MIT License</a><a className="site-footer__support" href={SUPPORT_URL} target="_blank" rel="noreferrer"><Icons.Coffee size={14} /> Buy Martis a coffee</a></div>
       </div>

@@ -14,6 +14,8 @@ const Landing = lazy(() => import('@/pages/Landing'))
 const Product = lazy(() => import('@/pages/Product'))
 const ForAgencies = lazy(() => import('@/pages/ForAgencies'))
 const Showcase = lazy(() => import('@/pages/Showcase'))
+const About = lazy(() => import('@/pages/About'))
+const Legal = lazy(() => import('@/pages/Legal'))
 const Compare = lazy(() => import('@/pages/Compare'))
 const CompareProduct = lazy(() => import('@/pages/CompareProduct'))
 const Changelog = lazy(() => import('@/pages/Changelog'))
@@ -33,6 +35,8 @@ export function App() {
             <Route path="/product" element={<Product />} />
             <Route path="/for-agencies" element={<ForAgencies />} />
             <Route path="/showcase" element={<Showcase />} />
+            <Route path="/about" element={<About />} />
+            <Route path="/legal" element={<Legal />} />
             <Route path="/compare" element={<Compare />} />
             <Route path="/compare/:product" element={<CompareProduct />} />
             <Route path="/changelog" element={<Changelog />} />

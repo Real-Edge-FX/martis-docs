@@ -7,6 +7,7 @@
   "scripts": {
     "dev": "node scripts/build-search-index.mjs && vite",
     "build": "node scripts/build-search-index.mjs && tsc -b && vite build",
+    "prerender": "node scripts/prerender.mjs",
     "release:stats": "node scripts/release-stats.mjs --write",
     "preview": "vite preview --port 4173",
     "test": "vitest run && node --test scripts/sync-docs.test.mjs scripts/release-stats.test.mjs",
@@ -37,6 +38,7 @@
     "@types/react-dom": "^18.3.5",
     "@vitejs/plugin-react": "^4.7.0",
     "jsdom": "^26.1.0",
+    "playwright-core": "1.59.1",
     "rehype-autolink-headings": "^7.1.0",
     "rehype-slug": "^6.0.0",
     "remark-frontmatter": "^5.0.0",

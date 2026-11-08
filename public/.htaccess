@@ -1,28 +1,79 @@
 # Martis Docs — Apache/LiteSpeed config for shared hosting (getmartis.com).
+#
+# Pages are prerendered at build time (scripts/prerender.mjs): /docs/x is
+# served from docs/x.html, its Markdown copy from docs/x.md. A path with no
+# prerendered page answers a real 404 with 404.html; the SPA no longer
+# catches every URL.
+
+DirectorySlash Off
+Options -MultiViews -Indexes
+ErrorDocument 404 /404.html
 
 <IfModule mod_mime.c>
   AddType video/webm .webm
   AddType video/mp4 .mp4
   AddType image/svg+xml .svg
+  AddType text/markdown .md
+  AddCharset utf-8 .md .txt
 </IfModule>
 
 <IfModule mod_rewrite.c>
   RewriteEngine On
   RewriteBase /
-  RewriteRule ^index\.html$ - [L]
-  RewriteCond %{REQUEST_FILENAME} -f [OR]
-  RewriteCond %{REQUEST_FILENAME} -d
+
+  # One URL per page: drop a trailing slash (not on the home page).
+  RewriteCond %{REQUEST_URI} !^/$
+  RewriteRule ^(.+)/$ /$1 [R=301,L]
+
+  # The documentation MCP server.
+  RewriteRule ^mcp$ mcp.php [L]
+
+  # Markdown for agents that ask for it (Accept: text/markdown).
+  RewriteCond %{HTTP_ACCEPT} text/markdown
+  RewriteRule ^$ index.md [L]
+  RewriteCond %{HTTP_ACCEPT} text/markdown
+  RewriteCond %{REQUEST_FILENAME}.md -f
+  RewriteRule ^(.+)$ $1.md [L]
+
+  # The home page.
+  RewriteRule ^$ index.html [L]
+
+  # Existing files (assets, media, .md, .txt, .xml, the PHP endpoints).
+  RewriteCond %{REQUEST_FILENAME} -f
   RewriteRule ^ - [L]
-  RewriteRule . /index.html [L]
+
+  # Prerendered pages.
+  RewriteCond %{REQUEST_FILENAME}.html -f
+  RewriteRule ^(.+)$ $1.html [L]
+
+  # Anything else does not exist.
+  RewriteCond %{REQUEST_URI} !^/404\.html$
+  RewriteRule ^ - [R=404,L]
 </IfModule>
 
 <IfModule mod_headers.c>
   <FilesMatch "\.(js|css|woff2?|png|jpg|jpeg|svg|webp|avif|ico|mp4|webm)$">
     Header set Cache-Control "public, max-age=31536000, immutable"
   </FilesMatch>
-  <FilesMatch "\.(html|json)$">
+  <FilesMatch "\.(html|json|md|txt|xml)$">
     Header set Cache-Control "no-cache"
   </FilesMatch>
+  <FilesMatch "\.(html|md)$">
+    Header merge Vary "Accept"
+  </FilesMatch>
+  <FilesMatch "\.md$">
+    Header set Content-Type "text/markdown; charset=utf-8"
+  </FilesMatch>
+  <FilesMatch "\.txt$">
+    Header set Content-Type "text/plain; charset=utf-8"
+  </FilesMatch>
+  <FilesMatch "^index\.(html|md)$">
+    Header set Link "</llms.txt>; rel=\"describedby\"; type=\"text/plain\", </index.md>; rel=\"alternate\"; type=\"text/markdown\", </sitemap.xml>; rel=\"sitemap\"; type=\"application/xml\", </.well-known/mcp/server-card.json>; rel=\"service-desc\"; type=\"application/json\""
+  </FilesMatch>
+  <Files "server-card.json">
+    Header set Content-Type "application/json; charset=utf-8"
+    Header set Access-Control-Allow-Origin "*"
+  </Files>
 </IfModule>
 
 # Video loops: no validators. The CDN answers a range request with If-Range
@@ -37,4 +88,3 @@
     Header set Cache-Control "public, max-age=31536000"
   </IfModule>
 </FilesMatch>
-

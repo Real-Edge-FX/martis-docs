@@ -1,0 +1,34 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/mcp-server-card/v1.json",
+  "version": "1.0",
+  "name": "martis-docs",
+  "title": "Martis documentation",
+  "description": "Read-only MCP server for the Martis documentation (open-source admin foundation for Laravel): search the docs and read any page as Markdown.",
+  "serverInfo": {
+    "name": "martis-docs",
+    "title": "Martis documentation",
+    "version": "1.0.0"
+  },
+  "protocolVersion": "2025-06-18",
+  "endpoint": "https://getmartis.com/mcp",
+  "transport": {
+    "type": "streamable-http",
+    "url": "https://getmartis.com/mcp"
+  },
+  "remotes": [
+    { "type": "streamable-http", "url": "https://getmartis.com/mcp" }
+  ],
+  "authentication": { "required": false },
+  "capabilities": {
+    "tools": { "listChanged": false }
+  },
+  "tools": [
+    { "name": "search_docs", "description": "Search the Martis documentation and return matching pages with URLs." },
+    { "name": "get_page", "description": "Return the Markdown content of a getmartis.com page." },
+    { "name": "list_pages", "description": "List every public page of getmartis.com." }
+  ],
+  "websiteUrl": "https://getmartis.com",
+  "documentationUrl": "https://getmartis.com/llms.txt",
+  "contact": { "email": "support@getmartis.com" },
+  "license": "MIT"
+}
