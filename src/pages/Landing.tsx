@@ -162,6 +162,9 @@ function AmbientVideo({ className, name }: { className: string; name: string }) 
   const [narrow] = useState(() => typeof window !== 'undefined' && window.matchMedia?.('(max-width: 640px)').matches)
   const still = reduced
   const videoRef = useRef<HTMLVideoElement>(null)
+  // iOS blocks autoplay in Low Data Mode and Low Power Mode until a tap: the
+  // still artwork drifts in CSS meanwhile, so the section never looks frozen.
+  const [blocked, setBlocked] = useState(false)
 
   // React sets `muted` as a property, not as the attribute iOS Safari needs
   // before it allows autoplay; set both and start playback explicitly. iOS
@@ -177,27 +180,39 @@ function AmbientVideo({ className, name }: { className: string; name: string }) 
     video.setAttribute('muted', '')
     const resume = () => {
       if (document.visibilityState === 'hidden' || !video.paused) return
-      video.play()?.catch(() => undefined)
+      video.play()?.catch((error: unknown) => {
+        if ((error as { name?: string } | null)?.name === 'NotAllowedError') setBlocked(true)
+      })
     }
     resume()
     const onVisibility = () => resume()
+    // touchend and click are the events WebKit counts as a user gesture, which
+    // is what a blocked autoplay waits for; the others resume a plain pause.
     const events: Array<[EventTarget, string]> = [
       [window, 'pageshow'], [window, 'focus'], [document, 'visibilitychange'],
-      [window, 'touchstart'], [window, 'scroll'], [window, 'pointerdown'],
+      [window, 'touchstart'], [window, 'touchend'], [window, 'click'], [window, 'scroll'], [window, 'pointerdown'],
     ]
     events.forEach(([target, type]) => target.addEventListener(type, onVisibility, { passive: true }))
+    const onPlaying = () => setBlocked(false)
     video.addEventListener('canplay', resume)
+    video.addEventListener('playing', onPlaying)
+    // Low Data Mode may neither play nor reject: still paused after a while
+    // counts as blocked too.
+    const watchdog = window.setTimeout(() => { if (video.paused) setBlocked(true) }, 2500)
     const observer = typeof IntersectionObserver === 'undefined' ? null : new IntersectionObserver(([entry]) => { if (entry?.isIntersecting) resume() })
     observer?.observe(video)
     return () => {
       events.forEach(([target, type]) => target.removeEventListener(type, onVisibility))
       video.removeEventListener('canplay', resume)
+      video.removeEventListener('playing', onPlaying)
+      window.clearTimeout(watchdog)
       observer?.disconnect()
     }
   }, [still])
 
   return (
-    <div className={className} aria-hidden="true">
+    <div className={className} aria-hidden="true" data-blocked={blocked || undefined}>
+      {!still && <img className="ambient-fallback" src={`/media/${name}-poster.webp`} alt="" />}
       {still ? (
         <img src={`/media/${name}-poster.webp`} alt="" />
       ) : (

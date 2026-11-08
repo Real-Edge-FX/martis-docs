@@ -1100,3 +1100,15 @@ html[data-theme="light"]:has(.site-shell[data-surface="docs"]) *::-webkit-scroll
   .hero-copy h1 em, .final-cta h2 em { animation: none; }
   .hero-copy > *, .hero-product { animation: none; }
 }
+
+/* When the browser blocks the loop (iOS Low Data / Low Power Mode until a
+   tap), the still artwork drifts instead (transform only). */
+.hero-motion .ambient-fallback, .final-cta__motion .ambient-fallback { display: none; }
+.hero-motion[data-blocked] video, .final-cta__motion[data-blocked] video { visibility: hidden; }
+.hero-motion[data-blocked] .ambient-fallback, .final-cta__motion[data-blocked] .ambient-fallback { display: block; animation: ambient-drift 16s ease-in-out infinite alternate; will-change: transform; }
+@keyframes ambient-drift {
+  0% { transform: translate3d(0, 0, 0) scale(1); }
+  50% { transform: translate3d(-3%, 2%, 0) scale(1.07); }
+  100% { transform: translate3d(2%, -1.5%, 0) scale(1.03); }
+}
+@media (prefers-reduced-motion: reduce) { .ambient-fallback { animation: none !important; } }
