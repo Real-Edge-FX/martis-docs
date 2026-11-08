@@ -43,6 +43,20 @@ const ROUTE_META: RouteMeta[] = [
     image: socialImage('showcase'),
   },
   {
+    path: '/about',
+    title: 'About · Martis',
+    description: 'Martis is an open-source, MIT-licensed admin foundation for Laravel, maintained by Luiz Moura.',
+    canonical: `${SITE_URL}/about`,
+    image: socialImage('home'),
+  },
+  {
+    path: '/legal',
+    title: 'Terms and privacy · Martis',
+    description: 'Terms of use of getmartis.com and how the site handles your data.',
+    canonical: `${SITE_URL}/legal`,
+    image: socialImage('home'),
+  },
+  {
     path: '/compare',
     title: 'Compare Martis',
     description: 'An evidence-based comparison of Laravel admin foundations.',

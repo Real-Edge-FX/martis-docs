@@ -27,6 +27,21 @@ describe('marketing routes', () => {
     expect(screen.getByRole('button', { name: /^Overview dashboard/ })).toHaveAttribute('aria-pressed', 'true')
   })
 
+  it('links about, contact, legal and the support address from every page', async () => {
+    renderRoute('/')
+    await screen.findByRole('heading', { level: 1 })
+    expect(screen.getByRole('link', { name: 'About' })).toHaveAttribute('href', '/about')
+    expect(screen.getByRole('link', { name: 'Terms and privacy' })).toHaveAttribute('href', '/legal')
+    expect(screen.getByRole('link', { name: 'support@getmartis.com' })).toHaveAttribute('href', 'mailto:support@getmartis.com')
+  })
+
+  it('renders the about and legal pages', async () => {
+    renderRoute('/about')
+    expect(await screen.findByRole('heading', { level: 1, name: /About Martis/i })).toBeInTheDocument()
+    renderRoute('/legal')
+    expect(await screen.findByRole('heading', { level: 1, name: /Terms and privacy/i })).toBeInTheDocument()
+  })
+
   it('renders the six product chapters', async () => {
     renderRoute('/product')
     expect(await screen.findByRole('heading', { level: 1, name: /One foundation/i })).toBeInTheDocument()

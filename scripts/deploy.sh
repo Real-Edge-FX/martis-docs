@@ -93,6 +93,11 @@ node scripts/sync-docs.mjs --package-dir "$PKG_DIR"
 echo "==> Building docs site"
 "${PNPM[@]}" build
 
+# Static HTML + Markdown for every page, sitemap.xml, robots.txt and
+# llms.txt, so agents and crawlers read the site without JavaScript.
+echo "==> Prerendering pages"
+node scripts/prerender.mjs
+
 # The contact endpoint (public/api/contact.php) loads its handler and
 # PHPMailer from server/contact, which is published next to public_html,
 # never inside it. Its config (SMTP password) lives only on the server.
@@ -171,6 +176,20 @@ if [ "$code" != "405" ]; then
   echo "  contact endpoint not ready: create domains/getmartis.com/private/contact-config.php from server/contact/config.example.php" >&2
   fail=1
 fi
+# Agent-facing surface: real 404s, Markdown negotiation, the text files and
+# the documentation MCP server.
+check() { # check LABEL EXPECTED ACTUAL
+  printf '  %-22s %s\n' "$1" "$3"
+  [ "$3" = "$2" ] || { echo "    expected: $2" >&2; fail=1; }
+}
+check "/no-such-page" "404" "$(curl -s -o /dev/null -w '%{http_code}' --max-time 25 "${SITE_URL}/no-such-page-$$")"
+check "/docs (no slash 301)" "200" "$(curl -s -o /dev/null -w '%{http_code}' --max-time 25 "${SITE_URL}/docs")"
+check "/llms.txt type" "text/plain" "$(curl -s -o /dev/null -w '%{content_type}' --max-time 25 "${SITE_URL}/llms.txt" | cut -d';' -f1)"
+check "/ as Markdown" "text/markdown" "$(curl -s -o /dev/null -w '%{content_type}' -H 'Accept: text/markdown' --max-time 25 "${SITE_URL}/" | cut -d';' -f1)"
+check "/sitemap.xml" "200" "$(curl -s -o /dev/null -w '%{http_code}' --max-time 25 "${SITE_URL}/sitemap.xml")"
+check "MCP server card" "application/json" "$(curl -s -o /dev/null -w '%{content_type}' --max-time 25 "${SITE_URL}/.well-known/mcp/server-card.json" | cut -d';' -f1)"
+check "MCP initialize" "200" "$(curl -s -o /dev/null -w '%{http_code}' --max-time 25 -X POST -H 'Content-Type: application/json' -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18"}}' "${SITE_URL}/mcp")"
+
 # The published chunks must carry the numbers this deploy built.
 found=0
 for asset in $(curl -s --max-time 25 "${SITE_URL}/" | grep -oE '/assets/[A-Za-z0-9_.-]+\.js' | sort -u) \
