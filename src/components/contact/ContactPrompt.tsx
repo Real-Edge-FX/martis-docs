@@ -47,7 +47,7 @@ export function ContactPrompt({ delay = CONTACT_PROMPT_DELAY_MS, submit }: { del
 
   return <aside className={`contact-prompt${closing ? ' is-closing' : ''}`} role="dialog" aria-modal="false" aria-labelledby="contact-prompt-title">
     <div className="contact-prompt__header">
-      <img src="/brand/martis-icon.svg" alt="" width={30} height={36} />
+      <img src="/brand/martis-icon-light.svg" alt="" width={30} height={36} />
       <div>
         <h2 id="contact-prompt-title">Any questions about Martis?</h2>
         <p>Ask away. A person from the team replies, usually within a business day.</p>
