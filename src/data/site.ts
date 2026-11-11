@@ -1,13 +1,13 @@
 import type { IconName } from '@/components/icons'
 
 export const RELEASE = {
-  version: '2.19.0',
-  tests: 7994,
+  version: '2.20.0',
+  tests: 8198,
   php: 'PHP 8.3+',
   laravel: 'Laravel 12–13',
-  downloads: 709,
-  monthlyDownloads: 358,
-  statsFetchedAt: '2026-11-10',
+  downloads: 722,
+  monthlyDownloads: 368,
+  statsFetchedAt: '2026-11-11',
 } as const
 
 export interface ProductChapter {
